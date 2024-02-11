@@ -1,0 +1,6 @@
+[submodule "external/GameNetworkingSockets"]
+    path = external/GameNetworkingSockets
+    url = https://github.com/ValveSoftware/GameNetworkingSockets
+[submodule "external/google/protobuf"]
+    path = external/google/protobuf
+    url = https://github.com/protocolbuffers/protobuf

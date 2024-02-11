@@ -1,0 +1,50 @@
+{
+    "version": 5,
+    "configurePresets": [
+        {
+            "name": "windows-base",
+            "generator": "MinGW Makefiles",
+            "cacheVariables": {
+            "CMAKE_CXX_COMPILER": "g++.exe",
+            "CMAKE_MAKE_PROGRAM": "mingw32-make.exe"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+          "name": "windows-debug",
+          "inherits": "windows-base",
+          "displayName": "Windows Debug Config",
+          "description": "Windows Debug build using MinGW generator",
+          "binaryDir": "${sourceDir}/build/Windows/Debug",
+          "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Debug",
+          "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/Windows/Debug"
+          }
+        },
+        {
+            "name": "windows-release",
+            "inherits": "windows-base",
+            "displayName": "Windows Release Config",
+            "description": "Windows Release build using MinGW generator",
+            "binaryDir": "${sourceDir}/build/Windows/Release",
+            "cacheVariables": {
+            "CMAKE_BUILD_TYPE": "Release",
+            "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/Windows/Release"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+          "name": "windows-debug",
+          "configurePreset": "windows-debug"
+        },
+        {
+            "name": "windows-release",
+            "configurePreset": "windows-release"
+        }
+    ]
+  }
