@@ -9,20 +9,20 @@ if(NOT CMAKE_CXX_EXTENSIONS)
     set(CMAKE_CXX_EXTENSIONS OFF)
 endif()
 
-list(APPEND CMAKE_PREFIX_PATH "external/GameNetworkingSockets/lib/cmake/GameNetworkingSockets")
-#Main network api
-find_package(GameNetworkingSockets REQUIRED)
 #GameNetworkingSockets depends on Protobuf
 find_package(Protobuf REQUIRED)
+
+#Trying to find GameNetworkingSockets (MAIN NETWORK LIB) in external folder or system dirs
+find_package(GameNetworkingSockets REQUIRED CONFIG HINTS external)
 
 if(GameNetworkingSockets_FOUND)
     message("-- Found GameNetworkingSockets")
 endif()
 
-if(Protobuf_FOUND)
-    message("-- Found Protobuf")
-endif()
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 #default character type setting
 set(CHARACTER_TYPE "USE_WCHAR" CACHE STRING "C++ character type to use for messages, nicknames, etc.
@@ -67,8 +67,11 @@ add_library(${PROJECT_NAME} SHARED
     src/Serializers.cpp
     )
 
+
+set(NickSVChat_INCLUDE_DIR include)
+
 target_include_directories(${PROJECT_NAME}
-    PUBLIC include
+    PUBLIC ${NickSVChat_INCLUDE_DIR}
     )
 
 target_link_libraries(${PROJECT_NAME} 
@@ -76,36 +79,50 @@ target_link_libraries(${PROJECT_NAME}
     )
 
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/install)
-set(NickSVChat_INCLUDE_DIR src/)
+#install(
+#    FILES external/bin/GameNetworkingSockets/${CMAKE_PLATFORM_NAME}/GameNetworkingSockets.dll 
+#    DESTINATION ${CMAKE_INSTALL_BINDIR}
+#    )
+#
+#install(
+#    FILES external/bin/google/${CMAKE_PLATFORM_NAME}/libprotobuf.dll
+#    DESTINATION ${CMAKE_INSTALL_BINDIR}
+#    )
+#
+#install(
+#    FILES external/bin/google/${CMAKE_PLATFORM_NAME}/libcrypto-3-x64.dll
+#    DESTINATION ${CMAKE_INSTALL_BINDIR}
+#    )
 
 
-install(
-    FILES external/bin/GameNetworkingSockets/${CMAKE_PLATFORM_NAME}/GameNetworkingSockets.dll 
-    DESTINATION ${CMAKE_INSTALL_BINDIR}
-    )
-
-install(
-    FILES external/bin/google/${CMAKE_PLATFORM_NAME}/libprotobuf.dll
-    DESTINATION ${CMAKE_INSTALL_BINDIR}
-    )
-
-install(
-    FILES external/bin/google/${CMAKE_PLATFORM_NAME}/libcrypto-3-x64.dll
-    DESTINATION ${CMAKE_INSTALL_BINDIR}
-    )
 
 install(
-    TARGETS ${PROJECT_NAME}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-    )
+	TARGETS NickSVChat
+	EXPORT NickSVChat
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(
+	EXPORT NickSVChat
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/NickSVChat
+	)
 
 install(
     DIRECTORY ${NickSVChat_INCLUDE_DIR}/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    PATTERN "*.cpp" EXCLUDE
-    PATTERN "*.c" EXCLUDE
-    PATTERN "*.cc" EXCLUDE
-    PATTERN "*.cxx" EXCLUDE
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/
     )
+
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(cmake/NickSVChatConfig.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/NickSVChatConfig.cmake
+	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/NickSVChat
+	PATH_VARS CMAKE_INSTALL_FULL_INCLUDEDIR
+	)
+
+install(FILES 
+	${CMAKE_CURRENT_BINARY_DIR}/NickSVChat.cmake
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/NickSVChat
+	)
