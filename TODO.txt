@@ -6,6 +6,8 @@
 
 -DONT FORGET TO COMMENT EVERYTHING
 
+-make normal version protocol
+
 2) update tests' cmakelists, its garbage for now
 
 1) update main cmake for normal install, maybe even about find package thingy
