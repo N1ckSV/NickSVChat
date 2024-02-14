@@ -2,11 +2,12 @@
     "version": 5,
     "configurePresets": [
         {
-            "name": "windows-base",
+            "name": "windows-base-mingw",
             "generator": "MinGW Makefiles",
             "cacheVariables": {
-            "CMAKE_CXX_COMPILER": "g++.exe",
-            "CMAKE_MAKE_PROGRAM": "mingw32-make.exe"
+                "CMAKE_CXX_COMPILER": "g++.exe",
+                "CMAKE_C_COMPILER": "gcc.exe",
+                "CMAKE_MAKE_PROGRAM": "mingw32-make.exe"
             },
             "condition": {
                 "type": "equals",
@@ -15,36 +16,59 @@
             }
         },
         {
-          "name": "windows-debug",
-          "inherits": "windows-base",
-          "displayName": "Windows Debug Config",
-          "description": "Windows Debug build using MinGW generator",
-          "binaryDir": "${sourceDir}/build/Windows/Debug",
-          "cacheVariables": {
-          "CMAKE_BUILD_TYPE": "Debug",
-          "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/Windows/Debug"
-          }
+            "name": "windows-debug-mingw",
+            "inherits": "windows-base-mingw",
+            "displayName": "Windows Debug MinGW Config",
+            "description": "Windows Debug build using MinGW gen",
+            "binaryDir": "${sourceDir}/build/Windows/Debug",
+            "installDir": "${sourceDir}/install/Windows/Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/Windows/Debug"
+            }
         },
         {
-            "name": "windows-release",
-            "inherits": "windows-base",
-            "displayName": "Windows Release Config",
-            "description": "Windows Release build using MinGW generator",
+            "name": "windows-release-mingw",
+            "inherits": "windows-base-mingw",
+            "displayName": "Windows Release MinGW Config",
+            "description": "Windows Release build using MinGW gen",
             "binaryDir": "${sourceDir}/build/Windows/Release",
+            "installDir": "${sourceDir}/install/Windows/Release",
             "cacheVariables": {
-            "CMAKE_BUILD_TYPE": "Release",
-            "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/Windows/Release"
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/Windows/Release"
+            }
+        },
+        {
+            "name": "windows-msvc",
+            "displayName": "Windows MSVC Config",
+            "description": "Windows Base build using Visual Studio gen",
+            "generator": "Visual Studio 16 2019",
+            "binaryDir": "${sourceDir}/build/Windows/",
+            "installDir": "${sourceDir}/install/Windows/${CMAKE_BUILD_TYPE}",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "cl.exe",
+                "CMAKE_CXX_COMPILER": "cl.exe"
+            },
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
             }
         }
     ],
     "buildPresets": [
         {
-          "name": "windows-debug",
-          "configurePreset": "windows-debug"
+            "name": "windows-debug-mingw",
+            "configurePreset": "windows-debug-mingw"
         },
         {
-            "name": "windows-release",
-            "configurePreset": "windows-release"
+            "name": "windows-release-mingw",
+            "configurePreset": "windows-release-mingw"
         }
     ]
-  }
+}
