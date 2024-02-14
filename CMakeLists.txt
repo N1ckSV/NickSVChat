@@ -1,19 +1,25 @@
 
-project(NickSVChat LANGUAGES CXX)
+project(NickSVChat LANGUAGES C CXX)
 
 include(GNUInstallDirs)
+include(CheckSymbolExists)
 
 cmake_minimum_required(VERSION 3.10)
 
-if(NOT CMAKE_CXX_EXTENSIONS)
-    set(CMAKE_CXX_EXTENSIONS OFF)
-endif()
+option(BUILD_SHARED_LIBS ON)
 
-#GameNetworkingSockets depends on Protobuf
+set(GameNetworkingSockets_DIR "" CACHE STRING "Path where to find GameNetworkingSockets")
+
+#add developer's path
+set(GameNetworkingSockets_DIR_HINTS ${GameNetworkingSockets_DIR} "E:/SDK/GameNetworkingSockets/install")
+
+#Protobuf is required for GameNetworkingSockets
 find_package(Protobuf REQUIRED)
 
-#Trying to find GameNetworkingSockets (MAIN NETWORK LIB) in external folder or system dirs
-find_package(GameNetworkingSockets REQUIRED CONFIG HINTS external)
+#GameNetworkingSockets is main network api for this project
+find_package(GameNetworkingSockets REQUIRED
+    HINTS ${GameNetworkingSockets_DIR_HINTS} 
+)
 
 if(GameNetworkingSockets_FOUND)
     message("-- Found GameNetworkingSockets")
@@ -60,41 +66,24 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DCHAT_DEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 
 
-add_library(${PROJECT_NAME} SHARED 
+add_library(${PROJECT_NAME} 
     src/ChatClient.cpp 
     src/ChatServer.cpp
     src/ClientInfo.cpp
     src/Serializers.cpp
     )
 
-
+    
 set(NickSVChat_INCLUDE_DIR include)
 
-target_include_directories(${PROJECT_NAME}
-    PUBLIC ${NickSVChat_INCLUDE_DIR}
-    )
+target_include_directories(NickSVChat PUBLIC  
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>  
+    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}/GameNetworkingSockets>
+)
 
 target_link_libraries(${PROJECT_NAME} 
     GameNetworkingSockets::GameNetworkingSockets
     )
-
-
-#install(
-#    FILES external/bin/GameNetworkingSockets/${CMAKE_PLATFORM_NAME}/GameNetworkingSockets.dll 
-#    DESTINATION ${CMAKE_INSTALL_BINDIR}
-#    )
-#
-#install(
-#    FILES external/bin/google/${CMAKE_PLATFORM_NAME}/libprotobuf.dll
-#    DESTINATION ${CMAKE_INSTALL_BINDIR}
-#    )
-#
-#install(
-#    FILES external/bin/google/${CMAKE_PLATFORM_NAME}/libcrypto-3-x64.dll
-#    DESTINATION ${CMAKE_INSTALL_BINDIR}
-#    )
-
-
 
 install(
 	TARGETS NickSVChat
@@ -103,7 +92,6 @@ install(
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
-
 install(
 	EXPORT NickSVChat
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/NickSVChat
@@ -123,6 +111,6 @@ configure_package_config_file(cmake/NickSVChatConfig.cmake.in
 	)
 
 install(FILES 
-	${CMAKE_CURRENT_BINARY_DIR}/NickSVChat.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/NickSVChatConfig.cmake
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/NickSVChat
 	)
