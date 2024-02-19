@@ -1,12 +1,13 @@
 
-#ifndef _CHAT_DEFINES
-#define _CHAT_DEFINES
+#ifndef _NICKSV_CHAT_DEFINES
+#define _NICKSV_CHAT_DEFINES
+#pragma once
 
 
 //ASSERT STUFF
 #ifdef CHAT_DEBUG
     #include <assert.h>
-    #define CHAT_ASSERT(exp, msg) assert(((void)msg, exp))
+    #define CHAT_ASSERT(exp, msg) assert((exp) && (msg))
 #else
     #define CHAT_ASSERT(exp, msg) (void(0))
 #endif
@@ -64,4 +65,4 @@
 
 
 
-#endif // _CHAT_DEFINES
+#endif // _NICKSV_CHAT_DEFINES

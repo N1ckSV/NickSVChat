@@ -1,8 +1,17 @@
 
+
+#ifndef _NICKSV_CHAT_SERVER_IMPL_T
+#define _NICKSV_CHAT_SERVER_IMPL_T
+#pragma once
+
+
+#include <iostream>
+
+#include <steam/steamnetworkingsockets.h>
+
 #include "NickSV/Chat/ChatServer.h"
 #include "NickSV/Chat/ClientInfo.h"
-#include "NickSV/Chat/Defines.h"
-#include <iostream>
+
 
 namespace NickSV::Chat {
 
@@ -267,3 +276,7 @@ void ChatServer::OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChan
 
 
 } /*END OF NAMESPACES*/
+
+
+
+#endif // _NICKSV_CHAT_SERVER_IMPL_T

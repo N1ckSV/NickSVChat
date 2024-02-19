@@ -1,63 +1,43 @@
 
-set(CMAKE_DISABLE_SOURCE_CHANGES ON)
-set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
-
-project(NickSVChatTest LANGUAGES CXX)
-
-include(GNUInstallDirs)
-
 cmake_minimum_required(VERSION 3.10)
 
-if(NOT CMAKE_CXX_EXTENSIONS)
-    set(CMAKE_CXX_EXTENSIONS OFF)
-endif()
+include(CTest)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -static -static-libgcc -static-libstdc++")
-SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -DNICKSVCHAT_DEBUG")
-SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
-
-add_executable(${PROJECT_NAME} 
+add_executable(NickSVChatTest
     test.cpp 
     )
 
-SET(NickSVChatTest_INCLUDE_DIRS /../include)
+set_target_properties(NickSVChatTest
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests"
+)
 
-message("-- NickSVChatTest_INCLUDE_DIRS = ${NickSVChatTest_INCLUDE_DIRS}")
+set(NickSVChat_INSTALL_FULL_BINDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}")
+message(STATUS "NickSVChat_INSTALL_FULL_BINDIR: ${NickSVChat_INSTALL_FULL_BINDIR}")
 
-target_include_directories(${PROJECT_NAME}
-    PUBLIC ${NickSVChatTest_INCLUDE_DIRS}
-    PUBLIC external/GameNetworkingSockets/include
+if(NOT TARGET NickSVChat)
+    message(FATAL_ERROR "NickSVChat was not found as a target")
+endif()
+
+#get_property(LIB_MAIN_FILE TARGET NickSVChat PROPERTY OUTPUT_NAME_DEBUG)
+#message(STATUS "NickSVChat_INSTALL_FULL_BINDIR: ${NickSVChat_INSTALL_FULL_BINDIR}")
+#message(STATUS "File to test: ${LIB_MAIN_FILE}")
+#
+#if(NOT EXISTS ${LIB_MAIN_FILE})
+#    message(FATAL_ERROR "NickSVChat library doesn't exist")
+#endif()
+
+target_include_directories(NickSVChatTest
+    PUBLIC "${PROJECT_SOURCE_DIR}/include"
     )
 
-SET(NickSVChatTest_LINK_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../bin/${CMAKE_PLATFORM_NAME}/${CMAKE_BUILD_TYPE})
-
-message("-- NickSVChatTest_LINK_DIRS = ${NickSVChatTest_LINK_DIRS}")
-
-target_link_directories(${PROJECT_NAME} 
-    PUBLIC ${NickSVChatTest_LINK_DIRS}
+target_link_libraries(NickSVChatTest
+        NickSVChat
     )
 
-target_link_libraries(${PROJECT_NAME} 
-    ${NickSVChatTest_LINK_DIRS}/libNickSVChat.dll
-    )
+#install(PROGRAMS "$<TARGET_FILE:NickSVChatTest>" DESTINATION "${NickSVChat_INSTALL_FULL_BINDIR}")
 
-file(
-    INSTALL ../external/bin/GameNetworkingSockets/${CMAKE_PLATFORM_NAME}/GameNetworkingSockets.dll 
-    DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    )
-
-file(
-    INSTALL ../external/bin/google/${CMAKE_PLATFORM_NAME}/libprotobuf.dll
-    DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    )
-
-file(
-    INSTALL ../external/bin/google/${CMAKE_PLATFORM_NAME}/libcrypto-3-x64.dll
-    DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    )
-
-file(
-    INSTALL ${NickSVChatTest_LINK_DIRS}/libNickSVChat.dll
-    DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+add_test(
+    NAME test_main COMMAND NickSVChatTest
+    WORKING_DIRECTORY "${NickSVChat_INSTALL_FULL_BINDIR}"
     )

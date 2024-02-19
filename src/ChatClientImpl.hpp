@@ -1,8 +1,17 @@
 
+
+#ifndef _NICKSV_CHAT_CLIENT_IMPL_T
+#define _NICKSV_CHAT_CLIENT_IMPL_T
+#pragma once
+
+
+#include <iostream>
+
+#include <steam/steamnetworkingsockets.h>
+
 #include "NickSV/Chat/ChatClient.h"
 #include "NickSV/Chat/ClientInfo.h"
-#include "NickSV/Chat/Defines.h"
-#include <iostream>
+
 
 namespace NickSV::Chat {
 
@@ -66,10 +75,12 @@ void ChatClient::CloseConnection()
     ///////////////////////////////////
     this->OnCloseConnection();
 }
+
 bool inline ChatClient::IsRunning()
 {
     return !m_bGoingExit;
 }
+
 ChatClient::ChatClient()
 {
     m_bGoingExit = true;
@@ -77,6 +88,7 @@ ChatClient::ChatClient()
 	m_pClientInfo = new ClientInfo<>();
 	/////////
 }
+
 ChatClient::~ChatClient()
 {
     //TODO
@@ -182,3 +194,7 @@ void ChatClient::OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChan
 
 
 } /*END OF NAMESPACES*/
+
+
+
+#endif // _NICKSV_CHAT_CLIENT_IMPL_T

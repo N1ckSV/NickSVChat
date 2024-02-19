@@ -1,23 +1,30 @@
 
-#include "Defines.h"
-#include "ClientInfo.h"
-#include "Serializers.h"
+#include "NickSV/Chat/ClientInfo.h"
+#include "NickSV/Chat/Serializers.h"
 #include <iostream>
 #include <iomanip>
+#include <exception>
+
 
 #define SETW_VAL 40
 
 #define IF_RETURN(exp, ret) if(exp) { return (ret); }
+#define IFN_RETURN(exp, ret) if(!exp) { return (ret); }
 
-#define RESULT(stage, failed) std::cout << std::setw(SETW_VAL) << std::string(#stage);         \
-                            if(!stage) {                                                       \
-                                std::cout << std::string(": PASSED") << std::endl;             \
-                            }                                                                  \
-                            else {                                                             \
-                                failed++;                                                      \
-                                std::cout  << std::string(": FAILED on stage ")                \
-                                << stage << std::endl;                                         \
-                            }                                                                  \
+#define RESULT(stage, failed)                                              \
+    try {                                                                  \
+        std::cout << std::setw(SETW_VAL) << std::string(#stage) << ": ";   \
+        if(!stage) {                                                       \
+            std::cout << std::string("PASSED") << std::endl;               \
+        }                                                                  \
+        else {                                                             \
+            failed++;                                                      \
+            std::cout  << std::string("FAILED on stage ")                  \
+            << stage << std::endl;                                         \
+        }                                                                  \
+    } catch (const std::exception& ex) {                                   \
+        std::cout << "Exception thrown - " << ex.what() << std::endl;      \
+    }                                                                      \
 
 
 
@@ -72,7 +79,7 @@ int client_info_serializer_test()
 }
 
 
-int main()
+int main(int arc, const char ** argv)
 {
     int ntest_failed = 0;
 
@@ -89,5 +96,5 @@ int main()
     std::cout << '\n' << ntest_failed << " tests failed" << std::endl;
     
 
-    return 0;
+    return ntest_failed;
 }

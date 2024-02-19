@@ -1,7 +1,9 @@
 
 
-#ifndef _CHAT_CLIENT_T
-#define _CHAT_CLIENT_T
+#ifndef _NICKSV_CHAT_CLIENT_T
+#define _NICKSV_CHAT_CLIENT_T
+#pragma once
+
 
 #include <thread>
 #include <exception>
@@ -10,7 +12,6 @@
 
 
 #include "NickSV/Chat/IChatClient.h"
-#include "NickSV/Chat/Types.h"
 
 
 namespace NickSV::Chat {
@@ -48,4 +49,4 @@ private:
 } /*END OF NAMESPACES*/
 
 
-#endif // _CHAT_CLIENT_T
+#endif // _NICKSV_CHAT_CLIENT_T

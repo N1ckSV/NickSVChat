@@ -2,12 +2,8 @@
 
 -add linux support (https://metamod-p.sourceforge.net/cross-compiling.on.windows.for.linux.html)
 
--add msvc dll support (dlliexport/import stuff)
-
 -DONT FORGET TO COMMENT EVERYTHING
 
--make normal version protocol
-
-2) update tests' cmakelists, its garbage for now
-
-1) update main cmake for normal install, maybe even about find package thingy
+-CPack
+2) add msvc dll support (dlliexport/import stuff)
+1) make normal version protocol

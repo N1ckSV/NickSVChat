@@ -4,7 +4,6 @@
 
 #include "NickSV/Chat/ClientInfo.h"
 #include "NickSV/Chat/Serializers.h"
-#include "NickSV/Chat/Defines.h"
 #include "NickSV/Chat/Utils.h"
 
 
@@ -49,7 +48,7 @@ template<class CharT>
 bool ClientInfo<CharT>::IsValid() const { return GetAPIVer() > 0; }
 
 template<class CharT>
-ClientInfoSerializer<CharT> ClientInfo<CharT>::GetSerializer() { return Serializer_t(this); }
+ClientInfoSerializer<CharT> ClientInfo<CharT>::GetSerializer() { return ClientInfoSerializer<CharT>(this); }
 
 template<class CharT>
 typename ClientInfo<CharT>::api_version_type ClientInfo<CharT>::GetAPIVer() const { return m_nAPIVer; }
