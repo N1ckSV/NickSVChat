@@ -1,11 +1,31 @@
 
 
-#ifndef _CHAT_TYPES
-#define _CHAT_TYPES
+#ifndef _NICKSV_CHAT_TYPES
+#define _NICKSV_CHAT_TYPES
+#pragma once
 
 
 
 #include "NickSV/Chat/Defines.h"
+
+
+//GameNetworkingSockets types/
+//This is added so the API user doesn't need to install GameNetworkingSockets' headers
+class SteamNetworkingIPAddr;
+class SteamNetConnectionStatusChangedCallback_t;
+class ISteamNetworkingSockets;
+/// Handle used to identify a connection to a remote host.
+typedef uint32_t HSteamNetConnection;
+/// Handle used to identify a "listen socket".  Unlike traditional
+/// Berkeley sockets, a listen socket and a connection are two
+/// different abstractions.
+typedef uint32_t HSteamListenSocket;
+/// Handle used to identify a poll group, used to query many
+/// connections at once efficiently.
+typedef uint32_t HSteamNetPollGroup;
+
+
+
 
 
 namespace NickSV::Chat {
@@ -36,4 +56,4 @@ using ClientInfoSerializer = Serializer<ClientInfo<CharT>>;
 
 
 
-#endif // _CHAT_TYPES
+#endif // _NICKSV_CHAT_TYPES

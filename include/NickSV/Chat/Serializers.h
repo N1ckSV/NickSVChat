@@ -1,7 +1,8 @@
 
 
-#ifndef _CHAT_SERIALIZERS_T
-#define _CHAT_SERIALIZERS_T
+#ifndef _NICKSV_CHAT_SERIALIZERS_T
+#define _NICKSV_CHAT_SERIALIZERS_T
+#pragma once
 
 
 #include <cstdint>
@@ -126,4 +127,4 @@ private:
 
 
 
-#endif // _CHAT_SERIALIZERS_T
+#endif // _NICKSV_CHAT_SERIALIZERS_T

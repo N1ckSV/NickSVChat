@@ -4,6 +4,7 @@
         {
             "name": "windows-base-mingw",
             "generator": "MinGW Makefiles",
+            "hidden": true,            
             "cacheVariables": {
                 "CMAKE_CXX_COMPILER": "g++.exe",
                 "CMAKE_C_COMPILER": "gcc.exe",
@@ -18,25 +19,45 @@
         {
             "name": "windows-debug-mingw",
             "inherits": "windows-base-mingw",
-            "displayName": "Windows Debug MinGW Config",
+            "displayName": "Windows Debug MinGW",
             "description": "Windows Debug build using MinGW gen",
             "binaryDir": "${sourceDir}/build/Windows/Debug",
             "installDir": "${sourceDir}/install/Windows/Debug",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/Windows/Debug"
+                "CMAKE_BUILD_TYPE": "Debug"
             }
         },
         {
             "name": "windows-release-mingw",
             "inherits": "windows-base-mingw",
-            "displayName": "Windows Release MinGW Config",
+            "displayName": "Windows Release MinGW",
             "description": "Windows Release build using MinGW gen",
             "binaryDir": "${sourceDir}/build/Windows/Release",
             "installDir": "${sourceDir}/install/Windows/Release",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/Windows/Release"
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "windows-debug-mingw-test",
+            "inherits": "windows-debug-mingw",
+            "displayName": "Windows Test Debug MinGW",
+            "description": "Windows Test Debug build using MinGW gen",
+            "cacheVariables": {
+                "INSTALL_RUNTIME_DEPENDENCIES": "ON",
+                "BUILD_TESTS": "ON",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/Windows/Debug/bin"
+            }
+        },
+        {
+            "name": "windows-release-mingw-test",
+            "inherits": "windows-release-mingw",
+            "displayName": "Windows Test Release MinGW",
+            "description": "Windows Test Release build using MinGW gen",
+            "cacheVariables": {
+                "INSTALL_RUNTIME_DEPENDENCIES": "ON",
+                "BUILD_TESTS": "ON",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/Windows/Release/bin"
             }
         },
         {
@@ -64,11 +85,61 @@
     "buildPresets": [
         {
             "name": "windows-debug-mingw",
-            "configurePreset": "windows-debug-mingw"
+            "displayName": "Enabled",
+            "configurePreset": "windows-debug-mingw",
+            "targets":[
+              "all"
+            ]
         },
         {
             "name": "windows-release-mingw",
+            "displayName": "Enabled",
+            "configurePreset": "windows-release-mingw",
+            "targets":[
+              "all"
+            ]
+        },
+        {
+            "name": "windows-debug-mingw-test",
+            "displayName": "Enabled",
+            "configurePreset": "windows-debug-mingw-test",
+            "targets":[
+              //install before test
+              "install"
+            ]
+        },
+        {
+            "name": "windows-release-mingw-test",
+            "displayName": "Enabled",
+            "configurePreset": "windows-release-mingw-test",
+            "targets":[
+              //install before test
+              "install"
+            ]
+        }
+    ],
+    "testPresets": [
+        {
+            //Disabled because doing nothing
+            "name": "windows-debug-mingw",
+            "displayName": "Disabled",
+            "configurePreset": "windows-debug-mingw"
+        },
+        {
+            //Disabled because doing nothing
+            "name": "windows-release-mingw",
+            "displayName": "Disabled",
             "configurePreset": "windows-release-mingw"
+        },
+        {
+          "name": "windows-debug-mingw-test",
+          "displayName": "Enabled",
+          "configurePreset": "windows-debug-mingw-test"
+        },
+        {
+            "name": "windows-release-mingw-test",
+            "displayName": "Enabled",
+            "configurePreset": "windows-release-mingw-test"
         }
     ]
 }

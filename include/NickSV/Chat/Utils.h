@@ -1,7 +1,8 @@
 
 
-#ifndef _CHAT_UTILS
-#define _CHAT_UTILS
+#ifndef _NICKSV_CHAT_UTILS
+#define _NICKSV_CHAT_UTILS
+#pragma once
 
 
 #include <type_traits>
@@ -49,4 +50,4 @@ std::string inline basic_string_cast<char>(char const * pcszToConvert) { return 
 
 
 
-#endif // _CHAT_UTILS
+#endif // _NICKSV_CHAT_UTILS

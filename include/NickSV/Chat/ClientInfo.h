@@ -1,7 +1,8 @@
 
 
-#ifndef _CHAT_CLIENT_INFO
-#define _CHAT_CLIENT_INFO
+#ifndef _NICKSV_CHAT_CLIENT_INFO
+#define _NICKSV_CHAT_CLIENT_INFO
+#pragma once
 
 
 #include <string>
@@ -106,4 +107,4 @@ private:
 
 
 
-#endif // _CHAT_CLIENT_INFO
+#endif // _NICKSV_CHAT_CLIENT_INFO

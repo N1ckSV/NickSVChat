@@ -1,12 +1,9 @@
 
+#ifndef _NICKSV_CHAT_ICHAT_CLIENT_T
+#define _NICKSV_CHAT_ICHAT_CLIENT_T
+#pragma once
 
-#ifndef _CHAT_ICHAT_CLIENT_T
-#define _CHAT_ICHAT_CLIENT_T
-
-#include <steam/steamnetworkingsockets.h>
-
-
-#include "NickSV/Chat/Defines.h"
+#include "NickSV/Chat/Types.h"
 
 
 namespace NickSV::Chat {
@@ -29,4 +26,4 @@ public:
 
 } /*END OF NAMESPACES*/
 
-#endif // _CHAT_ICHAT_CLIENT_T
+#endif // _NICKSV_CHAT_ICHAT_CLIENT_T

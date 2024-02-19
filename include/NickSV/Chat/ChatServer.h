@@ -1,7 +1,8 @@
 
 
-#ifndef _CHAT_SERVER_T
-#define _CHAT_SERVER_T
+#ifndef _NICKSV_CHAT_SERVER_T
+#define _NICKSV_CHAT_SERVER_T
+#pragma once
 
 
 #include <thread>
@@ -11,7 +12,6 @@
 
 
 #include "NickSV/Chat/IChatServer.h"
-#include "NickSV/Chat/Types.h"
 
 
 namespace NickSV::Chat {
@@ -19,7 +19,6 @@ namespace NickSV::Chat {
 class ChatServer: public IChatServer
 {
 public:
-
     void Run(const SteamNetworkingIPAddr &serverAddr ) override;
     void CloseConnection() override;
     bool IsRunning();
@@ -35,7 +34,7 @@ protected:
 private:
     void MainThreadFunction();
     void SendStringToClient( HSteamNetConnection, const char * );
-    void SendStringToAllClients( const char *, HSteamNetConnection except = k_HSteamNetConnection_Invalid );
+    void SendStringToAllClients( const char *, HSteamNetConnection except = 0 );
     void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_t * );
     static void SteamNetConnectionStatusChangedCallback( SteamNetConnectionStatusChangedCallback_t * );
     std::thread* m_pMainThread;
@@ -63,4 +62,4 @@ private:
 } /*END OF NAMESPACES*/
 
 
-#endif // _CHAT_SERVER_T
+#endif // _NICKSV_CHAT_SERVER_T

@@ -1,7 +1,6 @@
 
 #include <cstring>
 
-
 #include "NickSV/Chat/Serializers.h"
 #include "NickSV/Chat/ClientInfo.h"
 #include "NickSV/Chat/Defines.h"
@@ -13,7 +12,7 @@ namespace NickSV::Chat {
 template<typename CharT>
 Serializer<ClientInfo<CharT>>::Serializer(ClientInfo<CharT>* p_CI) : m_pClientInfo(p_CI)
 { 
-    CHAT_ASSERT(!m_pClientInfo, "m_pClientInfo must not be nullptr");
+    CHAT_ASSERT(m_pClientInfo, "m_pClientInfo must not be nullptr");
 };
 
 
