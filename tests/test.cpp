@@ -1,4 +1,7 @@
 
+#include "NickSV/Chat/Defines.h"
+#include "NickSV/Chat/Types.h"
+#include "NickSV/Chat/Utils.h"
 #include "NickSV/Chat/ClientInfo.h"
 #include "NickSV/Chat/Serializers.h"
 #include <iostream>
@@ -78,6 +81,22 @@ int client_info_serializer_test()
     return 0;
 }
 
+int versio_conversation_test()
+{
+    int stage = 1;
+    NickSV::Chat::Version_t ver = NickSV::Chat::ConvertVersions(NICKSVCHAT_VERSION_MAJOR, NICKSVCHAT_VERSION_MINOR, NICKSVCHAT_VERSION_PATCH, 0);
+    IF_RETURN(NickSV::Chat::ConvertVersionToMajor(ver) != NICKSVCHAT_VERSION_MAJOR, stage)
+    stage++;
+    IF_RETURN(NickSV::Chat::ConvertVersionToMinor(ver) != NICKSVCHAT_VERSION_MINOR, stage)
+    stage++;
+    IF_RETURN(NickSV::Chat::ConvertVersionToPatch(ver) != NICKSVCHAT_VERSION_PATCH, stage)
+    stage++;
+    IF_RETURN(NickSV::Chat::ConvertVersionToTweak(ver) != 0, stage)
+    stage++;
+
+    return 0;
+}
+
 
 int main(int arc, const char ** argv)
 {
@@ -92,6 +111,8 @@ int main(int arc, const char ** argv)
     RESULT(client_info_serializer_test<wchar_t>(), ntest_failed);
     RESULT(client_info_serializer_test<char16_t>(), ntest_failed);
     RESULT(client_info_serializer_test<char32_t>(), ntest_failed);
+
+    RESULT(versio_conversation_test(), ntest_failed);
 
     std::cout << '\n' << ntest_failed << " tests failed" << std::endl;
     

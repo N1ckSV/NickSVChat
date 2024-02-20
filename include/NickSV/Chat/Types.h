@@ -5,6 +5,7 @@
 #pragma once
 
 
+#include <cstdint>
 
 #include "NickSV/Chat/Defines.h"
 
@@ -27,7 +28,6 @@ typedef uint32_t HSteamNetPollGroup;
 
 
 
-
 namespace NickSV::Chat {
 
 enum EResult
@@ -35,6 +35,8 @@ enum EResult
     kSucces = 0,
     kError
 };
+
+using Version_t = uint32_t;
 
 class IChatClient;
 class ChatClient;

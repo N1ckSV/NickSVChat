@@ -4,6 +4,8 @@
 #pragma once
 
 
+#include "ChatConfig.h"
+
 //ASSERT STUFF
 #ifdef CHAT_DEBUG
     #include <assert.h>
@@ -11,11 +13,6 @@
 #else
     #define CHAT_ASSERT(exp, msg) (void(0))
 #endif
-
-
-
-//VERSION STUFF
-#define NICKSVCHAT_VERSION 1           /// FIXME: MAKE VERSION PROTOCOL
 
 
 
@@ -31,6 +28,14 @@
 #define CHAT_NODISCARD [[nodiscard]]
 #endif
 
+#define VERSION_PROTOCOL_ERROR_MESSAGE "Version protocol rule violated: Each NICKSVCHAT_VERSION_<ver-name> should be between 0 to 255."
+
+#define IS_VERSION_VALID(major, minor, patch, tweak)\
+(((major) < 256) && ((minor) < 256) && ((patch) < 256) && ((tweak) < 256) && ((major) >= 0 ) && ((minor) >= 0 ) && ((patch) >= 0 ) && ((tweak) >= 0 ))
+
+#if !IS_VERSION_VALID(NICKSVCHAT_VERSION_MAJOR, NICKSVCHAT_VERSION_MINOR, NICKSVCHAT_VERSION_PATCH, 0)
+    #error Version protocol rule violated: Each NICKSVCHAT_VERSION_<ver-name> should be between 0 to 255.
+#endif
 
 
 // STRING STUFF

@@ -6,7 +6,6 @@
 
 
 #include <string>
-#include <cstdint>
 
 
 #include "NickSV/Chat/Defines.h"
@@ -36,7 +35,7 @@ struct ClientInfo
     static_assert(is_char<CharT>::value, is_char_ERROR_MESSAGE);
     using char_type = CharT;
     using nick_string_type = std::basic_string<CharT>;
-    using api_version_type = uint32_t;
+    using api_version_type = Version_t;
     using Serializer_t = ClientInfoSerializer<char_type>;
     friend Serializer_t;
 
@@ -95,7 +94,7 @@ struct ClientInfo
 
 	nick_string_type m_sNick;
 private:
-    api_version_type m_nAPIVer = NICKSVCHAT_VERSION;
+    api_version_type m_nAPIVer = ConvertVersions(NICKSVCHAT_VERSION_MAJOR, NICKSVCHAT_VERSION_MINOR, NICKSVCHAT_VERSION_PATCH, 0);
 };
 
 

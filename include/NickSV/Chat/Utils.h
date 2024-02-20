@@ -11,6 +11,7 @@
 
 
 #include "NickSV/Chat/Defines.h"
+#include "NickSV/Chat/Types.h"
 
 
 namespace NickSV::Chat {
@@ -44,6 +45,15 @@ std::basic_string<CharT> basic_string_cast(char const *pcszToConvert)
 template <>
 std::string inline basic_string_cast<char>(char const * pcszToConvert) { return std::string(pcszToConvert); };
 
+constexpr Version_t ConvertVersions(Version_t major, Version_t minor = 0U, Version_t patch = 0U, Version_t tweak = 0U)
+{
+    CHAT_ASSERT(IS_VERSION_VALID(major, minor, patch, tweak), VERSION_PROTOCOL_ERROR_MESSAGE);
+    return (major << 24) + (minor << 16) + (patch << 8) + tweak;
+}
+constexpr Version_t ConvertVersionToMajor(Version_t fullVersion) { return (fullVersion      ) >> 24; }
+constexpr Version_t ConvertVersionToMinor(Version_t fullVersion) { return (fullVersion << 8 ) >> 24; }
+constexpr Version_t ConvertVersionToPatch(Version_t fullVersion) { return (fullVersion << 16) >> 24; }
+constexpr Version_t ConvertVersionToTweak(Version_t fullVersion) { return (fullVersion << 24) >> 24; }
 
 
 } /*END OF NAMESPACES*/

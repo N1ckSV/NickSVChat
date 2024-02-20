@@ -1,10 +1,5 @@
 
 
-#ifndef _NICKSV_CHAT_SERVER_IMPL_T
-#define _NICKSV_CHAT_SERVER_IMPL_T
-#pragma once
-
-
 #include <iostream>
 
 #include <steam/steamnetworkingsockets.h>
@@ -276,7 +271,3 @@ void ChatServer::OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChan
 
 
 } /*END OF NAMESPACES*/
-
-
-
-#endif // _NICKSV_CHAT_SERVER_IMPL_T
