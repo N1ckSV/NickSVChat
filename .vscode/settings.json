@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.h.in": "cpp",
         "iostream": "cpp",
         "iomanip": "cpp",
         "exception": "cpp",
@@ -65,5 +66,6 @@
         "xtr1common": "cpp",
         "xtree": "cpp",
         "xutility": "cpp"
-    }
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }
