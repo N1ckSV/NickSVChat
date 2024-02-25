@@ -31,9 +31,16 @@ target_include_directories(NickSVChatTest
     PUBLIC "${PROJECT_SOURCE_DIR}/include"
     )
 
-target_link_libraries(NickSVChatTest
+if(WIN32)
+    target_link_libraries(NickSVChatTest
+        NickSVChat
+        Iphlpapi
+    )
+else()
+    target_link_libraries(NickSVChatTest
         NickSVChat
     )
+endif()
 
 #install(PROGRAMS "$<TARGET_FILE:NickSVChatTest>" DESTINATION "${NickSVChat_INSTALL_FULL_BINDIR}")
 

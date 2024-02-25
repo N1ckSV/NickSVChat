@@ -32,26 +32,74 @@ namespace NickSV::Chat {
 
 enum EResult
 {
-    kSucces = 0,
-    kError
+    Success = 0,
+    Error,
+    AlreadyRunning,
+    InvalidSize
 };
+
+enum class ERequestType : uint32_t
+{
+    Unknown = 0,
+    Message,
+    ClientInfo
+};
+
+struct Constant
+{
+    static const int MaxChatErrorMsgSize  = 1024;
+    static const int MaxNicknameSize  = MAX_NICKNAME_SIZE;
+};
+
+using ChatErrorMsg = char[Constant::MaxChatErrorMsgSize];
 
 using Version_t = uint32_t;
 
-class IChatClient;
+class IChatSocket;
 class ChatClient;
-class IChatServer;
 class ChatServer;
 
-template<class CharT = TCHAR>
-class ClientInfo;
 
+/*
+"Basic" prefix here means the same thing as "basic_" in std::basic_string<...>
+*/
+
+template<typename CharT = CHAT_CHAR>
+class BasicClientInfo;
+using ClientInfo = BasicClientInfo<CHAT_CHAR>;
+
+
+class ISerializer;
+class ISerializable;
 template<typename Serializable>
 class Serializer;
+template<typename Serializable>
+class ConstSerializer;
 
-template<typename CharT = TCHAR>
-using ClientInfoSerializer = Serializer<ClientInfo<CharT>>;
+using ClientInfoSerializer = Serializer<ClientInfo>;
+using ConstClientInfoSerializer = ConstSerializer<ClientInfo>;
 
+
+template<typename CharT = CHAT_CHAR>
+class BasicMessage;
+using Message = BasicMessage<CHAT_CHAR>;
+
+using MessageSerializer = Serializer<Message>;
+using ConstMessageSerializer = ConstSerializer<Message>;
+
+
+class SendInfo;
+
+
+class IRequest;
+class Request;
+class MessageRequest;
+class ClientInfoRequest;
+
+
+using RequestSerializer = Serializer<Request>;
+using MessageRequestSerializer = Serializer<MessageRequest>;
+using ClientInfoRequestSerializer = Serializer<ClientInfoRequest>;
 
 
 } /*END OF NAMESPACES*/

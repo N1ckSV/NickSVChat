@@ -5,48 +5,52 @@
 #include <steam/steamnetworkingsockets.h>
 
 #include "NickSV/Chat/ChatServer.h"
-#include "NickSV/Chat/ClientInfo.h"
+#include "NickSV/Chat/BasicClientInfo.h"
 
 
 namespace NickSV::Chat {
 
-void ChatServer::Run(const SteamNetworkingIPAddr &serverAddr )
+EResult ChatServer::Run(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg)
 {
     /*Description*/
 
-    
-    /*
-      ERROR: Chat's connection is already running or m_pMainThread is'n null.
-      Call CloseConnection() before calling Run() second time.
-      Asserts that m_pMainThread in null, memory leak instead.
-      IsRunning() == false should always indicate that m_pMainThread is null.
-    */
-    CHAT_ASSERT(!IsRunning() && !m_pMainThread, "ERROR: Connection is already running.");
+    if(IsRunning() || m_pConnectionThread)
+	{
+		CHAT_EXPECT(false, "Connection is already running");
+		return EResult::AlreadyRunning;
+	}
 
-    this->OnPreStartConnection();
+	EResult result = this->OnPreStartConnection(serverAddr, errMsg );
+    if(result != EResult::Success)
+		return result;
+		
     ///////////////////////////////////
-
+	if (!GameNetworkingSockets_Init( nullptr, errMsg ))
+        return EResult::Error;
 
     m_pInterface = SteamNetworkingSockets();
-
     SteamNetworkingConfigValue_t opt;
 	opt.SetPtr( k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)SteamNetConnectionStatusChangedCallback );
 	m_hListenSock = m_pInterface->CreateListenSocketIP( serverAddr, 1, &opt );
 
     if ( m_hListenSock == k_HSteamListenSocket_Invalid )
-            return;
+            return EResult::Error;
 
 	m_hPollGroup = m_pInterface->CreatePollGroup();
 
-	if ( m_hPollGroup == k_HSteamNetPollGroup_Invalid )
-        return;
+	if (m_hPollGroup == k_HSteamNetPollGroup_Invalid)
+	{
+		GameNetworkingSockets_Kill();
+		sprintf(errMsg, "ISteamNetworkingSockets interface returned invalid connection");
+        return EResult::Error;
+	}
 
-    m_bGoingExit = false; //SHOULD BE FIRST BEFORE m_pMainThread = new ...
-    m_pMainThread = new std::thread(&ChatServer::MainThreadFunction, this);
+    m_bGoingExit = false; //SHOULD BE FIRST BEFORE m_pConnectionThread = new ...
+    m_pConnectionThread = new std::thread(&ChatServer::ConnectionThreadFunction, this);
     //TODO: exit/kill/nuke/terminate
 
     ///////////////////////////////////
-    this->OnStartConnection();
+    return this->OnStartConnection(serverAddr, errMsg);
 }
 
 ChatServer *ChatServer::s_pCallbackInstance = nullptr;
@@ -59,46 +63,44 @@ void ChatServer::CloseConnection()
 {
     /*Description*/
     
-	//ERROR: m_pMainThread is null.
-    CHAT_ASSERT(m_pMainThread, "ERROR: Conection thread is missing (m_pMainThread == null).");
+	//ERROR: m_pConnectionThread is null.
+    CHAT_EXPECT(m_pConnectionThread, "Conection thread is missing (m_pConnectionThread == null).");
 
     this->OnPreCloseConnection();
     ///////////////////////////////////
-
-
     //TODO
     //FIXME FIXME FIXME FIXME FIXME FIXME
     m_bGoingExit = true;
-    m_pMainThread->join();
-    delete m_pMainThread;
-    m_pMainThread = nullptr;
+    if(m_pConnectionThread)
+   		m_pConnectionThread->join();
 
-
+    delete m_pConnectionThread;
+    m_pConnectionThread = nullptr;
     ///////////////////////////////////
     this->OnCloseConnection();
 }
-bool inline ChatServer::IsRunning()
-{
-    return !m_bGoingExit;
-}
+
+bool inline ChatServer::IsRunning() { return !m_bGoingExit; }
+
 ChatServer::ChatServer()
 {
     m_bGoingExit = true;
-    m_pMainThread = nullptr;
+    m_pConnectionThread = nullptr;
 }
 ChatServer::~ChatServer()
 {
     //TODO
     //FIXME FIXME FIXME FIXME FIXME FIXME 
-    delete m_pMainThread;
+    delete m_pConnectionThread;
 }
 
-void ChatServer::OnPreStartConnection()  { };
-void ChatServer::OnStartConnection()     { };
-void ChatServer::OnPreCloseConnection()  { };
-void ChatServer::OnCloseConnection()     { };
+EResult ChatServer::OnPreStartConnection(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg)  { return EResult::Success; }
+EResult ChatServer::OnStartConnection(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg)     { return EResult::Success; }
+void ChatServer::OnPreCloseConnection()  { }
+void ChatServer::OnCloseConnection()     { }
 
-void ChatServer::MainThreadFunction()
+
+void ChatServer::ConnectionThreadFunction()
 {
     while(!m_bGoingExit)
     {
@@ -254,7 +256,7 @@ void ChatServer::OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChan
 			//SendStringToAllClients( temp, pInfo->m_hConn ); 
 			//// Add them to the client list, using std::map wacky syntax
 			m_mapClients[ pInfo->m_hConn ];
-			m_mapClients[ pInfo->m_hConn ].m_sNick = _T("Blank");
+			m_mapClients[ pInfo->m_hConn ].GetNickname() = _T("Blank");
 			//SetClientNick( pInfo->m_hConn, nick );
 			break;
 		}

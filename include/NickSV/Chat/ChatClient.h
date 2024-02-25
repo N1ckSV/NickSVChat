@@ -1,5 +1,4 @@
 
-
 #ifndef _NICKSV_CHAT_CLIENT_T
 #define _NICKSV_CHAT_CLIENT_T
 #pragma once
@@ -11,36 +10,46 @@
 #include <map>
 
 
-#include "NickSV/Chat/IChatClient.h"
+#include "NickSV/Chat/Interfaces/IChatSocket.h"
 
 
 namespace NickSV::Chat {
 
-class ChatClient: public IChatClient
+class ChatClient: public IChatSocket
 {
+    /*
+    Description
+    
+    This is main client class handles connection to server, receiving messages,client information.
+    This class is supposed to be inherited, but base work is also possible
+
+    */
 public:
-    void Run(const SteamNetworkingIPAddr &serverAddr ) override;
+    /*
+    Initializes networking library and connection thread
+    */
+    EResult Run(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg  ) override;
     void CloseConnection() override;
     bool IsRunning();
-    void SetInfo(ClientInfo<>* pClientInfo);
+    void SetInfo(ClientInfo* pClientInfo);
     ChatClient();
     ~ChatClient();
 
 protected:
-    virtual void OnPreStartConnection() ; 
-    virtual void OnStartConnection()    ; 
-    virtual void OnPreCloseConnection() ; 
-    virtual void OnCloseConnection()    ; 
+    virtual EResult OnPreStartConnection(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg ) ;
+    virtual EResult OnStartConnection(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg )    ;
+    virtual void OnPreCloseConnection()    ;
+    virtual void OnCloseConnection()       ;
 
 private:
-    void MainThreadFunction();
+    void ConnectionThreadFunction();
     void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_t *pInfo );
     static void SteamNetConnectionStatusChangedCallback( SteamNetConnectionStatusChangedCallback_t *);
-    std::thread* m_pMainThread;
+    std::thread* m_pConnectionThread;
     volatile bool m_bGoingExit;
     HSteamNetConnection m_hConnection;
     ISteamNetworkingSockets* m_pInterface;
-    ClientInfo<>* m_pClientInfo;
+    ClientInfo* m_pClientInfo;
     static ChatClient *s_pCallbackInstance;
 };
 

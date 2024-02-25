@@ -5,82 +5,77 @@
 #include <steam/steamnetworkingsockets.h>
 
 #include "NickSV/Chat/ChatClient.h"
-#include "NickSV/Chat/ClientInfo.h"
+#include "NickSV/Chat/BasicClientInfo.h"
 
 
 namespace NickSV::Chat {
 
-void ChatClient::Run(const SteamNetworkingIPAddr &serverAddr )
+EResult ChatClient::Run(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg )
 {
-    /*Description*/
+	if(IsRunning() || m_pConnectionThread)
+	{
+		CHAT_EXPECT(false, "Connection is already running");
+		return EResult::AlreadyRunning;
+	}
 
-    
-    /*
-      ERROR: Chat's connection is already running or m_pMainThread is'n null.
-      Call CloseConnection() before calling Run() second time.
-      Asserts that m_pMainThread in null, memory leak instead.
-      IsRunning() == false should always indicate that m_pMainThread is null.
-    */
-    CHAT_ASSERT(!IsRunning() && !m_pMainThread, "ERROR: Connection is already running.");
+	EResult result = this->OnPreStartConnection(serverAddr, errMsg);
+    if(result != EResult::Success)
+		return result;
 
-    this->OnPreStartConnection();
     ///////////////////////////////////
-
+	if (!GameNetworkingSockets_Init( nullptr, errMsg ))
+        return EResult::Error;
 
     m_pInterface = SteamNetworkingSockets();
 	SteamNetworkingConfigValue_t opt;
 	opt.SetPtr( k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)SteamNetConnectionStatusChangedCallback );
     m_hConnection = m_pInterface->ConnectByIPAddress( serverAddr, 1,&opt);    
 
-    if ( m_hConnection == k_HSteamNetConnection_Invalid )
-        return;
+    if (m_hConnection == k_HSteamNetConnection_Invalid)
+	{
+		GameNetworkingSockets_Kill();
+		sprintf(errMsg, "ISteamNetworkingSockets interface returned invalid connection");
+        return EResult::Error;
+	}
 
-    m_bGoingExit = false; //SHOULD BE FIRST BEFORE m_pMainThread = new ...
-    m_pMainThread = new std::thread(&ChatClient::MainThreadFunction, this);
+    m_bGoingExit = false; //SHOULD BE ALWAYS FIRST BEFORE m_pConnectionThread = new ...
+    m_pConnectionThread = new std::thread(&ChatClient::ConnectionThreadFunction, this);
     //TODO: exit/kill/nuke/terminate
 
     ///////////////////////////////////
-    this->OnStartConnection();
+    return this->OnStartConnection(serverAddr, errMsg);
 }
 
-void ChatClient::SetInfo(ClientInfo<>* pChatClientInfo)
+void ChatClient::SetInfo(BasicClientInfo<>* pChatClientInfo)
 {
 	
 }
 
 void ChatClient::CloseConnection()
 {
-    /*Description*/
-
-    //ERROR: m_pMainThread is null.
-    CHAT_ASSERT(m_pMainThread, "ERROR: Connection thread is missing (m_pMainThread == null).");
+    CHAT_EXPECT(m_pConnectionThread, "Connection thread is missing (m_pConnectionThread == null).");
 
     this->OnPreCloseConnection();
     ///////////////////////////////////
-
-
     //TODO
     //FIXME FIXME FIXME FIXME FIXME FIXME
     m_bGoingExit = true;
-    m_pMainThread->join();
-    delete m_pMainThread;
-    m_pMainThread = nullptr;
+	if(m_pConnectionThread)
+   		m_pConnectionThread->join();
 
-
+    delete m_pConnectionThread;
+    m_pConnectionThread = nullptr;
     ///////////////////////////////////
     this->OnCloseConnection();
 }
 
-bool inline ChatClient::IsRunning()
-{
-    return !m_bGoingExit;
-}
+bool inline ChatClient::IsRunning() { return !m_bGoingExit; }
 
 ChatClient::ChatClient()
 {
     m_bGoingExit = true;
-    m_pMainThread = nullptr;
-	m_pClientInfo = new ClientInfo<>();
+    m_pConnectionThread = nullptr;
+	m_pClientInfo = new ClientInfo();
 	/////////
 }
 
@@ -89,15 +84,15 @@ ChatClient::~ChatClient()
     //TODO
     //FIXME FIXME FIXME FIXME FIXME FIXME 
 	delete m_pClientInfo;
-    delete m_pMainThread;
+    delete m_pConnectionThread;
 }
 
-void ChatClient::OnPreStartConnection()  { };
-void ChatClient::OnStartConnection()     { };
+EResult ChatClient::OnPreStartConnection(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg)  { return EResult::Success; };
+EResult ChatClient::OnStartConnection(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg)     { return EResult::Success; };
 void ChatClient::OnPreCloseConnection()  { };
 void ChatClient::OnCloseConnection()     { };
 
-void ChatClient::MainThreadFunction()
+void ChatClient::ConnectionThreadFunction()
 {
     while(!m_bGoingExit)
     {

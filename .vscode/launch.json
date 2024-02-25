@@ -11,9 +11,9 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${cmake.testProgram}",
-            "cwd": "${cmake.testWorkingDirectory}",
-            "args": [ "${cmake.testArgs}"],
+            "program": "${command:cmake.launchTargetPath}",
+            "cwd": "${workspaceRoot}/install/Windows/Debug/bin",
+            "args": [ ],
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",

@@ -1,5 +1,4 @@
 
-
 #ifndef _NICKSV_CHAT_SERVER_T
 #define _NICKSV_CHAT_SERVER_T
 #pragma once
@@ -11,40 +10,40 @@
 #include <map>
 
 
-#include "NickSV/Chat/IChatServer.h"
+#include "NickSV/Chat/Interfaces/IChatSocket.h"
 
 
 namespace NickSV::Chat {
 
-class ChatServer: public IChatServer
+class ChatServer: public IChatSocket
 {
 public:
-    void Run(const SteamNetworkingIPAddr &serverAddr ) override;
+    EResult Run(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg  ) override;
     void CloseConnection() override;
     bool IsRunning();
     ChatServer();
     ~ChatServer();
 
 protected:
-    virtual void OnPreStartConnection() ;
-    virtual void OnStartConnection()    ;
-    virtual void OnPreCloseConnection() ;
-    virtual void OnCloseConnection()    ;
+    virtual EResult OnPreStartConnection(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg ) ;
+    virtual EResult OnStartConnection(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg )    ;
+    virtual void OnPreCloseConnection()    ;
+    virtual void OnCloseConnection()       ;
 
 private:
-    void MainThreadFunction();
+    void ConnectionThreadFunction();
     void SendStringToClient( HSteamNetConnection, const char * );
     void SendStringToAllClients( const char *, HSteamNetConnection except = 0 );
     void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_t * );
     static void SteamNetConnectionStatusChangedCallback( SteamNetConnectionStatusChangedCallback_t * );
-    std::thread* m_pMainThread;
+    std::thread* m_pConnectionThread;
     volatile bool m_bGoingExit;
 	HSteamListenSocket m_hListenSock;
 	HSteamNetPollGroup m_hPollGroup;
 	ISteamNetworkingSockets *m_pInterface;
     static ChatServer *s_pCallbackInstance;
 
-	std::map< HSteamNetConnection, ClientInfo<>/*FIXME FIXME FIXME FIXME FIXME has to be pointer or think of it better*/> m_mapClients;
+	std::map< HSteamNetConnection, ClientInfo/*FIXME FIXME FIXME FIXME FIXME has to be pointer or think of it better*/> m_mapClients;
 };
 
 

@@ -1,5 +1,4 @@
 
-
 #ifndef _NICKSV_CHAT_UTILS
 #define _NICKSV_CHAT_UTILS
 #pragma once
@@ -16,18 +15,21 @@
 
 namespace NickSV::Chat {
 
+
 /*
-Character-like type-traits
+Character-like type-traits.
+See is_char_ERROR_MESSAGE
 */
-template<typename CharT = char>
-struct is_char : std::integral_constant<bool,
-                     std::is_same<CharT, char>::value     ||
-                     std::is_same<CharT, char16_t>::value ||
-                     std::is_same<CharT, char32_t>::value ||
-                     std::is_same<CharT, wchar_t>::value>
-{
-#define is_char_ERROR_MESSAGE "Type must be character-like type (char, wchar_t etc). See is_char type trait declaration."
-};
+template<typename CharT, typename PureCharT = typename std::remove_cv<CharT>::type>
+struct is_char : std::false_type {};
+template<typename CharT>
+struct is_char<CharT, char> : std::true_type {};
+template<typename CharT>
+struct is_char<CharT, wchar_t> : std::true_type {};
+template<typename CharT>
+struct is_char<CharT, char16_t> : std::true_type {};
+template<typename CharT>
+struct is_char<CharT, char32_t> : std::true_type {};
 
 /*
 Runtime conversation from [char const *] to [std::basic_string<CharT>]
@@ -56,7 +58,31 @@ constexpr Version_t ConvertVersionToPatch(Version_t fullVersion) { return (fullV
 constexpr Version_t ConvertVersionToTweak(Version_t fullVersion) { return (fullVersion << 24) >> 24; }
 
 
+
+/*
+Serializable type-traits.
+See is_serializable_ERROR_MESSAGE.
+*/
+template<typename ToSerialize>
+struct is_serializable : std::integral_constant<bool,
+                     std::is_default_constructible<ToSerialize>::value &&
+                     std::is_base_of<ISerializable, ToSerialize>::value> {};
+
+
+
+
+/*
+Same as Serializer<ToSerialize>::ParseFromString(...) but creates 
+ToSerialize object.
+If str is bad (Unparsable), return value is ToSerialize()
+*/
+template<typename ToSerialize>
+ToSerialize MakeFromString(const std::string& str);
+
+
+
 } /*END OF NAMESPACES*/
+
 
 
 
