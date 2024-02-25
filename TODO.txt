@@ -1,10 +1,14 @@
 
 -make vcpkg
 
+-MAYBE ChatServer and ChatClient should be singleton
+
 -add linux support (https://metamod-p.sourceforge.net/cross-compiling.on.windows.for.linux.html)
 
 -DONT FORGET TO COMMENT EVERYTHING
 
+-FIX FIXME ISSUES 
+
 -CPack
-2) add msvc dll support (dlliexport/import stuff)
-1) make normal version protocol !!! FUNCTION TO CONVERT VERSIONS
+
+1) add msvc dll support (dlliexport/import stuff)

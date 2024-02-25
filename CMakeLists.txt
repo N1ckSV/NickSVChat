@@ -56,7 +56,7 @@ if( (NOT ${CHARACTER_TYPE} STREQUAL "USE_WCHAR") AND
      message(WARNING "Invalid CHARACTER_TYPE is used, default (USE_WCHAR) was set")
 endif()
 #-----------------------------------------------
-#
+#-----------------------------------------------
 #-----------------------------------------------
 
 
@@ -81,7 +81,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D${CHARACTER_TYPE}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DCHAT_DEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 #-----------------------------------------------
-#
+#-----------------------------------------------
 #-----------------------------------------------
 
 
@@ -95,8 +95,10 @@ configure_file(cmake/ChatConfig.h.in "${CMAKE_CURRENT_SOURCE_DIR}/include/NickSV
 add_library(${PROJECT_NAME} 
     src/ChatClient.cpp
     src/ChatServer.cpp
-    src/ClientInfo.cpp
+    src/BasicClientInfo.cpp
+    src/BasicMessage.cpp
     src/Serializers.cpp
+    src/Requests.cpp
     )
 target_include_directories(NickSVChat PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>"
@@ -107,7 +109,7 @@ target_link_libraries(${PROJECT_NAME}
 )
 set_target_properties(NickSVChat PROPERTIES LINK_FLAGS "-static -static-libgcc -static-libstdc++")
 #-----------------------------------------------
-#
+#-----------------------------------------------
 #-----------------------------------------------
 
 
@@ -154,5 +156,5 @@ if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 #-----------------------------------------------
-#
+#-----------------------------------------------
 #-----------------------------------------------

@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.in": "cpp",
         "*.h.in": "cpp",
         "iostream": "cpp",
         "iomanip": "cpp",
@@ -65,7 +66,10 @@
         "xstring": "cpp",
         "xtr1common": "cpp",
         "xtree": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "xlocmon": "cpp",
+        "cstdarg": "cpp",
+        "xloctime": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
