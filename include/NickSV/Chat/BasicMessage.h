@@ -9,14 +9,14 @@
 
 #include "NickSV/Chat/Types.h"
 #include "NickSV/Chat/Utils.h"
-#include "NickSV/Chat/Interfaces/ISerializer.h"
+#include "NickSV/Chat/Interfaces/ISerializable.h"
 
 
 namespace NickSV::Chat {
 
 
 template<typename CharT>
-struct BasicMessage : public TriviallySerializable<BasicMessage<CharT>>
+struct BasicMessage : public ISerializable
 {
     /*
     Simple data struct.
@@ -24,13 +24,12 @@ struct BasicMessage : public TriviallySerializable<BasicMessage<CharT>>
     */
     static_assert(is_char<CharT>::value, is_char_ERROR_MESSAGE);
     using CharType = CharT;
-    using text_type = std::basic_string<CharT>;
-    TRIVIALLY_SERIALIZER_REQUIREMENTS(BasicMessage<CharT>);
+    using TextType = std::basic_string<CharT>;
 
     //Simple default constructor
     BasicMessage() = default;
-    explicit BasicMessage(const text_type& rsText);
-    explicit BasicMessage(text_type&& rsText) noexcept;
+    explicit BasicMessage(const TextType& rsText);
+    explicit BasicMessage(TextType&& rsText) noexcept;
 
     //Simple copy constructor
     BasicMessage(const BasicMessage&) = default;
@@ -42,32 +41,7 @@ struct BasicMessage : public TriviallySerializable<BasicMessage<CharT>>
     BasicMessage<CharT>& operator=(BasicMessage<CharT>&&) noexcept;
     //Virtual no action destructor for inheritance
     virtual ~BasicMessage() = default;
-
-    /*
-    Sets object to Invalid state (IsValid() == false).
-    m_sNick sets to "Invalid"
-    GetAPIVer returs 0
-    */
-    //virtual void SetInvalid();
-
-    /*
-    If somehow object was built incorrectly and SetInvalid() is called
-    IsValid() tells that.
-    REMEMBER - this function does NOT 100% guarantee that the object is VALID,
-    but it DOES 100% guarantee if object is INVALID and action should be taken
-    */
-    //CHAT_NODISCARD virtual bool IsValid() const;
-
-    /*
-    Returns ClientInfoSerializer<CharType> that handles "this" ClientInfo.
-    See ClientInfoSerializer<>
-    */
-
-    /*
-    Returns CHAT API version
-    */
-    //CHAT_NODISCARD inline APIVersionType GetAPIVer() const;
-
+    
     /*
     Simple equal operators
     */
@@ -77,16 +51,20 @@ struct BasicMessage : public TriviallySerializable<BasicMessage<CharT>>
     /*
     FIXME add comment
     */
-    CHAT_NODISCARD inline text_type& GetText();
+    CHAT_NODISCARD TextType& GetText();
     
     /*
     FIXME add comment
     */
-    CHAT_NODISCARD inline const text_type& GetText() const;
+    CHAT_NODISCARD const TextType& GetText() const;
 
+    /*
+    FIXME add comment
+    */
+    const std::unique_ptr<ISerializer> GetSerializer() const override;
 
 private:
-	text_type m_sText;
+	TextType m_sText;
 };
 
 

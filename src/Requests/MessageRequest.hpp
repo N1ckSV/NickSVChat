@@ -4,8 +4,8 @@
 #pragma once
 
 
-#include "NickSV/Chat/BasicMessage.h"
 #include "NickSV/Chat/Requests/MessageRequest.h"
+#include "NickSV/Chat/Serializers/MessageRequestSerializer.h"
 
 namespace NickSV::Chat {
 
@@ -13,11 +13,26 @@ namespace NickSV::Chat {
 //-----------------------------------------------------------------------------------
 // Impementation of MessageRequest
 //-----------------------------------------------------------------------------------
-EResult MessageRequest::Handle() { return EResult::Success; }
+MessageRequest::MessageRequest() : m_upMessage(std::make_unique<Message>()) {};
+
+std::unique_ptr<Message>& MessageRequest::GetMessage()
+{
+    return m_upMessage;
+}
+
+const std::unique_ptr<Message>& MessageRequest::GetMessage() const
+{
+    return m_upMessage;
+}
 
 ERequestType MessageRequest::GetType() const { return ERequestType::Message; }
+
+const  std::unique_ptr<ISerializer> MessageRequest::GetSerializer() const 
+{ 
+    return std::make_unique<Serializer<MessageRequest>>(this); 
+}
 //-----------------------------------------------------------------------------------
-// End
+//-----------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------
 
 

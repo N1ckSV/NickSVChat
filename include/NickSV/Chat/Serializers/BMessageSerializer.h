@@ -6,6 +6,7 @@
 #include <string>
 
 #include "NickSV/Chat/Interfaces/ISerializer.h"
+#include "NickSV/Chat/BasicMessage.h"
 #include "NickSV/Chat/Utils.h"
 
 
@@ -26,56 +27,26 @@ class Serializer<BasicMessage<CharT>> : public ISerializer
     BasicMessage's child class with your extra info
 
     */
-    static_assert(is_serializable<BasicMessage<CharT>>::value, is_serializable_ERROR_MESSAGE);
 public:
     using CharType = CharT;
 
     Serializer() = delete;
-    explicit Serializer(BasicMessage<CharT>*);
+    explicit Serializer(const BasicMessage<CharT>* const);
 
-    inline size_t GetSize() const override final;
-    inline size_t OnGetSize(size_t baseSize = 0) const override;
+    inline const BasicMessage<CharT>* const GetObject() const;
+
+    size_t GetSize() const override final;
+    size_t OnGetSize(size_t baseSize = 0) const override;
 
     std::string ToString() const override final;
     std::string::iterator ToString(std::string::iterator, std::string::iterator) const override final;
-    inline std::string::iterator OnToString(std::string::iterator, std::string::iterator) const override;
-    inline std::string::iterator ToStringBuffer(std::string&) const override final;
-
-    inline std::string::const_iterator ParseFromString(const std::string&) override final;
-           std::string::const_iterator ParseFromString(std::string::const_iterator, std::string::const_iterator) override final;
-    inline std::string::const_iterator OnParseFromString(std::string::const_iterator, std::string::const_iterator) override;
+    std::string::iterator OnToString(std::string::iterator, std::string::iterator) const override;
+    std::string::iterator ToStringBuffer(std::string&) const override final;
 private:
     /*
     Pointer to BasicMessage object where "this" serializes from or parses to.
     */
-    BasicMessage<CharT>* const m_cpBasicMessage; //FIXME maybe const is redundant
-};
-
-template<typename CharT>
-class ConstSerializer<BasicMessage<CharT>> : public ISerializer
-{
-    /*
-    Same as Serializer<BasicMessage<CharT>> but const
-    */
-    static_assert(is_serializable<BasicMessage<CharT>>::value, is_serializable_ERROR_MESSAGE);
-public:
-    using CharType = typename BasicMessage<CharT>::CharType;
-
-    ConstSerializer() = delete;
-    explicit ConstSerializer(const BasicMessage<CharT>*);
-    inline size_t GetSize() const override final;
-    inline size_t OnGetSize(size_t baseSize = 0) const override;
-    
-    std::string ToString() const override final;
-    std::string::iterator ToString(std::string::iterator, std::string::iterator) const override final;
-    inline std::string::iterator OnToString(std::string::iterator, std::string::iterator) const override;
-    inline std::string::iterator ToStringBuffer(std::string&) const override final;
-
-    inline std::string::const_iterator ParseFromString(const std::string&) override final;
-    inline std::string::const_iterator ParseFromString(std::string::const_iterator, std::string::const_iterator) override final;
-    inline std::string::const_iterator OnParseFromString(std::string::const_iterator, std::string::const_iterator) override final;
-private:
-    const BasicMessage<CharT>* const m_cpcBasicMessage; //FIXME maybe second const is redundant
+    const BasicMessage<CharT>* const m_cpcBasicMessage; //FIXME maybe const is redundant
 };
 
 

@@ -4,46 +4,38 @@
 #pragma once
 
 
-#include <thread>
-#include <exception>
-#include <string>
-#include <map>
+#include <utility>
 
+#include "NickSV/Chat/ChatSocket.h"
 
-#include "NickSV/Chat/Interfaces/IChatSocket.h"
 
 
 namespace NickSV::Chat {
 
-class ChatServer: public IChatSocket
+
+
+class ChatServer: public ChatSocket
 {
 public:
-    EResult Run(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg  ) override;
-    void CloseConnection() override;
-    bool IsRunning();
     ChatServer();
-    ~ChatServer();
-
-protected:
-    virtual EResult OnPreStartConnection(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg ) ;
-    virtual EResult OnStartConnection(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg )    ;
-    virtual void OnPreCloseConnection()    ;
-    virtual void OnCloseConnection()       ;
-
+    virtual ~ChatServer();
+    EResult Run(const ChatIPAddr &serverAddr = ChatIPAddr()) override final;
+    using ClientsMap = std::map<HSteamNetConnection, std::shared_ptr<ClientInfo>>;
 private:
-    void ConnectionThreadFunction();
-    void SendStringToClient( HSteamNetConnection, const char * );
-    void SendStringToAllClients( const char *, HSteamNetConnection except = 0 );
-    void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_t * );
-    static void SteamNetConnectionStatusChangedCallback( SteamNetConnectionStatusChangedCallback_t * );
-    std::thread* m_pConnectionThread;
-    volatile bool m_bGoingExit;
-	HSteamListenSocket m_hListenSock;
-	HSteamNetPollGroup m_hPollGroup;
-	ISteamNetworkingSockets *m_pInterface;
-    static ChatServer *s_pCallbackInstance;
-
-	std::map< HSteamNetConnection, ClientInfo/*FIXME FIXME FIXME FIXME FIXME has to be pointer or think of it better*/> m_mapClients;
+    void        ConnectionThreadFunction() override final;
+    void        RequestThreadFunction()    override final;
+    EResult     SendStringToClient(HSteamNetConnection, const std::string);
+    size_t      SendStringToAllClients(const std::string, HSteamNetConnection except = 0);
+    UserID_t    GenerateUniqueUserID();
+    void        OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t*) override final;
+    static void SteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t*);
+	EResult     PollIncomingRequests()  override final;
+	EResult     PollQueuedRequests()    override final;
+	void        PollConnectionChanges() override final;
+    HSteamListenSocket       m_hListenSock;
+	HSteamNetPollGroup       m_hPollGroup;
+    static ChatServer*       s_pCallbackInstance;
+	ClientsMap               m_mapClients;
 };
 
 

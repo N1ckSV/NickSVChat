@@ -11,4 +11,6 @@
 
 -CPack
 
-1) add msvc dll support (dlliexport/import stuff)
+-add msvc dll support (dlliexport/import stuff)
+
+1) maybe change reinterpret_cast to unions in some places
