@@ -12,9 +12,8 @@ namespace NickSV::Chat {
 class IRequest
 {
 public:
-    CHAT_NODISCARD virtual EResult Handle() = 0;
     CHAT_NODISCARD virtual ERequestType GetType() const = 0;
-    virtual ~IRequest() = default;
+                   virtual              ~IRequest() = default;
 };
 
 

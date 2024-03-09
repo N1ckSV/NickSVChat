@@ -8,7 +8,8 @@
             "cacheVariables": {
                 "CMAKE_CXX_COMPILER": "g++.exe",
                 "CMAKE_C_COMPILER": "gcc.exe",
-                "CMAKE_MAKE_PROGRAM": "mingw32-make.exe"
+                "CMAKE_MAKE_PROGRAM": "mingw32-make.exe",
+                "BUILD_EXAMPLES": "ON"
             },
             "condition": {
                 "type": "equals",

@@ -6,6 +6,7 @@
 
 
 #include "NickSV/Chat/Requests/Request.h"
+#include "NickSV/Chat/Interfaces/ISerializer.h"
 
 namespace NickSV::Chat {
 
@@ -13,13 +14,26 @@ namespace NickSV::Chat {
 //-----------------------------------------------------------------------------------
 // Impementation of Unknown (default) Request
 //-----------------------------------------------------------------------------------
-EResult Request::Handle() { return EResult::Success; }
-
 ERequestType Request::GetType() const { return ERequestType::Unknown; }
+
+const std::unique_ptr<ISerializer> Request::GetSerializer() const
+{
+    return std::unique_ptr<ISerializer>(nullptr);
+}
 //-----------------------------------------------------------------------------------
-// End
+//-----------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------
 
+
+//-----------------------------------------------------------------------------------
+// Impementation of RequestInfo
+//-----------------------------------------------------------------------------------
+RequestInfo::RequestInfo() : connection(0), sendFlags(0) {};
+RequestInfo::RequestInfo(HSteamNetConnection conn) : connection(conn), sendFlags(0) {};
+RequestInfo::RequestInfo(HSteamNetConnection conn, uint32_t flags) : connection(conn), sendFlags(flags) {};
+//-----------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------
 
 
 

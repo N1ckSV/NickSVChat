@@ -35,7 +35,10 @@ enum EResult
     Success = 0,
     Error,
     AlreadyRunning,
-    InvalidSize
+    InvalidSize,
+    Overflow,
+    NoAction,
+    InvalidParam
 };
 
 enum class ERequestType : uint32_t
@@ -49,46 +52,48 @@ struct Constant
 {
     static const int MaxChatErrorMsgSize  = 1024;
     static const int MaxNicknameSize  = MAX_NICKNAME_SIZE;
+    static const int MaxSendRequestsQueueSize = 10;
 };
 
 using ChatErrorMsg = char[Constant::MaxChatErrorMsgSize];
 
 using Version_t = uint32_t;
+using UserID_t = uint64_t;
 
 class IChatSocket;
 class ChatClient;
 class ChatServer;
 
+struct ChatIPAddr;
+
+class ClientInfo;
+
+class ISerializer;
+class IParser;
+class ISerializable;
+
+template<typename Serializable>
+class SimplySerializable;
+
+template<typename Serializable>
+class Serializer;
+
+template<typename Parsable>
+class Parser;
+
+using ClientInfoSerializer = Serializer<ClientInfo>;
+using ClientInfoParser = Parser<ClientInfo>;
+
 
 /*
 "Basic" prefix here means the same thing as "basic_" in std::basic_string<...>
 */
-
-template<typename CharT = CHAT_CHAR>
-class BasicClientInfo;
-using ClientInfo = BasicClientInfo<CHAT_CHAR>;
-
-
-class ISerializer;
-class ISerializable;
-template<typename Serializable>
-class Serializer;
-template<typename Serializable>
-class ConstSerializer;
-
-using ClientInfoSerializer = Serializer<ClientInfo>;
-using ConstClientInfoSerializer = ConstSerializer<ClientInfo>;
-
-
 template<typename CharT = CHAT_CHAR>
 class BasicMessage;
 using Message = BasicMessage<CHAT_CHAR>;
 
-using MessageSerializer = Serializer<Message>;
-using ConstMessageSerializer = ConstSerializer<Message>;
 
-
-class SendInfo;
+class RequestInfo;
 
 
 class IRequest;
@@ -98,8 +103,10 @@ class ClientInfoRequest;
 
 
 using RequestSerializer = Serializer<Request>;
+using RequestParser = Parser<Request>;
+
 using MessageRequestSerializer = Serializer<MessageRequest>;
-using ClientInfoRequestSerializer = Serializer<ClientInfoRequest>;
+using MessageRequestParser = Parser<MessageRequest>;
 
 
 } /*END OF NAMESPACES*/

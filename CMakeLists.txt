@@ -36,7 +36,9 @@ endif()
 include(CMakeDependentOption)
 option(INSTALL_RUNTIME_DEPENDENCIES "Installing runtime deps to bin folder. Note: this is a custom script, so not all dependencies may be installed." OFF)
 option(BUILD_SHARED_LIBS "Default type is SHARED" ON)
-cmake_dependent_option(BUILD_TESTS "No tests build by default, but tests only builds if INSTALL_RUNTIME_DEPENDENCIES set to ON" 
+cmake_dependent_option(BUILD_TESTS "No tests build by default, but tests only build if INSTALL_RUNTIME_DEPENDENCIES set to ON" 
+                        OFF "INSTALL_RUNTIME_DEPENDENCIES" OFF)
+cmake_dependent_option(BUILD_EXAMPLES "No examples build by default, but examples only build if INSTALL_RUNTIME_DEPENDENCIES set to ON" 
                         OFF "INSTALL_RUNTIME_DEPENDENCIES" OFF)
 set(MINIMUM_DEPENDENCIES_COUNT_TO_SKIP_INSTALL ${MINIMUM_DEPENDENCIES_COUNT_TO_SKIP_INSTALL_DEFAULT} CACHE STRING 
                                                                     "If there are fewer dll/so files in the
@@ -93,12 +95,15 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 #-----------------------------------------------
 configure_file(cmake/ChatConfig.h.in "${CMAKE_CURRENT_SOURCE_DIR}/include/NickSV/Chat/ChatConfig.h")
 add_library(${PROJECT_NAME} 
+    src/ChatSocket.cpp
     src/ChatClient.cpp
     src/ChatServer.cpp
-    src/BasicClientInfo.cpp
+    src/ClientInfo.cpp
     src/BasicMessage.cpp
     src/Serializers.cpp
+    src/Parsers.cpp
     src/Requests.cpp
+    src/Utils.cpp
     )
 target_include_directories(NickSVChat PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>"
@@ -107,7 +112,7 @@ target_include_directories(NickSVChat PUBLIC
 target_link_libraries(${PROJECT_NAME} 
     GameNetworkingSockets::GameNetworkingSockets
 )
-set_target_properties(NickSVChat PROPERTIES LINK_FLAGS "-static -static-libgcc -static-libstdc++")
+#set_target_properties(NickSVChat PROPERTIES LINK_FLAGS "-static -static-libgcc -static-libstdc++")
 #-----------------------------------------------
 #-----------------------------------------------
 #-----------------------------------------------
@@ -154,6 +159,10 @@ install(
 if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
+endif()
+
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
 endif()
 #-----------------------------------------------
 #-----------------------------------------------

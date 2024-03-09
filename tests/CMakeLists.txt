@@ -34,7 +34,6 @@ target_include_directories(NickSVChatTest
 if(WIN32)
     target_link_libraries(NickSVChatTest
         NickSVChat
-        Iphlpapi
     )
 else()
     target_link_libraries(NickSVChatTest
@@ -48,3 +47,5 @@ add_test(
     NAME test_main COMMAND NickSVChatTest
     WORKING_DIRECTORY "${NickSVChat_INSTALL_FULL_BINDIR}"
     )
+
+set_tests_properties(test_main PROPERTIES TIMEOUT 10) 

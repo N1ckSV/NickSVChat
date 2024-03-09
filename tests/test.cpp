@@ -1,19 +1,34 @@
 
 #include "NickSV/Chat/Utils.h"
-#include "NickSV/Chat/BasicClientInfo.h"
+
+#include "NickSV/Chat/ClientInfo.h"
 #include "NickSV/Chat/BasicMessage.h"
-#include "NickSV/Chat/Serializers/BClientInfoSerializer.h"
-#include "NickSV/Chat/Serializers/BMessageSerializer.h"
-#include "NickSV/Chat/Serializers/BStringSerializer.h"
-#include "NickSV/Chat/ChatClient.h"
-#include "NickSV/Chat/ChatServer.h"
+
 #include "NickSV/Chat/Requests/Request.h"
 #include "NickSV/Chat/Requests/MessageRequest.h"
 #include "NickSV/Chat/Requests/ClientInfoRequest.h"
+
+#include "NickSV/Chat/Serializers/ClientInfoSerializer.h"
+#include "NickSV/Chat/Serializers/BMessageSerializer.h"
+#include "NickSV/Chat/Serializers/BStringSerializer.h"
+#include "NickSV/Chat/Serializers/ClientInfoRequestSerializer.h"
+#include "NickSV/Chat/Serializers/MessageRequestSerializer.h"
+
+#include "NickSV/Chat/Parsers/ClientInfoParser.h"
+#include "NickSV/Chat/Parsers/BMessageParser.h"
+#include "NickSV/Chat/Parsers/BStringParser.h"
+#include "NickSV/Chat/Parsers/RequestParser.h"
+#include "NickSV/Chat/Parsers/ClientInfoRequestParser.h"
+#include "NickSV/Chat/Parsers/MessageRequestParser.h"
+
+#include "NickSV/Chat/ChatClient.h"
+#include "NickSV/Chat/ChatServer.h"
+
 #include <iostream>
 #include <iomanip>
 #include <exception>
 #include <type_traits>
+#include <thread>
 
 #define SETW_VAL 50
 
@@ -40,23 +55,22 @@
 
 using namespace NickSV::Chat;
 
-template<typename CharT>
-int basic_client_info_test()
+int client_info_test()
 {
     int stage = 0;
-    BasicClientInfo<CharT> invalid;
+    ClientInfo invalid;
     invalid.SetInvalid();
     IF_RETURN(invalid.IsValid(), ++stage);
 
-    BasicClientInfo<CharT> info1, info2;
-    info1.GetNickname() = basic_string_cast<CharT>("nick1");
-    info2.GetNickname() = basic_string_cast<CharT>("nick1");
+    ClientInfo info1, info2;
+    info1.GetUserID() = 12345;
+    info2.GetUserID() = 12345;
     IF_RETURN(info1 != info2, ++stage);
 
-    info2.GetNickname() = basic_string_cast<CharT>("nick2");
+    info2.GetUserID() = 10101;
     IF_RETURN(info1 == info2, ++stage);
 
-    info1.GetNickname() = basic_string_cast<CharT>("nick1");
+    info1.GetUserID() = 12345;
     info2.SetInvalid();
     IF_RETURN(info1 == info2, ++stage);
 
@@ -64,21 +78,92 @@ int basic_client_info_test()
 }
 
 
-
-template<typename CharT>
-int basic_client_info_serializer_test()
+int client_info_serializers_and_parsers_test()
 {
     int stage = 0;
-    std::basic_string<CharT> nick = basic_string_cast<CharT>("Hello there, I am a test nickname!");
-    const BasicClientInfo<CharT> BasicClientInfo1(nick);
-    BasicClientInfo<CharT> BasicClientInfo2;
-    std::string str = BasicClientInfo1.GetSerializer()->ToString();
-    BasicClientInfo2 = MakeFromString<BasicClientInfo<CharT>>(str);
-    IF_RETURN(BasicClientInfo2 != BasicClientInfo1, ++stage);
+    UserID_t id = 2;
+    const auto ClientInfo1 = ClientInfo(id);
+    ClientInfo ClientInfo2;
+    auto str = ClientInfo1.GetSerializer()->ToString();
+    ClientInfo2 = MakeFromString<ClientInfo>(str);
+    IF_RETURN(ClientInfo2 != ClientInfo1, ++stage);
+
+    str.resize(str.size()-1);
+    ClientInfo2 = MakeFromString<ClientInfo>(str);
+    IF_RETURN(ClientInfo2 != ClientInfo(), ++stage);
+
+    return 0;
+}
+
+
+template<typename CharT>
+int basic_serializers_and_parsers_test()
+{
+    int stage = 0;
+    std::basic_string<CharT> text = basic_string_cast<CharT>("Hello there, I am a test text!");
+    std::string str = Serializer<std::basic_string<CharT>>(&text).ToString();
+    std::basic_string<CharT> text2 = MakeFromString<std::basic_string<CharT>>(str);
+    IF_RETURN(text != text2, ++stage);
+
+    str.resize(str.size()-1);
+    text2 = MakeFromString<std::basic_string<CharT>>(str);
+    IF_RETURN(text2 != std::basic_string<CharT>(), ++stage);
+
+    text = basic_string_cast<CharT>("Hello there, I am a test message!");
+    const BasicMessage<CharT> BasicMessage1(text);
+    BasicMessage<CharT> BasicMessage2;
+    str = BasicMessage1.GetSerializer()->ToString();
+    BasicMessage2 = MakeFromString<BasicMessage<CharT>>(str);
+    IF_RETURN(BasicMessage2 != BasicMessage1, ++stage);
 
     str = str.substr(0, str.size()-1);
-    BasicClientInfo2 = MakeFromString<BasicClientInfo<CharT>>(str);
-    IF_RETURN(BasicClientInfo2 != BasicClientInfo<CharT>(), ++stage);
+    BasicMessage2 = MakeFromString<BasicMessage<CharT>>(str);
+    IF_RETURN(BasicMessage2 != BasicMessage<CharT>(), ++stage);
+
+    return 0;
+}
+
+int requests_serializers_and_parsers_test()
+{
+    int stage = 0;
+    UserID_t id = 123123414;
+    const ClientInfo ClientInfo1(id);
+          ClientInfo ClientInfo2;
+    const ClientInfoRequest clientInfoRequest;
+    *clientInfoRequest.GetClientInfo() = ClientInfo1;
+    std::string str = clientInfoRequest.GetSerializer()->ToString();
+    auto parser = Parser<Request>();
+    auto iter = parser.FromString(str);
+    IF_RETURN(iter == str.begin(), ++stage);
+
+    IF_RETURN(parser.GetObject()->GetType() != clientInfoRequest.GetType(), ++stage);
+
+    Request* pRequest = parser.GetObject().get();
+    ClientInfoRequest* pClientInfoRequest = static_cast<ClientInfoRequest*>(pRequest);
+    IF_RETURN(*pClientInfoRequest->GetClientInfo() != ClientInfo1, ++stage);
+
+    str.resize(str.size()-1);
+    iter = Parser<Request>().FromString(str);
+    IF_RETURN(iter != str.begin(), ++stage);
+
+    auto text = basic_string_cast<CHAT_CHAR>("Hello there, I am a test nickname!");
+    const Message Message1(text);
+          Message Message2;
+    const MessageRequest messageRequest;
+    *messageRequest.GetMessage() = Message1;
+    str = messageRequest.GetSerializer()->ToString();
+    iter = parser.FromString(str);
+    IF_RETURN(iter == str.begin(), ++stage);
+
+    IF_RETURN(parser.GetObject()->GetType() != ERequestType::Message, ++stage);
+
+    pRequest = parser.GetObject().get();
+    MessageRequest* pMessageRequest = static_cast<MessageRequest*>(pRequest);
+    IF_RETURN(*pMessageRequest->GetMessage() != Message1, ++stage);
+
+    str.resize(str.size()-1);
+    iter = Parser<Request>().FromString(str);
+    IF_RETURN(iter != str.begin(), ++stage);
 
     return 0;
 }
@@ -95,24 +180,6 @@ int version_conversation_test()
     return 0;
 }
 
-
-template<typename CharT>
-int basic_message_serializer_test()
-{
-    int stage = 0;
-    std::basic_string<CharT> text = basic_string_cast<CharT>("Yo yo yo text here!");
-    const BasicMessage<CharT> BasicMessage1(text);
-    BasicMessage<CharT> BasicMessage2;
-    std::string str = BasicMessage1.GetSerializer()->ToString();
-    BasicMessage2 = MakeFromString<BasicMessage<CharT>>(str);
-    IF_RETURN(BasicMessage2 != BasicMessage1, ++stage);
-
-    str = str.substr(0, str.size()-1);
-    BasicMessage2 = MakeFromString<BasicMessage<CharT>>(str);
-    IF_RETURN(BasicMessage2 != BasicMessage<CharT>(), ++stage);
-
-    return 0;
-}
 
 int requests_test()
 {
@@ -132,22 +199,51 @@ int requests_test()
 }
 
 
-#define DEFAULT_SERVER_PORT 27020
+Message g_Message;
+
+
+class TestChatServer : public ChatServer
+{
+    NickSV::Chat::EResult OnHandleRequest(const Request* pcR, RequestInfo rInfo, NickSV::Chat::EResult outsideResult) override
+    {
+        if(pcR->GetType() == ERequestType::Message)
+            g_Message = *static_cast<const MessageRequest*>(pcR)->GetMessage();
+
+        return  NickSV::Chat::EResult::Success;
+    }
+};
 
 int client_server_data_exchange_test()
 {
-    //int stage = 0;
-    //ChatServer server;
-    //ChatClient client;
-    //SteamNetworkingIPAddr localhost;
-    //localhost.Clear();
-    //IF_RETURN(!localhost.ParseString("127.0.0.1"), ++stage);
-//
-    //IF_RETURN(!localhost.IsIPv4(), ++stage);
-//
-    //IF_RETURN(!localhost.IsLocalHost(), ++stage);
-//
-    //localhost.m_port = DEFAULT_SERVER_PORT;
+    int stage = 0;
+    TestChatServer server;
+    ChatClient client;
+    MessageRequest req;
+    *req.GetMessage() = Message(TEXT("Hello guys, ima test message"));
+    IF_RETURN(server.Run() == NickSV::Chat::EResult::Error, ++stage);
+
+    ++stage;
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    if(client.Run() == NickSV::Chat::EResult::Error)
+    {
+        server.CloseConnection();
+        return stage;
+    }
+
+    ++stage;
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    if( client.QueueRequest(&req, {0, 0}) != NickSV::Chat::EResult::Success)
+    {
+        server.CloseConnection();
+        client.CloseConnection();
+        return stage;
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    server.CloseConnection();
+    client.CloseConnection();
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    IF_RETURN(g_Message != Message(TEXT("Hello guys, ima test message")), ++stage);
 
     
     return 0;
@@ -172,24 +268,21 @@ int main(int arc, const char ** argv)
 
     static_assert(!is_char<int>::value);
 
-    RESULT(basic_client_info_test<char>(), ntest_failed);
-    RESULT(basic_client_info_test<wchar_t>(), ntest_failed);
-    RESULT(basic_client_info_test<char16_t>(), ntest_failed);
-    RESULT(basic_client_info_test<char32_t>(), ntest_failed);
+    RESULT(client_info_test(), ntest_failed);
+    RESULT(client_info_serializers_and_parsers_test(), ntest_failed);
 
-    RESULT(basic_client_info_serializer_test<char>(), ntest_failed);
-    RESULT(basic_client_info_serializer_test<wchar_t>(), ntest_failed);
-    RESULT(basic_client_info_serializer_test<char16_t>(), ntest_failed);
-    RESULT(basic_client_info_serializer_test<char32_t>(), ntest_failed);
+    RESULT(basic_serializers_and_parsers_test<char>(), ntest_failed);
+    RESULT(basic_serializers_and_parsers_test<wchar_t>(), ntest_failed);
+    RESULT(basic_serializers_and_parsers_test<char16_t>(), ntest_failed);
+    RESULT(basic_serializers_and_parsers_test<char32_t>(), ntest_failed);
 
-    RESULT(basic_message_serializer_test<char>(), ntest_failed);
-    RESULT(basic_message_serializer_test<wchar_t>(), ntest_failed);
-    RESULT(basic_message_serializer_test<char16_t>(), ntest_failed);
-    RESULT(basic_message_serializer_test<char32_t>(), ntest_failed);
+    RESULT(requests_serializers_and_parsers_test(), ntest_failed);
 
     RESULT(version_conversation_test(), ntest_failed);
 
     RESULT(requests_test(), ntest_failed);
+
+    RESULT(client_server_data_exchange_test(), ntest_failed);
 
 /////////////////////////////////////////////////////////////////////////
     //ULONG bufferSize = 1500;

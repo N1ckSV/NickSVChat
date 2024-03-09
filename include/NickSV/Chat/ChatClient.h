@@ -4,18 +4,12 @@
 #pragma once
 
 
-#include <thread>
-#include <exception>
-#include <string>
-#include <map>
-
-
-#include "NickSV/Chat/Interfaces/IChatSocket.h"
+#include "NickSV/Chat/ChatSocket.h"
 
 
 namespace NickSV::Chat {
 
-class ChatClient: public IChatSocket
+class ChatClient: public ChatSocket
 {
     /*
     Description
@@ -28,29 +22,23 @@ public:
     /*
     Initializes networking library and connection thread
     */
-    EResult Run(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg  ) override;
-    void CloseConnection() override;
-    bool IsRunning();
-    void SetInfo(ClientInfo* pClientInfo);
     ChatClient();
-    ~ChatClient();
-
-protected:
-    virtual EResult OnPreStartConnection(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg ) ;
-    virtual EResult OnStartConnection(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg )    ;
-    virtual void OnPreCloseConnection()    ;
-    virtual void OnCloseConnection()       ;
-
+    virtual ~ChatClient();
+    //IChatSocket impl
+    //A.K.A. StartConnection
+    EResult Run(const ChatIPAddr &serverAddr = ChatIPAddr()) override final;
 private:
-    void ConnectionThreadFunction();
-    void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_t *pInfo );
-    static void SteamNetConnectionStatusChangedCallback( SteamNetConnectionStatusChangedCallback_t *);
-    std::thread* m_pConnectionThread;
-    volatile bool m_bGoingExit;
-    HSteamNetConnection m_hConnection;
-    ISteamNetworkingSockets* m_pInterface;
-    ClientInfo* m_pClientInfo;
-    static ChatClient *s_pCallbackInstance;
+    EResult     SendStringToServer(std::string);
+    void        ConnectionThreadFunction() override final;
+    void        RequestThreadFunction()    override final;
+    void        OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t *pInfo) override final;
+    static void SteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t*);
+    EResult     PollIncomingRequests()  override final;
+	EResult     PollQueuedRequests()    override final;
+	void        PollConnectionChanges() override final;
+    HSteamNetConnection      m_hConnection;
+    ClientInfo*              m_pClientInfo;
+    static ChatClient*       s_pCallbackInstance;
 };
 
 

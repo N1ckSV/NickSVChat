@@ -16,51 +16,35 @@ namespace NickSV::Chat {
 template<typename CharT>
 class Serializer<std::basic_string<CharT>> final : public ISerializer
 {
+    /*
+    Class helper handles the serialization of std::basic_string struct to string 
+    and parsing (deserializing) it back.
+
+    Inherit from this class to handle its functions on your custom 
+    std::basic_string's child class with your extra info
+
+    */
 public:
     using CharType = CharT;
 
     Serializer() = delete;
-    explicit Serializer(std::basic_string<CharT>*);
+    explicit Serializer(const std::basic_string<CharT>* const);
 
-    inline size_t GetSize() const override;
-    inline size_t OnGetSize(size_t baseSize) const override;
+    inline const std::basic_string<CharT>* const GetObject() const;
+
+    size_t GetSize() const override;
+    size_t OnGetSize(size_t baseSize = 0) const override;
 
     std::string ToString() const override;
     std::string::iterator ToString(std::string::iterator, std::string::iterator) const override;
-    inline std::string::iterator OnToString(std::string::iterator, std::string::iterator) const override;
-    inline std::string::iterator ToStringBuffer(std::string&) const override;
-
-    inline std::string::const_iterator ParseFromString(const std::string&) override;
-           std::string::const_iterator ParseFromString(std::string::const_iterator, std::string::const_iterator) override;
-    inline std::string::const_iterator OnParseFromString(std::string::const_iterator, std::string::const_iterator) override;
+    std::string::iterator OnToString(std::string::iterator, std::string::iterator) const override;
+    std::string::iterator ToStringBuffer(std::string&) const override;
 private:
-    std::basic_string<CharT>* const m_cpBasicString; //FIXME maybe const is redundant
+    /*
+    Pointer to std::basic_string object where "this" serializes from or parses to.
+    */
+    const std::basic_string<CharT>* const m_cpcBasicString; //FIXME maybe const is redundant
 };
-
-template<typename CharT>
-class ConstSerializer<std::basic_string<CharT>> final : public ISerializer
-{
-public:
-    using CharType = CharT;
-
-    ConstSerializer() = delete;
-    explicit ConstSerializer(const std::basic_string<CharT>*);
-
-    inline size_t GetSize() const override;
-    inline size_t OnGetSize(size_t) const override;
-    
-    std::string ToString() const override;
-    std::string::iterator ToString(std::string::iterator, std::string::iterator) const override;
-    inline std::string::iterator OnToString(std::string::iterator, std::string::iterator) const override;
-    inline std::string::iterator ToStringBuffer(std::string&) const override;
-
-    inline std::string::const_iterator ParseFromString(const std::string&) override;
-    inline std::string::const_iterator ParseFromString(std::string::const_iterator, std::string::const_iterator) override;
-    inline std::string::const_iterator OnParseFromString(std::string::const_iterator, std::string::const_iterator) override;
-private:
-    const std::basic_string<CharT>* const m_cpcBasicString; //FIXME maybe second const is redundant
-};
-
 
 
 } /*END OF NAMESPACES*/

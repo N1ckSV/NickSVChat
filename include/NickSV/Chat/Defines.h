@@ -40,7 +40,8 @@
 	#endif
 #endif
 
-
+//Default port
+#define DEFAULT_PORT 27020
 
 //Just macroed it for convenience :-)
 #ifndef CHAT_NODISCARD
@@ -84,14 +85,19 @@
 #define TEXT(x) _T(x)
 
 
+//Send flags
+#define SF_SEND_TO_ALL 0
+#define SF_SEND_TO_ONE 1
 
 
 //ERROR MESSAGES
 #define const_class_ERROR_MESSAGE "You are using ConstClass without the const specifier, so this function has no effect."
 #define is_char_ERROR_MESSAGE "Type must be character-like type (char, wchar_t etc). See is_char type trait declaration."
 #define is_serializable_ERROR_MESSAGE "Type must be serializable. See requirements in is_serializable definition."
+#define is_parsable_ERROR_MESSAGE "Type must be parsable. See requirements in is_parsable definition."
 #define something_went_wrong_ERROR_MESSAGE "Something went wrong and probably the above code is broken."
 #define invalid_range_size_ERROR_MESSAGE "Size of given range is invalid."
+#define serialize_request_ERROR_MESSAGE "Request is 'Unknown' request so you are not supposed to serialize it to string, but parse."
 
 
 

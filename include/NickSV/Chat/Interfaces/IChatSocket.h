@@ -3,7 +3,10 @@
 #define _NICKSV_CHAT_ICHAT_SOCKET_T
 #pragma once
 
+
 #include "NickSV/Chat/Types.h"
+
+
 
 
 namespace NickSV::Chat {
@@ -11,11 +14,15 @@ namespace NickSV::Chat {
 
 class IChatSocket
 {
+//FIXME Add const things and return EResult
 public:
-    CHAT_NODISCARD virtual EResult Run(const SteamNetworkingIPAddr &serverAddr, ChatErrorMsg &errMsg  ) = 0;
-    virtual void CloseConnection() = 0;
-    virtual void SendRequest(const IRequest*) = 0;
-    virtual ~IChatSocket() = default;
+    CHAT_NODISCARD virtual EResult Run(const ChatIPAddr &serverAddr) = 0;
+    CHAT_NODISCARD virtual    bool IsRunning() = 0;
+                   virtual    void CloseConnection() = 0;
+    //Queue request for sending
+    CHAT_NODISCARD virtual EResult QueueRequest(const Request*, RequestInfo) = 0;
+    CHAT_NODISCARD virtual EResult HandleRequest(const Request*, RequestInfo) = 0;
+                   virtual         ~IChatSocket() = default;
 };
 
 
