@@ -78,12 +78,21 @@
         "mutex": "cpp",
         "chrono": "cpp",
         "charconv": "cpp",
-        "format": "cpp"
+        "format": "cpp",
+        "forward_list": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled",
+    "c-cpp-flylint.enable": true,
+    "c-cpp-flylint.debug": true,
+    "c-cpp-flylint.flexelint.enable": false,
+    "c-cpp-flylint.cppcheck.enable": true,
+    "c-cpp-flylint.clang.enable": false,
     "c-cpp-flylint.standard": [
         
         "c11",
         "c++11"
+    ],
+    "c-cpp-flylint.excludeFromWorkspacePaths": [
+        "include/steam"
     ]
 }

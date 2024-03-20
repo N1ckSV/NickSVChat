@@ -51,11 +51,7 @@ std::string Serializer<MessageRequest>::ToString() const
 std::string::iterator Serializer<MessageRequest>::ToString(std::string::iterator begin, std::string::iterator end) const
 {
     CHAT_ASSERT(end >= begin + GetSize(), invalid_range_size_ERROR_MESSAGE);
-    union 
-    {
-        ERequestType Base;
-        char CharArr[sizeof(ERequestType)];
-    } type;
+    Transfer<ERequestType> type;
     type.Base = GetObject()->GetType();
     std::string::iterator iter = std::copy(type.CharArr, type.CharArr + sizeof(ERequestType), begin);
     iter = GetObject()->GetMessage()->GetSerializer()->ToString(iter, end);

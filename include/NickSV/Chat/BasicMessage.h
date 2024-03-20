@@ -39,7 +39,7 @@ struct BasicMessage : public ISerializable
     const BasicMessage<CharT>& operator=(const BasicMessage<CharT>&);
     //Simple move assign operator
     BasicMessage<CharT>& operator=(BasicMessage<CharT>&&) noexcept;
-    //Virtual no action destructor for inheritance
+
     virtual ~BasicMessage() = default;
     
     /*

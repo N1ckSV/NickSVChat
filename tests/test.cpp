@@ -58,10 +58,6 @@ using namespace NickSV::Chat;
 int client_info_test()
 {
     int stage = 0;
-    ClientInfo invalid;
-    invalid.SetInvalid();
-    IF_RETURN(invalid.IsValid(), ++stage);
-
     ClientInfo info1, info2;
     info1.GetUserID() = 12345;
     info2.GetUserID() = 12345;
@@ -71,7 +67,6 @@ int client_info_test()
     IF_RETURN(info1 == info2, ++stage);
 
     info1.GetUserID() = 12345;
-    info2.SetInvalid();
     IF_RETURN(info1 == info2, ++stage);
 
     return 0;
@@ -201,15 +196,30 @@ int requests_test()
 
 Message g_Message;
 
+class TestChatServerException : public std::exception
+{
+    const char * what() const noexcept override 
+    {
+        return "TestChatServerException got bad request";
+    }
+};
 
 class TestChatServer : public ChatServer
 {
-    NickSV::Chat::EResult OnHandleRequest(const Request* pcR, RequestInfo rInfo, NickSV::Chat::EResult outsideResult) override
+    void OnHandleRequest(const Request* pcR, RequestInfo rInfo, NickSV::Chat::EResult outsideResult) override
     {
         if(pcR->GetType() == ERequestType::Message)
             g_Message = *static_cast<const MessageRequest*>(pcR)->GetMessage();
-
-        return  NickSV::Chat::EResult::Success;
+    }
+    void OnBadIncomingRequest(std::string str, UserID_t, NickSV::Chat::EResult outsideResult) override
+    {
+        throw TestChatServerException();
+    }
+    // If we do not require the client to send their information,
+    // set client's state as Active to allow message exchange
+    void OnAcceptClient(ConnectionInfo* pInfo, UserID_t id, NickSV::Chat::EResult res)
+    {
+        GetClientInfo(id).GetState() = EState::Active;
     }
 };
 
@@ -226,23 +236,26 @@ int client_server_data_exchange_test()
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     if(client.Run() == NickSV::Chat::EResult::Error)
     {
-        server.CloseConnection();
+        server.CloseSocket();
+        server.Wait();
         return stage;
     }
 
     ++stage;
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     if( client.QueueRequest(&req, {0, 0}) != NickSV::Chat::EResult::Success)
     {
-        server.CloseConnection();
-        client.CloseConnection();
+        server.CloseSocket();
+        client.CloseSocket();
+        server.Wait();
+        client.Wait();
         return stage;
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    server.CloseConnection();
-    client.CloseConnection();
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    server.CloseSocket();
+    client.CloseSocket();
+    server.Wait();
+    client.Wait();
     IF_RETURN(g_Message != Message(TEXT("Hello guys, ima test message")), ++stage);
 
     

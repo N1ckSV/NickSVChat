@@ -28,9 +28,9 @@ const std::unique_ptr<ISerializer> Request::GetSerializer() const
 //-----------------------------------------------------------------------------------
 // Impementation of RequestInfo
 //-----------------------------------------------------------------------------------
-RequestInfo::RequestInfo() : connection(0), sendFlags(0) {};
-RequestInfo::RequestInfo(HSteamNetConnection conn) : connection(conn), sendFlags(0) {};
-RequestInfo::RequestInfo(HSteamNetConnection conn, uint32_t flags) : connection(conn), sendFlags(flags) {};
+RequestInfo::RequestInfo() : id(0), sendFlags(0) {};
+RequestInfo::RequestInfo(UserID_t _id) : id(_id), sendFlags(0) {};
+RequestInfo::RequestInfo(UserID_t _id, uint32_t flags) : id(_id), sendFlags(flags) {};
 //-----------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------

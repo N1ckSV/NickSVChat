@@ -41,7 +41,7 @@ template<typename CharT>
 std::string::const_iterator Parser<std::basic_string<CharT>>::FromString(std::string::const_iterator begin, std::string::const_iterator end) 
 {
     if(begin + sizeof(size_t) > end)
-        return begin; //BAD INPUT. Range size has to be at least sizeof(APIVersionType) + sizeof(size_t) bytes long
+        return begin; //BAD INPUT. Range size has to be at least sizeof(size_t) bytes long
 
     union
     {

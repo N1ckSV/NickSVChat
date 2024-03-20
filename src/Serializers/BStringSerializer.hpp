@@ -61,12 +61,8 @@ template<typename CharT>
 std::string::iterator Serializer<std::basic_string<CharT>>::ToString(std::string::iterator begin, std::string::iterator end) const
 {
     CHAT_ASSERT(end >= begin + GetSize(), invalid_range_size_ERROR_MESSAGE);
-    union
-    {
-        size_t Size;
-        char CharArr[sizeof(size_t)];
-    } stringSize;
-    stringSize.Size = GetObject()->size();
+    Transfer<size_t> stringSize;
+    stringSize.Base = GetObject()->size();
     auto iter = std::copy(stringSize.CharArr, stringSize.CharArr + sizeof(size_t), begin);
     iter = std::copy(reinterpret_cast<const char*>(GetObject()->cbegin().base()),
                      reinterpret_cast<const char*>(GetObject()->cend().base()), iter);

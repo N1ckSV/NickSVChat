@@ -31,6 +31,7 @@ struct ClientInfo : public ISerializable
     //Simple default constructor
     ClientInfo() = default;
     explicit ClientInfo(const UserIDType&);
+    ClientInfo(const UserIDType&, const EState&);
 
     //Simple copy constructor
     ClientInfo(const ClientInfo&) = default;
@@ -40,23 +41,8 @@ struct ClientInfo : public ISerializable
     const ClientInfo& operator=(const ClientInfo&);
     //Simple move assign operator
     ClientInfo& operator=(ClientInfo&&) noexcept;
-    //Virtual no action destructor for inheritance
+    
     virtual ~ClientInfo() = default;
-
-    /*
-    Sets object to Invalid state (IsValid() == false).
-    m_sNick sets to "Invalid"
-    GetAPIVer returs 0
-    */
-    virtual void SetInvalid();
-
-    /*
-    If somehow object was built incorrectly and SetInvalid() is called
-    IsValid() tells that.
-    REMEMBER - this function does NOT 100% guarantee that the object is VALID,
-    but it DOES 100% guarantee if object is INVALID and action should be taken
-    */
-    CHAT_NODISCARD virtual bool IsValid() const;
 
     /*
     Simple equal operator.
@@ -94,15 +80,26 @@ struct ClientInfo : public ISerializable
     /*
     FIXME add comment
     */
+    CHAT_NODISCARD EState& GetState();
+    
+    /*
+    FIXME add comment
+    */
+    CHAT_NODISCARD EState GetState() const;
+
+    /*
+    FIXME add comment
+    */
     const std::unique_ptr<ISerializer> GetSerializer() const override;
 
 private:
-	UserID_t m_nUserID;
-    Version_t m_nAPIVer = ConvertVersions(NICKSVCHAT_VERSION_MAJOR, NICKSVCHAT_VERSION_MINOR, NICKSVCHAT_VERSION_PATCH, 0);
+    APIVersionType m_nAPIVer = ConvertVersions(NICKSVCHAT_VERSION_MAJOR, NICKSVCHAT_VERSION_MINOR, NICKSVCHAT_VERSION_PATCH, 0);
+    EState         m_eState = EState::Unauthorized;
+	UserIDType     m_nUserID;
 };
 
 
-
+const ClientInfo InvalidClientInfo = ClientInfo(0, EState::Invalid);
 
 
 
