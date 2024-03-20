@@ -22,12 +22,13 @@ public:
 
 struct RequestInfo
 {
-    HSteamNetConnection connection;
+    UserID_t id;
     //All send flags starts with SF_
     uint32_t sendFlags;
     RequestInfo();
-    RequestInfo(HSteamNetConnection conn);
-    RequestInfo(HSteamNetConnection conn, uint32_t flags);
+    //cppcheck-suppress noExplicitConstructor
+    RequestInfo(UserID_t id);
+    RequestInfo(UserID_t id, uint32_t flags);
 };
 
 

@@ -18,17 +18,16 @@ using namespace NickSV::Chat;
 
 class ExampleServer : public ChatServer
 {
-    NickSV::Chat::EResult OnHandleRequest(const Request* pcRer, RequestInfo reqInfo,  NickSV::Chat::EResult outsideResult) override
+    void OnHandleRequest(const Request* pcRer, RequestInfo reqInfo,  NickSV::Chat::EResult outsideResult) override
     {
-        if(outsideResult !=  NickSV::Chat::EResult::Success)
-            return outsideResult;
+        if(outsideResult != NickSV::Chat::EResult::Success)
+            return;
 
         if(pcRer->GetType() == ERequestType::Message)
         {
             auto pcmReq = static_cast<const MessageRequest*>(pcRer);
             std::wcout << pcmReq->GetMessage()->GetText() << std::endl;
         }
-        return NickSV::Chat::EResult::Success;
     }
 };
 
@@ -67,18 +66,24 @@ int main(int argc, const char *argv[])
         std::basic_string<CHAT_CHAR> cmd;
         while(client.IsRunning())
         {
+			std::wcout << L"Type message (or /exit): "; 
             std::wcin >> cmd;
+			if(cmd == L"/exit"){
+				client.CloseSocket();
+				break;}
             MessageRequest mReq;
             *mReq.GetMessage() = Message(cmd);
             client.QueueRequest(&mReq, {0,0});
         }
+		client.Wait();
 	}
 	else
 	{
 		ExampleServer server;
 		server.Run(addrServer);
         std::this_thread::sleep_for(std::chrono::seconds(100));
-		server.CloseConnection();
+		server.CloseSocket();
+		server.Wait();
 	}
     return 0;
 }

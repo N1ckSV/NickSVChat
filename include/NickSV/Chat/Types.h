@@ -9,36 +9,24 @@
 
 #include "NickSV/Chat/Defines.h"
 
-
-//GameNetworkingSockets types/
-//This is added so the API user doesn't need to install GameNetworkingSockets' headers
-class SteamNetworkingIPAddr;
-class SteamNetConnectionStatusChangedCallback_t;
-class ISteamNetworkingSockets;
-/// Handle used to identify a connection to a remote host.
-typedef uint32_t HSteamNetConnection;
-/// Handle used to identify a "listen socket".  Unlike traditional
-/// Berkeley sockets, a listen socket and a connection are two
-/// different abstractions.
-typedef uint32_t HSteamListenSocket;
-/// Handle used to identify a poll group, used to query many
-/// connections at once efficiently.
-typedef uint32_t HSteamNetPollGroup;
-
-
+#include "steam/steamnetworkingtypes.h"
 
 
 namespace NickSV::Chat {
 
-enum EResult
+enum class EResult
 {
     Success = 0,
     Error,
+
     AlreadyRunning,
-    InvalidSize,
     Overflow,
     NoAction,
-    InvalidParam
+    
+    InvalidSize,
+    InvalidParam,
+    InvalidRequest,
+    InvalidConnection
 };
 
 enum class ERequestType : uint32_t
@@ -48,17 +36,33 @@ enum class ERequestType : uint32_t
     ClientInfo
 };
 
-struct Constant
+enum class EState : uint32_t
 {
-    static const int MaxChatErrorMsgSize  = 1024;
-    static const int MaxNicknameSize  = MAX_NICKNAME_SIZE;
-    static const int MaxSendRequestsQueueSize = 10;
+    Invalid = 0, // Object is invalid
+
+    Busy,        // ID is busy
+    Free,        // ID is free
+    Reserved,    // ID is reserved
+
+    Active,      // Connected and ready to get messages
+    Unauthorized // Not ready to get messages
 };
 
-using ChatErrorMsg = char[Constant::MaxChatErrorMsgSize];
+struct Constant
+{
+    //cppcheck-suppress unusedStructMember
+    static const int MaxSendRequestsQueueSize = 100;
+    //cppcheck-suppress unusedStructMember
+    static const int ApiReservedUserIDs = 256;
+};
+
+using ChatStatusMsg = char[1024];
+using ChatErrorMsg = ChatStatusMsg;
 
 using Version_t = uint32_t;
 using UserID_t = uint64_t;
+
+using ConnectionInfo = SteamNetConnectionStatusChangedCallback_t;
 
 class IChatSocket;
 class ChatClient;
@@ -107,6 +111,12 @@ using RequestParser = Parser<Request>;
 
 using MessageRequestSerializer = Serializer<MessageRequest>;
 using MessageRequestParser = Parser<MessageRequest>;
+
+template<typename Type>
+union Transfer { 
+    Type Base; 
+    char CharArr[sizeof(Type)]; 
+};
 
 
 } /*END OF NAMESPACES*/

@@ -38,20 +38,22 @@ inline std::string::const_iterator Parser<ClientInfo>::FromString(const std::str
 
 std::string::const_iterator Parser<ClientInfo>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
-    if(begin + sizeof(APIVersionType) + sizeof(UserIDType) > end)
-        return begin; //BAD INPUT. Range size has to be at least sizeof(APIVersionType) + sizeof(size_t) bytes long
+    constexpr size_t atleastSize = sizeof(APIVersionType) + sizeof(EState) + sizeof(UserIDType);
+    // __SIZEOF_POINTER__ here because of vtable
+    static_assert(atleastSize + __SIZEOF_POINTER__ == sizeof(ClientInfo),
+        "Seems like you added new field to this parse object, so you need to edit atleastSize and code above");
+    if(begin + atleastSize > end)
+        return begin; //BAD INPUT. Range size has to be atleastSize bytes long
 
-    union {
-        APIVersionType Base;
-        char CharArr[sizeof(APIVersionType)];
-    } ver;
+    Transfer<APIVersionType> ver;
     std::copy(begin, begin + sizeof(APIVersionType), ver.CharArr);
     auto iter = begin + sizeof(APIVersionType);
     GetObject()->GetAPIVer() = ver.Base;
-    union {
-        UserIDType Base;
-        char CharArr[sizeof(UserIDType)];
-    } id;
+    Transfer<EState> state;
+    std::copy(iter, iter + sizeof(EState), state.CharArr);
+    iter += sizeof(EState);
+    GetObject()->GetState() = state.Base;
+    Transfer<UserIDType> id;
     std::copy(iter, iter + sizeof(UserIDType), id.CharArr);
     iter += sizeof(UserIDType);
     GetObject()->GetUserID() = id.Base;

@@ -43,13 +43,9 @@ inline std::string::const_iterator Parser<ClientInfoRequest>::FromString(const s
 std::string::const_iterator Parser<ClientInfoRequest>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
     if(begin + sizeof(ERequestType) > end)
-        return begin; //BAD INPUT. Range size has to be at least sizeof(APIVersionType) + sizeof(size_t) bytes long
+        return begin; //BAD INPUT. Range size has to be at least sizeof(ERequestType) bytes long
 
-    union
-    {
-        ERequestType Base;
-        char CharArr[sizeof(ERequestType)];
-    } type;
+    Transfer<ERequestType> type;
     std::copy(begin, begin + sizeof(ERequestType), type.CharArr);
     if(type.Base != ERequestType::ClientInfo)
         return begin;

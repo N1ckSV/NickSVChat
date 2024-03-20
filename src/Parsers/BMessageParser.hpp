@@ -40,8 +40,12 @@ inline std::string::const_iterator Parser<BasicMessage<CharT>>::FromString(const
 template<typename CharT>
 std::string::const_iterator Parser<BasicMessage<CharT>>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
-    if(begin + sizeof(size_t) > end)
-        return begin; //BAD INPUT. Range size has to be at least sizeof(APIVersionType) + sizeof(size_t) bytes long
+    constexpr size_t atleastSize = sizeof(size_t);
+    // __SIZEOF_POINTER__ here because of vtable
+    static_assert(sizeof(std::string) + __SIZEOF_POINTER__ == sizeof(BasicMessage<CharT>), 
+        "Seems like you added new field to this parse object, so you need to edit atleastSize and code above");
+    if(begin + atleastSize > end)
+        return begin; //BAD INPUT. Range size has to be atleastSize bytes long
         
     auto parser = Parser<std::basic_string<CharT>>();
     auto iter = parser.FromString(begin, end);

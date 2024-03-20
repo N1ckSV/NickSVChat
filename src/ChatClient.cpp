@@ -20,90 +20,94 @@ EResult ChatClient::Run(const ChatIPAddr &serverAddr)
 {
 	ChatErrorMsg errMsg;
 	EResult result = OnPreRun(serverAddr, errMsg);
-	if(result != EResult::Success)
-		return OnRun(serverAddr, result, errMsg);
+	if(result != EResult::Success) {
+		OnRun(serverAddr, result, errMsg);
+		return result; }
 
 	result = ChatSocket::Run(serverAddr);
-	if(result != EResult::Success)
-		return OnRun(serverAddr, result, errMsg);
+	if(result != EResult::Success) {
+		sprintf(errMsg, "ChatSocket::Run() not succeeded");
+		OnRun(serverAddr, result, errMsg);
+		return result; }
 	
-	if (!GameNetworkingSockets_Init(nullptr, errMsg))
-        return OnRun(serverAddr, EResult::Error, errMsg);
+	if (!GameNetworkingSockets_Init(nullptr, errMsg)) {
+		OnRun(serverAddr, EResult::Error, errMsg);
+		return EResult::Error; }
 
     m_pInterface = SteamNetworkingSockets();
 	SteamNetworkingConfigValue_t opt;
 	opt.SetPtr(k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)SteamNetConnectionStatusChangedCallback);
     m_hConnection = m_pInterface->ConnectByIPAddress(serverAddr, 1,&opt);    
-    if (m_hConnection == k_HSteamNetConnection_Invalid)
-	{
+    if (m_hConnection == k_HSteamNetConnection_Invalid) {
 		GameNetworkingSockets_Kill();
 		sprintf(errMsg, "ISteamNetworkingSockets interface returned invalid connection");
-        return OnRun(serverAddr, EResult::Error, errMsg);
-	}
+        OnRun(serverAddr, EResult::Error, errMsg);
+		return EResult::Error; }
 
     m_bGoingExit = false; //SHOULD BE ALWAYS FIRST BEFORE m_pConnectionThread = new ...
     m_pConnectionThread = new std::thread(&ChatClient::ConnectionThreadFunction, this);
     m_pRequestThread = new std::thread(&ChatClient::RequestThreadFunction, this);
-    //TODO: exit/kill/nuke/terminate
-
-    ///////////////////////////////////
-    return OnRun(serverAddr, EResult::Success, errMsg);
+    OnRun(serverAddr, EResult::Success, errMsg);
+	return EResult::Success;
 }
 
 ChatClient::ChatClient() : ChatSocket()
 {
-	m_pClientInfo = new ClientInfo();
+	m_upClientInfo = MakeClientInfo();
 }
 
-ChatClient::~ChatClient()
-{
-    //TODO
-    //FIXME FIXME FIXME FIXME FIXME FIXME 
-	delete m_pClientInfo;
-}
+ChatClient::~ChatClient() {}
 
-EResult ChatClient::PollIncomingRequests()
+void ChatClient::OnBadIncomingRequest(std::string, EResult) {};
+
+void ChatClient::PollIncomingRequests()
 {
 	while (!m_bGoingExit)
 	{
-		
-		if(m_handleRequestsQueue.size() >= Constant::MaxSendRequestsQueueSize)
-			return EResult::Overflow;
-			
 		ISteamNetworkingMessage *pIncomingMsg = nullptr;
 		int numMsgs = m_pInterface->ReceiveMessagesOnConnection(m_hConnection, &pIncomingMsg, 1);
 		if (numMsgs == 0)
-			return EResult::Success;
-		if (numMsgs < 0)
-			return EResult::Error;
-		
-		if((size_t)pIncomingMsg->m_cbSize < sizeof(ERequestType))
-			return EResult::Error; //FIXME mb return EResult::CorruptedData
+			break;
+
+		if (numMsgs < 0){
+			FatalError("ISteamNetworkingSockets::ReceiveMessagesOnPollGroup returned error code");
+			break;}
 
 		std::string strReq;
 		strReq.assign(static_cast<const char *>(pIncomingMsg->m_pData), pIncomingMsg->m_cbSize);
+		size_t mesSize = (size_t)pIncomingMsg->m_cbSize;
+		pIncomingMsg->Release();
 
-		std::pair<std::string, RequestInfo> para(std::move(strReq), {pIncomingMsg->m_conn, 0});
+		if(mesSize < sizeof(ERequestType)){
+			OnBadIncomingRequest(std::move(strReq), EResult::InvalidRequest);
+			continue;}
+
+		if(m_handleRequestsQueue.size() >= Constant::MaxSendRequestsQueueSize){
+			OnBadIncomingRequest(std::move(strReq), EResult::Overflow);
+			continue;}
+
+		std::pair<std::string, RequestInfo> para(std::move(strReq), {0, 0});
 		m_handleRequestMutex.lock();
 		m_handleRequestsQueue.push(std::move(para));
 		m_handleRequestMutex.unlock();
-		pIncomingMsg->Release();
 	}
-	return EResult::Success;
 }
 
-EResult ChatClient::PollQueuedRequests()
+void ChatClient::PollQueuedRequests()
 {
-	auto result = EResult::Success;
 	while (!m_bGoingExit && !m_sendRequestsQueue.empty())
 	{
-		std::lock_guard<std::mutex> lock(m_sendRequestMutex);
-		if(SendStringToServer(std::move(m_sendRequestsQueue.front().first)) == EResult::Error && result == EResult::Success)
-				result = EResult::Error;
-		
+		m_sendRequestMutex.lock();
+		std::string strRequest(std::move(m_sendRequestsQueue.front().first));
+		RequestInfo rInfo = m_sendRequestsQueue.front().second;
 		m_sendRequestsQueue.pop();
+		m_sendRequestMutex.unlock();
+		auto result = SendStringToServer(&strRequest);
+		CHAT_ASSERT(result != EResult::InvalidParam, "The request is too big or connection is invalid");
+		CHAT_EXPECT(result == EResult::Success, "Request sending not succeeded");
+		if(result != EResult::Success)
+			OnErrorSendingRequest(std::move(strRequest), rInfo, result);
 	}
-	return result;
 }
 
 void ChatClient::PollConnectionChanges()
@@ -112,17 +116,16 @@ void ChatClient::PollConnectionChanges()
 	m_pInterface->RunCallbacks();
 }
 
-EResult ChatClient::SendStringToServer(std::string str)
+EResult ChatClient::SendStringToServer(const std::string* pStr)
 {
-	auto result = m_pInterface->SendMessageToConnection(m_hConnection, str.data(), (uint32)str.size(), 
-		k_nSteamNetworkingSend_Reliable, nullptr);
-	return (result == k_EResultOK) ? EResult::Success : EResult::Error;
+	return SendStringToConnection(m_hConnection, pStr);
 }
 
 void ChatClient::ConnectionThreadFunction()
 {
     ChatSocket::ConnectionThreadFunction();
 	m_pInterface->CloseConnection(m_hConnection, 0, "Closing con", true);
+	OnCloseSocket();
 }
 
 void ChatClient::RequestThreadFunction()
@@ -136,68 +139,50 @@ void ChatClient::RequestThreadFunction()
 
 ChatClient *ChatClient::s_pCallbackInstance = nullptr;
 
-void ChatClient::SteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t *pInfo)
+void ChatClient::SteamNetConnectionStatusChangedCallback(ConnectionInfo *pInfo)
 {
 	s_pCallbackInstance->OnSteamNetConnectionStatusChanged(pInfo);
 }
 
-void ChatClient::OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t *pInfo)
+void ChatClient::OnSteamNetConnectionStatusChanged(ConnectionInfo *pInfo)
 {	
 	CHAT_ASSERT(pInfo->m_hConn == m_hConnection || m_hConnection == k_HSteamNetConnection_Invalid, "");
-
-	// What's the state of the connection?
+	auto result = EResult::Success;
 	switch (pInfo->m_info.m_eState)
 	{
-		case k_ESteamNetworkingConnectionState_None:
-			// NOTE: We will get callbacks here when we destroy connections.  You can ignore these.
-			break;
-
-		case k_ESteamNetworkingConnectionState_ClosedByPeer:
-		case k_ESteamNetworkingConnectionState_ProblemDetectedLocally:
-		{
-			m_bGoingExit = true;
-
-			// Print an appropriate message
-			if (pInfo->m_eOldState == k_ESteamNetworkingConnectionState_Connecting)
-			{
-				// Note: we could distinguish between a timeout, a rejected connection,
-				// or some other transport problem.
-				//Printf("We sought the remote host, yet our efforts were met with defeat.  (%s)", pInfo->m_info.m_szEndDebug);
-			}
-			else if (pInfo->m_info.m_eState == k_ESteamNetworkingConnectionState_ProblemDetectedLocally)
-			{
-				//Printf("Alas, troubles beset us; we have lost contact with the host.  (%s)", pInfo->m_info.m_szEndDebug);
-			}
-			else
-			{
-				// NOTE: We could check the reason code for a normal disconnection
-				//Printf("The host hath bidden us farewell.  (%s)", pInfo->m_info.m_szEndDebug);
-			}
-
-			// Clean up the connection.  This is important!
-			// The connection is "closed" in the network sense, but
-			// it has not been destroyed.  We must close it on our end, too
-			// to finish up.  The reason information do not matter in this case,
-			// and we cannot linger because it's already closed on the other end,
-			// so we just pass 0's.
-			m_pInterface->CloseConnection(pInfo->m_hConn, 0, nullptr, false);
-			m_hConnection = k_HSteamNetConnection_Invalid;
-			break;
-		}
-
-		case k_ESteamNetworkingConnectionState_Connecting:
-			// We will get this callback when we start connecting.
-			// We can ignore this.
-			break;
-
-		case k_ESteamNetworkingConnectionState_Connected:
-			//Printf("Connected to server OK");
-			break;
-
-		default:
-			// Silences -Wswitch
-			break;
+	case k_ESteamNetworkingConnectionState_None:
+		// NOTE: We will get callbacks here when we destroy connections.  You can ignore these.
+		break;
+	case k_ESteamNetworkingConnectionState_ClosedByPeer:
+	case k_ESteamNetworkingConnectionState_ProblemDetectedLocally:
+	{
+		m_pInterface->CloseConnection(pInfo->m_hConn, 0, nullptr, false);
+		m_hConnection = k_HSteamNetConnection_Invalid;
+		if(pInfo->m_info.m_eState == k_ESteamNetworkingConnectionState_ProblemDetectedLocally){
+			OnConnectionStatusChanged(pInfo, EResult::Error);
+			FatalError(std::string("GNS detected problem: ") + std::string(pInfo->m_info.m_szEndDebug));
+			return;}
+		else{
+			OnConnectionStatusChanged(pInfo, EResult::Success);
+			CloseSocket();
+			return;}
+		break;
 	}
+
+	case k_ESteamNetworkingConnectionState_Connecting:
+		// We will get this callback when we start connecting.
+		// We can ignore this.
+		break;
+
+	case k_ESteamNetworkingConnectionState_Connected:
+		//Connected to server,
+		break;
+
+	default:
+		// Silences -Wswitch
+		break;
+	}
+	OnConnectionStatusChanged(pInfo, result);
 }
 	
 

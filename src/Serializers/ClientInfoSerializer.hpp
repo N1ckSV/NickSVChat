@@ -35,6 +35,7 @@ inline size_t Serializer<ClientInfo>::GetSize() const
 {
     size_t size = 
       sizeof(APIVersionType) +
+      sizeof(EState) +
       sizeof(UserIDType); 
     return size + OnGetSize(size);
 }
@@ -52,16 +53,13 @@ std::string Serializer<ClientInfo>::ToString() const
 std::string::iterator Serializer<ClientInfo>::ToString(std::string::iterator begin, std::string::iterator end) const
 {
     CHAT_ASSERT(end >= begin + GetSize(), invalid_range_size_ERROR_MESSAGE);
-    union {
-        APIVersionType Base;
-        char CharArr[sizeof(APIVersionType)];
-    } ver;
+    Transfer<APIVersionType> ver;
     ver.Base = GetObject()->GetAPIVer();
     auto iter = std::copy(ver.CharArr, ver.CharArr + sizeof(APIVersionType), begin);
-    union {
-        UserIDType Base;
-        char CharArr[sizeof(UserIDType)];
-    } id;
+    Transfer<EState> state;
+    state.Base = GetObject()->GetState();
+    iter = std::copy(state.CharArr, state.CharArr + sizeof(EState), iter);
+    Transfer<UserIDType> id;
     id.Base = GetObject()->GetUserID();
     iter = std::copy(id.CharArr, id.CharArr + sizeof(UserIDType), iter);
     CHAT_ASSERT(iter <= end, something_went_wrong_ERROR_MESSAGE);
