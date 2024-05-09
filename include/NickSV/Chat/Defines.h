@@ -6,6 +6,8 @@
 
 #include "ChatConfig.h"
 
+#include "NickSV/Tools/Defines.h"
+
 //ASSERT STUFF (EXPECT is non-fatal one)
 #if defined(CHAT_DEBUG)
     #include <assert.h>
@@ -16,6 +18,12 @@
     #define CHAT_EXPECT(exp, msg) (void(0))
 #endif
 
+//Special define, that disabling type integrity assertion
+//
+#ifndef CHAT_TYPE_INTEGRITY_NO_ASSERTION
+#define CHAT_TYPE_INTEGRITY_NO_ASSERTION
+#undef CHAT_TYPE_INTEGRITY_NO_ASSERTION
+#endif
 
 
 //GameNetworkingSockets for opensource

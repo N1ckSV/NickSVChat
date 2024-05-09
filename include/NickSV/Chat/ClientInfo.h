@@ -28,21 +28,11 @@ struct ClientInfo : public ISerializable
     using UserIDType = UserID_t;
     using APIVersionType = Version_t;
 
-    //Simple default constructor
     ClientInfo() = default;
     explicit ClientInfo(const UserIDType&);
     ClientInfo(const UserIDType&, const EState&);
 
-    //Simple copy constructor
-    ClientInfo(const ClientInfo&) = default;
-    //Simple move constructor
-    ClientInfo(ClientInfo&&) noexcept;
-    //Simple copy assign operator
-    const ClientInfo& operator=(const ClientInfo&);
-    //Simple move assign operator
-    ClientInfo& operator=(ClientInfo&&) noexcept;
-    
-    virtual ~ClientInfo() = default;
+    DECLARE_RULE_OF_5_VIRTUAL_DEFAULT(ClientInfo);
 
     /*
     Simple equal operator.

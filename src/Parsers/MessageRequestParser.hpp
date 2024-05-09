@@ -41,6 +41,7 @@ inline std::string::const_iterator Parser<MessageRequest>::FromString(const std:
 
 std::string::const_iterator Parser<MessageRequest>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
+    type_integrity_assert<MessageRequest, 16, std::unique_ptr<Message>>();
     if(begin + sizeof(ERequestType) > end)
         return begin; //BAD INPUT. Range size has to be at least sizeof(ERequestType) bytes long
 

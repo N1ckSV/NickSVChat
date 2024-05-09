@@ -78,6 +78,11 @@ void ChatClient::PollIncomingRequests()
 		size_t mesSize = (size_t)pIncomingMsg->m_cbSize;
 		pIncomingMsg->Release();
 
+		///
+		/// FIXME unnecessary strReq assign if OnBadIncomingRequest not needed here for api user,
+		/// so better think about config thingy
+		///
+
 		if(mesSize < sizeof(ERequestType)){
 			OnBadIncomingRequest(std::move(strReq), EResult::InvalidRequest);
 			continue;}
@@ -87,9 +92,9 @@ void ChatClient::PollIncomingRequests()
 			continue;}
 
 		std::pair<std::string, RequestInfo> para(std::move(strReq), {0, 0});
-		m_handleRequestMutex.lock();
+		m_Mutexes.handleRequestMutex.lock();
 		m_handleRequestsQueue.push(std::move(para));
-		m_handleRequestMutex.unlock();
+		m_Mutexes.handleRequestMutex.unlock();
 	}
 }
 
@@ -97,11 +102,11 @@ void ChatClient::PollQueuedRequests()
 {
 	while (!m_bGoingExit && !m_sendRequestsQueue.empty())
 	{
-		m_sendRequestMutex.lock();
+		m_Mutexes.sendRequestMutex.lock();
 		std::string strRequest(std::move(m_sendRequestsQueue.front().first));
 		RequestInfo rInfo = m_sendRequestsQueue.front().second;
 		m_sendRequestsQueue.pop();
-		m_sendRequestMutex.unlock();
+		m_Mutexes.sendRequestMutex.unlock();
 		auto result = SendStringToServer(&strRequest);
 		CHAT_ASSERT(result != EResult::InvalidParam, "The request is too big or connection is invalid");
 		CHAT_EXPECT(result == EResult::Success, "Request sending not succeeded");
@@ -128,14 +133,49 @@ void ChatClient::ConnectionThreadFunction()
 	OnCloseSocket();
 }
 
-void ChatClient::RequestThreadFunction()
+ClientInfo& ChatClient::GetClientInfo()
 {
-    while(!m_bGoingExit)
-    {
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		//TODO FIXME
-    }
+	return *m_upClientInfo;
 }
+
+#define CLIENT_INFO_ALLOWED_STATES(state) ((state) == EState::Active) || ((state) == EState::Unauthorized)
+
+void ChatClient::HandleClientInfoRequest(ClientInfoRequest* pClientInfoRequest, RequestInfo rInfo)
+{
+	EResult result = OnPreHandleClientInfoRequest(pClientInfoRequest, rInfo);
+	if(result != EResult::Success){
+		OnHandleClientInfoRequest(pClientInfoRequest, rInfo, result);
+		return;}
+	
+	GetClientInfo().GetUserID() = pClientInfoRequest->GetClientInfo()->GetUserID();
+	GetClientInfo().GetState()  = pClientInfoRequest->GetClientInfo()->GetState();
+	CHAT_EXPECT(GetClientInfo().GetUserID() >= Constant::ApiReservedUserIDs, "Invalid user id given");
+	CHAT_EXPECT(CLIENT_INFO_ALLOWED_STATES(GetClientInfo().GetState()), "Invalid client info state given");
+	if(GetClientInfo().GetUserID() < Constant::ApiReservedUserIDs || !CLIENT_INFO_ALLOWED_STATES(GetClientInfo().GetState())){
+		OnHandleClientInfoRequest(pClientInfoRequest, rInfo, EResult::InvalidRequest);
+		return;}
+
+	if(GetClientInfo().GetState() == EState::Unauthorized)
+	{
+		*(pClientInfoRequest->GetClientInfo()) = GetClientInfo();
+		result = QueueRequest(pClientInfoRequest, {0,0});
+	}
+
+	OnHandleClientInfoRequest(pClientInfoRequest, rInfo, result);
+}
+
+void ChatClient::HandleMessageRequest(MessageRequest* pMessageRequest, RequestInfo rInfo)
+{
+	EResult result = OnPreHandleMessageRequest(pMessageRequest, rInfo);
+	if(result != EResult::Success){
+		OnHandleMessageRequest(pMessageRequest, rInfo, result);
+		return;}
+
+	//Dunno what to add here for now TODO FIXME
+
+	OnHandleMessageRequest(pMessageRequest, rInfo, result);
+}
+
 
 ChatClient *ChatClient::s_pCallbackInstance = nullptr;
 

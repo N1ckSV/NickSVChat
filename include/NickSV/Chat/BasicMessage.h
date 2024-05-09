@@ -25,22 +25,15 @@ struct BasicMessage : public ISerializable
     static_assert(is_char<CharT>::value, is_char_ERROR_MESSAGE);
     using CharType = CharT;
     using TextType = std::basic_string<CharT>;
+    using UserIDType = UserID_t;
 
     //Simple default constructor
     BasicMessage() = default;
     explicit BasicMessage(const TextType& rsText);
     explicit BasicMessage(TextType&& rsText) noexcept;
 
-    //Simple copy constructor
-    BasicMessage(const BasicMessage&) = default;
-    //Simple move constructor
-    BasicMessage(BasicMessage&&) noexcept;
-    //Simple copy assign operator
-    const BasicMessage<CharT>& operator=(const BasicMessage<CharT>&);
-    //Simple move assign operator
-    BasicMessage<CharT>& operator=(BasicMessage<CharT>&&) noexcept;
-
-    virtual ~BasicMessage() = default;
+    
+    DECLARE_RULE_OF_5_VIRTUAL_DEFAULT(BasicMessage<CharT>);
     
     /*
     Simple equal operators
@@ -64,6 +57,7 @@ struct BasicMessage : public ISerializable
     const std::unique_ptr<ISerializer> GetSerializer() const override;
 
 private:
+    //UserIDType m_nUserID;
 	TextType m_sText;
 };
 

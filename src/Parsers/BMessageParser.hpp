@@ -41,9 +41,7 @@ template<typename CharT>
 std::string::const_iterator Parser<BasicMessage<CharT>>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
     constexpr size_t atleastSize = sizeof(size_t);
-    // __SIZEOF_POINTER__ here because of vtable
-    static_assert(sizeof(std::string) + __SIZEOF_POINTER__ == sizeof(BasicMessage<CharT>), 
-        "Seems like you added new field to this parse object, so you need to edit atleastSize and code above");
+    type_integrity_assert<BasicMessage<CharT>, 8, std::string>();
     if(begin + atleastSize > end)
         return begin; //BAD INPUT. Range size has to be atleastSize bytes long
         

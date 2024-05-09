@@ -19,10 +19,10 @@ namespace NickSV::Chat {
 class IParser
 {
 public:
-    CHAT_NODISCARD virtual std::string::const_iterator FromString(const std::string&) = 0;
-    CHAT_NODISCARD virtual std::string::const_iterator FromString(std::string::const_iterator, std::string::const_iterator) = 0;
-    CHAT_NODISCARD virtual std::string::const_iterator OnFromString(std::string::const_iterator, std::string::const_iterator) = 0;
-                   virtual                             ~IParser() = default;
+    CHAT_NODISCARD virtual std::string::const_iterator        FromString(const std::string&) = 0;
+    CHAT_NODISCARD virtual std::string::const_iterator        FromString(std::string::const_iterator, std::string::const_iterator) = 0;
+    CHAT_NODISCARD virtual std::string::const_iterator        OnFromString(std::string::const_iterator, std::string::const_iterator) = 0;
+                   virtual                                    ~IParser() = default;
 };
 //------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------

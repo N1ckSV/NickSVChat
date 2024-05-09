@@ -1,4 +1,3 @@
-
 #include "NickSV/Chat/Utils.h"
 
 #include "NickSV/Chat/ClientInfo.h"
@@ -24,103 +23,84 @@
 #include "NickSV/Chat/ChatClient.h"
 #include "NickSV/Chat/ChatServer.h"
 
-#include <iostream>
-#include <iomanip>
-#include <exception>
+#include "NickSV/Tools/ValueLock.h"
+
+#include "NickSV/Tools/Testing.h"
+
 #include <type_traits>
 #include <thread>
 
-#define SETW_VAL 50
-
-#define IF_RETURN(exp, ret) if(exp) { return (ret); } else { (void)(ret); }
-#define IFN_RETURN(exp, ret) if(!(exp)) { return (ret); }
-
-#define RESULT(stage, failed)                                              \
-    try {                                                                  \
-        auto stageOut = stage;                                             \
-        std::cout << std::setw(SETW_VAL) << std::string(#stage) << ": ";   \
-        if(!stageOut) {                                                    \
-            std::cout << std::string("PASSED") << std::endl;               \
-        }                                                                  \
-        else {                                                             \
-            failed++;                                                      \
-            std::cout  << std::string("FAILED on stage ")                  \
-            << stageOut << std::endl;                                      \
-        }                                                                  \
-    } catch (const std::exception& ex) {                                   \
-        std::cout << "Exception thrown - " << ex.what() << std::endl;      \
-    }                                                                      \
-
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <pthread.h>
+#endif
 
 
 using namespace NickSV::Chat;
 
-int client_info_test()
+size_t client_info_test()
 {
-    int stage = 0;
     ClientInfo info1, info2;
     info1.GetUserID() = 12345;
     info2.GetUserID() = 12345;
-    IF_RETURN(info1 != info2, ++stage);
+    TEST_CHECK_STAGE(info1 == info2);
 
     info2.GetUserID() = 10101;
-    IF_RETURN(info1 == info2, ++stage);
+    TEST_CHECK_STAGE(info1 != info2);
 
     info1.GetUserID() = 12345;
-    IF_RETURN(info1 == info2, ++stage);
+    TEST_CHECK_STAGE(info1 != info2);
 
-    return 0;
+    return TEST_SUCCESS;
 }
 
 
-int client_info_serializers_and_parsers_test()
+size_t client_info_serializers_and_parsers_test()
 {
-    int stage = 0;
     UserID_t id = 2;
     const auto ClientInfo1 = ClientInfo(id);
     ClientInfo ClientInfo2;
     auto str = ClientInfo1.GetSerializer()->ToString();
     ClientInfo2 = MakeFromString<ClientInfo>(str);
-    IF_RETURN(ClientInfo2 != ClientInfo1, ++stage);
+    TEST_CHECK_STAGE(ClientInfo2 == ClientInfo1);
 
     str.resize(str.size()-1);
     ClientInfo2 = MakeFromString<ClientInfo>(str);
-    IF_RETURN(ClientInfo2 != ClientInfo(), ++stage);
+    TEST_CHECK_STAGE(ClientInfo2 == ClientInfo());
 
-    return 0;
+    return TEST_SUCCESS;
 }
 
 
 template<typename CharT>
-int basic_serializers_and_parsers_test()
+size_t basic_serializers_and_parsers_test()
 {
-    int stage = 0;
     std::basic_string<CharT> text = basic_string_cast<CharT>("Hello there, I am a test text!");
     std::string str = Serializer<std::basic_string<CharT>>(&text).ToString();
     std::basic_string<CharT> text2 = MakeFromString<std::basic_string<CharT>>(str);
-    IF_RETURN(text != text2, ++stage);
+    TEST_CHECK_STAGE(text == text2);
 
     str.resize(str.size()-1);
     text2 = MakeFromString<std::basic_string<CharT>>(str);
-    IF_RETURN(text2 != std::basic_string<CharT>(), ++stage);
+    TEST_CHECK_STAGE(text2 == std::basic_string<CharT>());
 
     text = basic_string_cast<CharT>("Hello there, I am a test message!");
     const BasicMessage<CharT> BasicMessage1(text);
     BasicMessage<CharT> BasicMessage2;
     str = BasicMessage1.GetSerializer()->ToString();
     BasicMessage2 = MakeFromString<BasicMessage<CharT>>(str);
-    IF_RETURN(BasicMessage2 != BasicMessage1, ++stage);
+    TEST_CHECK_STAGE(BasicMessage2 == BasicMessage1);
 
     str = str.substr(0, str.size()-1);
     BasicMessage2 = MakeFromString<BasicMessage<CharT>>(str);
-    IF_RETURN(BasicMessage2 != BasicMessage<CharT>(), ++stage);
+    TEST_CHECK_STAGE(BasicMessage2 == BasicMessage<CharT>());
 
-    return 0;
+    return TEST_SUCCESS;
 }
 
-int requests_serializers_and_parsers_test()
+size_t requests_serializers_and_parsers_test()
 {
-    int stage = 0;
     UserID_t id = 123123414;
     const ClientInfo ClientInfo1(id);
           ClientInfo ClientInfo2;
@@ -129,68 +109,71 @@ int requests_serializers_and_parsers_test()
     std::string str = clientInfoRequest.GetSerializer()->ToString();
     auto parser = Parser<Request>();
     auto iter = parser.FromString(str);
-    IF_RETURN(iter == str.begin(), ++stage);
-
-    IF_RETURN(parser.GetObject()->GetType() != clientInfoRequest.GetType(), ++stage);
+    TEST_CHECK_STAGE(iter != str.begin());
+    
+	#undef GetObject
+    TEST_CHECK_STAGE(parser.GetObject()->GetType() == clientInfoRequest.GetType());
 
     Request* pRequest = parser.GetObject().get();
     ClientInfoRequest* pClientInfoRequest = static_cast<ClientInfoRequest*>(pRequest);
-    IF_RETURN(*pClientInfoRequest->GetClientInfo() != ClientInfo1, ++stage);
+    TEST_CHECK_STAGE(*pClientInfoRequest->GetClientInfo() == ClientInfo1);
 
     str.resize(str.size()-1);
     iter = Parser<Request>().FromString(str);
-    IF_RETURN(iter != str.begin(), ++stage);
+    TEST_CHECK_STAGE(iter == str.begin());
 
     auto text = basic_string_cast<CHAT_CHAR>("Hello there, I am a test nickname!");
     const Message Message1(text);
           Message Message2;
     const MessageRequest messageRequest;
+    
+	#undef GetMessage
     *messageRequest.GetMessage() = Message1;
     str = messageRequest.GetSerializer()->ToString();
     iter = parser.FromString(str);
-    IF_RETURN(iter == str.begin(), ++stage);
+    TEST_CHECK_STAGE(iter != str.begin());
 
-    IF_RETURN(parser.GetObject()->GetType() != ERequestType::Message, ++stage);
+    TEST_CHECK_STAGE(parser.GetObject()->GetType() == ERequestType::Message);
 
     pRequest = parser.GetObject().get();
     MessageRequest* pMessageRequest = static_cast<MessageRequest*>(pRequest);
-    IF_RETURN(*pMessageRequest->GetMessage() != Message1, ++stage);
+    TEST_CHECK_STAGE(*pMessageRequest->GetMessage() == Message1);
 
     str.resize(str.size()-1);
     iter = Parser<Request>().FromString(str);
-    IF_RETURN(iter != str.begin(), ++stage);
+    TEST_CHECK_STAGE(iter == str.begin());
 
-    return 0;
+    return TEST_SUCCESS;
 }
 
-int version_conversation_test()
+size_t version_conversation_test()
 {
-    int stage = 0;
+    
     Version_t ver = ConvertVersions(NICKSVCHAT_VERSION_MAJOR, NICKSVCHAT_VERSION_MINOR, NICKSVCHAT_VERSION_PATCH, 0);
-    IF_RETURN(ConvertVersionToMajor(ver) != NICKSVCHAT_VERSION_MAJOR, ++stage);
-    IF_RETURN(ConvertVersionToMinor(ver) != NICKSVCHAT_VERSION_MINOR, ++stage);
-    IF_RETURN(ConvertVersionToPatch(ver) != NICKSVCHAT_VERSION_PATCH, ++stage);
-    IF_RETURN(ConvertVersionToTweak(ver) != 0, ++stage);
+    TEST_CHECK_STAGE(ConvertVersionToMajor(ver) == NICKSVCHAT_VERSION_MAJOR);
+    TEST_CHECK_STAGE(ConvertVersionToMinor(ver) == NICKSVCHAT_VERSION_MINOR);
+    TEST_CHECK_STAGE(ConvertVersionToPatch(ver) == NICKSVCHAT_VERSION_PATCH);
+    TEST_CHECK_STAGE(ConvertVersionToTweak(ver) == 0);
 
-    return 0;
+    return TEST_SUCCESS;
 }
 
 
-int requests_test()
+size_t requests_test()
 {
-    int stage = 0;
+    
     Request Req;
     MessageRequest mReq;
     ClientInfoRequest ciReq;
-    IF_RETURN(Req.GetType() != ERequestType::Unknown, ++stage);
-    IF_RETURN(mReq.GetType() != ERequestType::Message, ++stage);
-    IF_RETURN(ciReq.GetType() != ERequestType::ClientInfo, ++stage);
+    TEST_CHECK_STAGE(Req.GetType() == ERequestType::Unknown);
+    TEST_CHECK_STAGE(mReq.GetType() == ERequestType::Message);
+    TEST_CHECK_STAGE(ciReq.GetType() == ERequestType::ClientInfo);
 
     
 
 
     
-    return 0;
+    return TEST_SUCCESS;
 }
 
 
@@ -223,43 +206,44 @@ class TestChatServer : public ChatServer
     }
 };
 
-int client_server_data_exchange_test()
+size_t client_server_data_exchange_test()
 {
-    int stage = 0;
+    
     TestChatServer server;
     ChatClient client;
     MessageRequest req;
-    *req.GetMessage() = Message(TEXT("Hello guys, ima test message"));
-    IF_RETURN(server.Run() == NickSV::Chat::EResult::Error, ++stage);
+    *req.GetMessage() = Message(_T("Hello guys, ima test message"));
+    TEST_CHECK_STAGE(server.Run() != NickSV::Chat::EResult::Error);
 
-    ++stage;
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    bool result = true;
     if(client.Run() == NickSV::Chat::EResult::Error)
     {
         server.CloseSocket();
         server.Wait();
-        return stage;
+        result = false;
     }
+    TEST_CHECK_STAGE(result);
 
-    ++stage;
     if( client.QueueRequest(&req, {0, 0}) != NickSV::Chat::EResult::Success)
     {
         server.CloseSocket();
         client.CloseSocket();
         server.Wait();
         client.Wait();
-        return stage;
+        result = false;
     }
+    TEST_CHECK_STAGE(result);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     server.CloseSocket();
     client.CloseSocket();
     server.Wait();
     client.Wait();
-    IF_RETURN(g_Message != Message(TEXT("Hello guys, ima test message")), ++stage);
+    TEST_CHECK_STAGE(g_Message == Message(_T("Hello guys, ima test message")));
 
     
-    return 0;
+    return TEST_SUCCESS;
 }
 
 
@@ -268,8 +252,6 @@ int client_server_data_exchange_test()
 
 int main(int arc, const char ** argv)
 {
-    int ntest_failed = 0;
-
     static_assert(is_char<char>::value);
     static_assert(is_char<wchar_t>::value);
     static_assert(is_char<char16_t>::value);
@@ -281,94 +263,23 @@ int main(int arc, const char ** argv)
 
     static_assert(!is_char<int>::value);
 
-    RESULT(client_info_test(), ntest_failed);
-    RESULT(client_info_serializers_and_parsers_test(), ntest_failed);
+    TEST_VERIFY(client_info_test());
+    TEST_VERIFY(client_info_serializers_and_parsers_test());
 
-    RESULT(basic_serializers_and_parsers_test<char>(), ntest_failed);
-    RESULT(basic_serializers_and_parsers_test<wchar_t>(), ntest_failed);
-    RESULT(basic_serializers_and_parsers_test<char16_t>(), ntest_failed);
-    RESULT(basic_serializers_and_parsers_test<char32_t>(), ntest_failed);
+    TEST_VERIFY(basic_serializers_and_parsers_test<char>());
+    TEST_VERIFY(basic_serializers_and_parsers_test<wchar_t>());
+    TEST_VERIFY(basic_serializers_and_parsers_test<char16_t>());
+    TEST_VERIFY(basic_serializers_and_parsers_test<char32_t>());
 
-    RESULT(requests_serializers_and_parsers_test(), ntest_failed);
+    TEST_VERIFY(requests_serializers_and_parsers_test());
 
-    RESULT(version_conversation_test(), ntest_failed);
+    TEST_VERIFY(version_conversation_test());
 
-    RESULT(requests_test(), ntest_failed);
+    TEST_VERIFY(requests_test());
 
-    RESULT(client_server_data_exchange_test(), ntest_failed);
+    TEST_VERIFY(client_server_data_exchange_test());
 
-/////////////////////////////////////////////////////////////////////////
-    //ULONG bufferSize = 1500;
-    //PMIB_IPADDRTABLE  pIPAddrTable;
-    //DWORD dwSize = 0;
-    //DWORD dwRetVal = 0;
-    //IN_ADDR IPAddr;
-//
-//
-    //
-    //PMIB_IPADDRTABLE pCurrAddresses = NULL;
-//
-    //size_t Iterations = 0;
-    //do {
-    //    pIPAddrTable = (MIB_IPADDRTABLE *) malloc(bufferSize);
-    //    if (pIPAddrTable == NULL) {
-    //        dwRetVal = 1231;
-    //        printf
-    //            ("Memory allocation failed for IP_ADAPTER_ADDRESSES struct\n");
-    //        break;
-    //    }
-//
-    //    dwRetVal =
-    //        GetIpAddrTable(pIPAddrTable, &bufferSize, FALSE);
-//
-    //    if (dwRetVal == ERROR_INSUFFICIENT_BUFFER) {
-    //        free(pIPAddrTable);
-    //        pIPAddrTable = NULL;
-    //    } else {
-    //        break;
-    //    }
-//
-    //    Iterations++;
-//
-    //} while ((dwRetVal == ERROR_INSUFFICIENT_BUFFER) && (Iterations < 10));
-    //setlocale(LC_ALL, "");
-    //unsigned int i = 0;
-    //if (dwRetVal == NO_ERROR) {
-    //    // If successful, output some information from the data we received
-    //    printf("\tNum Entries: %ld\n", pIPAddrTable->dwNumEntries);
-    //    for (i=0; i < (int) pIPAddrTable->dwNumEntries; i++) {
-    //        printf("\n\tInterface Index[%d]:\t%ld\n", i, pIPAddrTable->table[i].dwIndex);
-    //        IPAddr.S_un.S_addr = (u_long) pIPAddrTable->table[i].dwAddr;
-    //        printf("\tIP Address[%d]:     \t%s\n", i, inet_ntoa(IPAddr) );
-    //        IPAddr.S_un.S_addr = (u_long) pIPAddrTable->table[i].dwMask;
-    //        printf("\tSubnet Mask[%d]:    \t%s\n", i, inet_ntoa(IPAddr) );
-    //        IPAddr.S_un.S_addr = (u_long) pIPAddrTable->table[i].dwBCastAddr;
-    //        printf("\tBroadCast[%d]:      \t%s (%ld%)\n", i, inet_ntoa(IPAddr), pIPAddrTable->table[i].dwBCastAddr);
-    //        printf("\tReassembly size[%d]:\t%ld\n", i, pIPAddrTable->table[i].dwReasmSize);
-    //        printf("\tType and State[%d]:", i);
-    //        if (pIPAddrTable->table[i].wType & MIB_IPADDR_PRIMARY)
-    //            printf("\tPrimary IP Address");
-    //        if (pIPAddrTable->table[i].wType & MIB_IPADDR_DYNAMIC)
-    //            printf("\tDynamic IP Address");
-    //        if (pIPAddrTable->table[i].wType & MIB_IPADDR_DISCONNECTED)
-    //            printf("\tAddress is on disconnected interface");
-    //        if (pIPAddrTable->table[i].wType & MIB_IPADDR_DELETED)
-    //            printf("\tAddress is being deleted");
-    //        if (pIPAddrTable->table[i].wType & MIB_IPADDR_TRANSIENT)
-    //            printf("\tTransient address");
-    //        printf("\n");
-    //        }
-    //} else {
-    //    std::cout << "Something went wrong, error code: " << dwRetVal << std::endl;
-    //}
-//
-//
-//
-    //free(pIPAddrTable);
-/////////////////////////////////////////////////////////////////////////
-
-    //Subtest, because whole exe is CTest test
-    std::cout << '\n' << ntest_failed << " subtests failed" << std::endl;
+    std::cout << '\n' << NickSV::Testing::TestsFailed << " subtests failed" << std::endl;
     
-    return ntest_failed;
+    return NickSV::Testing::TestsFailed;
 }

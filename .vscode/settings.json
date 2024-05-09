@@ -79,7 +79,12 @@
         "chrono": "cpp",
         "charconv": "cpp",
         "format": "cpp",
-        "forward_list": "cpp"
+        "forward_list": "cpp",
+        "list": "cpp",
+        "xhash": "cpp",
+        "locale": "cpp",
+        "xlocbuf": "cpp",
+        "xlocmes": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled",
     "c-cpp-flylint.enable": true,
@@ -88,11 +93,16 @@
     "c-cpp-flylint.cppcheck.enable": true,
     "c-cpp-flylint.clang.enable": false,
     "c-cpp-flylint.standard": [
-        
+
         "c11",
         "c++11"
     ],
     "c-cpp-flylint.excludeFromWorkspacePaths": [
         "include/steam"
-    ]
+    ],
+    "C_Cpp.files.exclude": {
+        "include/steam/**": true,
+        "**/.vscode": true,
+        "**/.vs": true
+    }
 }
