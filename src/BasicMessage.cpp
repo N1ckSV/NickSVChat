@@ -17,29 +17,10 @@ Struct that user is sending to server
 
 
 template<typename CharT>
-BasicMessage<CharT>::BasicMessage(const TextType& rsText) : m_sText(rsText) {};
+BasicMessage<CharT>::BasicMessage(const BasicMessage<CharT>::TextType& rsText) : m_sText(rsText) {};
 
 template<typename CharT>
-BasicMessage<CharT>::BasicMessage(TextType&& rsText) noexcept : m_sText(std::move(rsText)) {};
-
-template<typename CharT>
-BasicMessage<CharT>::BasicMessage(BasicMessage&& other) noexcept : m_sText(std::move(other.m_sText)) {};
-
-template<typename CharT>
-const BasicMessage<CharT>& BasicMessage<CharT>::operator=(const BasicMessage<CharT>& rhs)
-{
-    if (this == std::addressof(rhs)) [[unlikely]] return *this;
-    m_sText = rhs.m_sText;
-    return *this;
-};
-
-template<typename CharT>
-BasicMessage<CharT>& BasicMessage<CharT>::operator=(BasicMessage<CharT>&& rhs) noexcept
-{
-    if (this == std::addressof(rhs)) [[unlikely]] return *this;
-    std::swap(m_sText, rhs.m_sText);
-    return *this;
-};
+BasicMessage<CharT>::BasicMessage(BasicMessage<CharT>::TextType&& rsText) noexcept : m_sText(std::move(rsText)) {};
 
 
 template<typename CharT>

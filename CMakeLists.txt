@@ -159,6 +159,7 @@ install(
 if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
+    add_subdirectory("include/NickSV/Tools/tests")
 endif()
 
 if(BUILD_EXAMPLES)

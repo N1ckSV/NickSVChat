@@ -39,9 +39,7 @@ inline std::string::const_iterator Parser<ClientInfo>::FromString(const std::str
 std::string::const_iterator Parser<ClientInfo>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
     constexpr size_t atleastSize = sizeof(APIVersionType) + sizeof(EState) + sizeof(UserIDType);
-    // __SIZEOF_POINTER__ here because of vtable
-    static_assert(atleastSize + __SIZEOF_POINTER__ == sizeof(ClientInfo),
-        "Seems like you added new field to this parse object, so you need to edit atleastSize and code above");
+    type_integrity_assert<ClientInfo, atleastSize + 8>();
     if(begin + atleastSize > end)
         return begin; //BAD INPUT. Range size has to be atleastSize bytes long
 

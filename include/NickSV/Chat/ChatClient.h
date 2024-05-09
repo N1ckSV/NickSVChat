@@ -53,15 +53,17 @@ public:
     // them inside OnPreHandleRequest() or OnHandleRequest() 
     // will indicate their validity.
     virtual void    OnBadIncomingRequest(std::string rawRequest, EResult result);
+    ClientInfo&     GetClientInfo();
 private:
-    EResult     SendStringToServer(const std::string*);
-    void        ConnectionThreadFunction() override final;
-    void        RequestThreadFunction()    override final;
-    void        OnSteamNetConnectionStatusChanged(ConnectionInfo*) override final;
-    static void SteamNetConnectionStatusChangedCallback(ConnectionInfo*);
-    void        PollIncomingRequests()  override final;
-	void        PollQueuedRequests()    override final;
-	void        PollConnectionChanges() override final;
+    EResult         SendStringToServer(const std::string*);
+    void            ConnectionThreadFunction() override final;
+    void            PollIncomingRequests()     override final;
+	void            PollQueuedRequests()       override final;
+	void            PollConnectionChanges()    override final;
+    void            HandleClientInfoRequest(ClientInfoRequest*, RequestInfo) override final;
+    void            HandleMessageRequest(MessageRequest*, RequestInfo)       override final;
+    void            OnSteamNetConnectionStatusChanged(ConnectionInfo*)       override final;
+    static void     SteamNetConnectionStatusChangedCallback(ConnectionInfo*);
     HSteamNetConnection         m_hConnection;
     std::unique_ptr<ClientInfo> m_upClientInfo;
     static ChatClient*          s_pCallbackInstance;

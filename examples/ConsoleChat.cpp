@@ -9,10 +9,16 @@
 #include "NickSV/Chat/ChatClient.h"
 #include "NickSV/Chat/ChatServer.h"
 
+
+#include "NickSV/Tools/ValueLock.h"
+
+
 #include <string>
 #include <thread>
 #include <chrono>
 #include <iostream>
+#include <random>
+
 
 using namespace NickSV::Chat;
 
@@ -26,6 +32,7 @@ class ExampleServer : public ChatServer
         if(pcRer->GetType() == ERequestType::Message)
         {
             auto pcmReq = static_cast<const MessageRequest*>(pcRer);
+			#undef GetMessage
             std::wcout << pcmReq->GetMessage()->GetText() << std::endl;
         }
     }

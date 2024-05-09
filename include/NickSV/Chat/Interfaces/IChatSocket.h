@@ -22,7 +22,7 @@ public:
                    virtual    void Wait()        = 0;
     //Queue request for sending
     CHAT_NODISCARD virtual EResult QueueRequest( Request*, RequestInfo) = 0;
-    CHAT_NODISCARD virtual EResult HandleRequest(Request*, RequestInfo) = 0;
+                   virtual    void HandleRequest(Request*, RequestInfo) = 0;
                    virtual         ~IChatSocket() = default;
 };
 

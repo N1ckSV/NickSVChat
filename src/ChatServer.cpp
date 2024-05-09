@@ -10,8 +10,6 @@
 #include "NickSV/Chat/Serializers/ClientInfoRequestSerializer.h"
 #include "NickSV/Chat/Serializers/MessageRequestSerializer.h"
 
-#include "NickSV/Chat/Parsers/RequestParser.h"
-
 #include <iostream>
 
 
@@ -37,7 +35,8 @@ EResult ChatServer::Run(const ChatIPAddr &serverAddr)
 
     m_pInterface = SteamNetworkingSockets();
     SteamNetworkingConfigValue_t opt;
-	opt.SetPtr(k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)SteamNetConnectionStatusChangedCallback);
+	opt.SetPtr(k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged,
+		reinterpret_cast<void*>(SteamNetConnectionStatusChangedCallback));
 	m_hListenSock = m_pInterface->CreateListenSocketIP(serverAddr, 1, &opt);
 	if(m_hListenSock == k_HSteamListenSocket_Invalid){
 		GameNetworkingSockets_Kill();
@@ -72,22 +71,28 @@ ChatServer::~ChatServer() {}
 void ChatServer::ConnectionThreadFunction()
 {
     ChatSocket::ConnectionThreadFunction();
-	for (auto& it: m_mapClients)
-	{
-		// Send them one more goodbye message.  Note that we also have the
-		// connection close reason as a place to send final data.  However,
-		// that's usually best left for more diagnostic/debug text not actual
-		// protocol strings.
+	{	// lock_guard scope begin
+		//LOCK_GUARD(m_Mutex.clientInfoMutex);
+		for (auto& it: m_mapClients)
+		{
+			// Send them one more goodbye message.  Note that we also have the
+			// connection close reason as a place to send final data.  However,
+			// that's usually best left for more diagnostic/debug text not actual
+			// protocol strings.
 
-		//FIXME make Request here
-		std::string text = "Server is shutting down.  Goodbye.";
-		SendStringToConnection(it.first, &text);
+			//FIXME make send Request here
+			std::string text = "Server is shutting down.  Goodbye.";
+			SendStringToConnection(it.first, &text);
 
-		// Close the connection.  We use "linger mode" to ask SteamNetworkingSockets
-		// to flush this out and close gracefully.
-		m_pInterface->CloseConnection(it.first, 0, "Server Shutdown", true);
-	}
-	m_mapClients.clear();
+			// Close the connection.  We use "linger mode" to ask SteamNetworkingSockets
+			// to flush this out and close gracefully.
+			m_pInterface->CloseConnection(it.first, 0, "Server Shutdown", true);
+			
+			// FIXME add better cleaning here 
+		}
+		m_mapClients.clear();
+		m_mapConnections.clear();
+	}	// lock_guard scope end
 
 	m_pInterface->CloseListenSocket(m_hListenSock);
 	m_hListenSock = k_HSteamListenSocket_Invalid;
@@ -98,72 +103,96 @@ void ChatServer::ConnectionThreadFunction()
 }
 
 
-void ChatServer::RequestThreadFunction()
+void ChatServer::HandleClientInfoRequest(ClientInfoRequest* pClientInfoRequest, RequestInfo rInfo)
 {
-	RequestInfo rInfo;
-	std::string strReq; 
-	Parser<Request> parser;
-	EResult result;
-    while(!m_bGoingExit)
-    {
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		if(m_handleRequestsQueue.empty())
-			continue;
-		
-		//FIXME mb mutex locking here should be for each pop
-		std::lock_guard<std::mutex> lock(m_handleRequestMutex);
-		while(!m_handleRequestsQueue.empty())
-		{
-			strReq = std::move(m_handleRequestsQueue.front().first);
-			rInfo = m_handleRequestsQueue.front().second;
-			parser.FromString(strReq);
-			result = HandleRequest(parser.GetObject().get(), rInfo);
-			(void)result; //FIXME
-			m_handleRequestsQueue.pop();
-		}
-    }
+	EResult result = OnPreHandleClientInfoRequest(pClientInfoRequest, rInfo);
+	if(result != EResult::Success){
+		OnHandleClientInfoRequest(pClientInfoRequest, rInfo, result);
+		return;}
+	
+	if(ValidateClientInfo(pClientInfoRequest->GetClientInfo().get()))
+	{
+		pClientInfoRequest->GetClientInfo()->GetState() = EState::Active;
+		pClientInfoRequest->GetClientInfo()->GetUserID() = rInfo.id;
+		GetClientInfo(rInfo.id) = *pClientInfoRequest->GetClientInfo();
+	}
+	else
+		result = EResult::InvalidRequest;
+
+	OnHandleClientInfoRequest(pClientInfoRequest, rInfo, result);
 }
+
+void ChatServer::HandleMessageRequest(MessageRequest* pMessageRequest, RequestInfo rInfo)
+{
+	EResult result = OnPreHandleMessageRequest(pMessageRequest, rInfo);
+	if(result != EResult::Success){
+		OnHandleMessageRequest(pMessageRequest, rInfo, result);
+		return;}
+
+	//Dunno what to add here for now TODO FIXME
+
+	OnHandleMessageRequest(pMessageRequest, rInfo, result);
+}
+
 
 void ChatServer::PollIncomingRequests()
 {
 	while (!m_bGoingExit)
 	{
 		ISteamNetworkingMessage *pIncomingMsg = nullptr;
-		int numMsgs = m_pInterface->ReceiveMessagesOnPollGroup(m_hPollGroup, &pIncomingMsg, 1);
-		if (numMsgs == 0)
-			break;
-
-		if (numMsgs < 0){
-			FatalError("ISteamNetworkingSockets::ReceiveMessagesOnPollGroup returned error code");
-			break;}
-
-		auto itClient = m_mapClients.find(pIncomingMsg->m_conn);
-		CHAT_ASSERT(itClient != m_mapClients.end(), 
-			"Received request, but ChatServer has no info about connection");
+		ClientInfo * pClientInfo = nullptr;
+		std::pair<std::string, RequestInfo> para;
+    	//cppcheck-suppress variableScope
 		std::string strReq;
-		strReq.assign(static_cast<const char*>(pIncomingMsg->m_pData), pIncomingMsg->m_cbSize);
-		size_t mesSize = (size_t)pIncomingMsg->m_cbSize;
-		pIncomingMsg->Release();
+		{	// unique_lock scope begin
+			std::unique_lock<std::mutex> u_lock(m_Mutexes.clientInfoMutex);
+			int numMsgs = m_pInterface->ReceiveMessagesOnPollGroup(m_hPollGroup, &pIncomingMsg, 1);
+			if (numMsgs == 0)
+				break;
 
-		if(mesSize < sizeof(ERequestType)){
-			OnBadIncomingRequest(std::move(strReq), itClient->second->GetUserID(), EResult::InvalidRequest);
-			continue;}
+			if (numMsgs < 0){
+				u_lock.unlock();
+				FatalError("ISteamNetworkingSockets::ReceiveMessagesOnPollGroup returned error code");
+				break;}
 
-		if (itClient->second->GetState() == EState::Unauthorized){
-			Transfer<ERequestType> type;
-			std::copy(strReq.begin(), strReq.begin() + sizeof(ERequestType), type.CharArr);
-			if(type.Base != ERequestType::ClientInfo){
-				OnBadIncomingRequest(std::move(strReq), itClient->second->GetUserID(), EResult::InvalidConnection);
-				continue;}}
-		
-		if(m_handleRequestsQueue.size() >= Constant::MaxSendRequestsQueueSize){
-			OnBadIncomingRequest(std::move(strReq), itClient->second->GetUserID(), EResult::Overflow);
-			continue;}
+			auto itClient = m_mapClients.find(pIncomingMsg->m_conn);
+			CHAT_ASSERT(itClient != m_mapClients.end(), 
+				"Received request, but ChatServer has no info about connection");
+			pClientInfo = itClient->second.get();
+		}	// unique_lock scope end
+		CHAT_ASSERT(pClientInfo, "pClientInfo must not be nullptr");
+		{	// ValueLockGuard scope begin
+			//VALUE_LOCK_GUARD(m_UserIDLock, pClientInfo->GetUserID());
+			strReq.assign(static_cast<const char*>(pIncomingMsg->m_pData), pIncomingMsg->m_cbSize);
+			size_t mesSize = (size_t)pIncomingMsg->m_cbSize;
+			pIncomingMsg->Release();
 
-		std::pair<std::string, RequestInfo> para(std::move(strReq), {itClient->second->GetUserID(), 0});
-		m_handleRequestMutex.lock();
+			///
+			/// FIXME unnecessary strReq assign if OnBadIncomingRequest not needed here for api user,
+			/// so better think about config thingy
+			///
+			if(mesSize < sizeof(ERequestType)){
+				OnBadIncomingRequest(std::move(strReq), pClientInfo->GetUserID(), EResult::InvalidRequest);
+				continue;}
+
+			if (pClientInfo->GetState() == EState::Unauthorized){
+				Transfer<ERequestType> type;
+				std::copy(strReq.begin(), strReq.begin() + sizeof(ERequestType), type.CharArr);
+				if(type.Base != ERequestType::ClientInfo){
+					OnBadIncomingRequest(std::move(strReq), pClientInfo->GetUserID(), EResult::InvalidConnection);
+					continue;}}
+
+			if(m_handleRequestsQueue.size() >= Constant::MaxSendRequestsQueueSize){
+				OnBadIncomingRequest(std::move(strReq), pClientInfo->GetUserID(), EResult::Overflow);
+				continue;}
+			
+			para.first = std::move(strReq);
+			para.second = { pClientInfo->GetUserID(), 0 };
+		}	// ValueLockGuard scope end
+
+		m_Mutexes.handleRequestMutex.lock();
 		m_handleRequestsQueue.push(std::move(para));
-		m_handleRequestMutex.unlock();
+		m_Mutexes.handleRequestMutex.unlock();
 	}
 }
 
@@ -171,41 +200,66 @@ void ChatServer::PollIncomingRequests()
 
 void ChatServer::PollQueuedRequests()
 {
-	while (!m_bGoingExit && !m_sendRequestsQueue.empty())
+	while (!m_bGoingExit && !m_sendRequestsQueue.empty()) //FIXME add max iters
 	{
-		m_sendRequestMutex.lock();
-		std::string strRequest(std::move(m_sendRequestsQueue.front().first));
-		RequestInfo rInfo = m_sendRequestsQueue.front().second;
-		m_sendRequestsQueue.pop();
-		m_sendRequestMutex.unlock();
-		auto iter = m_mapConnections.find(rInfo.id);
-		if((rInfo.sendFlags & SF_SEND_TO_ONE) > 0)
-		{
-			//SEND REQUEST TO RequestInfo::id
-			if(iter == m_mapConnections.end()) //Not sending request to deleted client
-				continue; // maybe should put OnErrorSendingRequest here
-			CHAT_ASSERT(iter->second != 0, "ID used to send the request is in Reserved state (ID is not yet associated with a client)");
-			auto result = SendStringToConnection(iter->second, &strRequest);
-			CHAT_ASSERT(result != EResult::InvalidParam, "The request is too big or connection is invalid");
-			CHAT_EXPECT(result == EResult::Success, "Request sending not succeeded");
-			if(result != EResult::Success)
-				OnErrorSendingRequest(std::move(strRequest), rInfo, result);
-			continue;
-		}
-		//SEND REQUEST TO EVERYONE EXCEPT RequestInfo::id
-		HSteamNetConnection conExcept = (iter != m_mapConnections.end()) ? iter->second : 0;
-		std::forward_list<std::pair<UserID_t, EResult>> list;
-		for (auto &client: m_mapClients)
-		{
-			if (client.first != conExcept)
+		std::string strRequest;
+		RequestInfo rInfo;
+		{	//lock guard scope begin
+			LOCK_GUARD(m_Mutexes.sendRequestMutex);
+			if(m_sendRequestsQueue.empty())
+				break;
+			strRequest = std::move(m_sendRequestsQueue.front().first);
+			rInfo = m_sendRequestsQueue.front().second;
+			m_sendRequestsQueue.pop();
+		}	//lock guard scope end
+
+		bool sendToSingleClient = rInfo.sendFlags & SF_SEND_TO_ONE;
+		CHAT_ASSERT(rInfo.id || !sendToSingleClient, 
+			"Tried to send Request to a single client but RequestInfo is given with a null user id");
+
+		HSteamNetConnection reqCon = 0;
+		bool clientFound = false;
+		
+		{	// ValueLockGuard scope begin
+			//VALUE_LOCK_GUARD(m_UserIDLock, rInfo.id);
+			{	//lock guard scope begin
+				LOCK_GUARD(m_Mutexes.clientInfoMutex);
+				auto iter = m_mapConnections.find(rInfo.id);
+				clientFound = (iter != m_mapConnections.end());
+				reqCon = (clientFound ? iter->second : 0);
+			}	//lock guard scope end
+			if(sendToSingleClient)
 			{
-				auto result = SendStringToConnection(client.first, &strRequest);
+				//SEND REQUEST TO RequestInfo::id
+				if(!clientFound) //Not sending request to deleted client
+					continue; // maybe should put OnErrorSendingRequest here
+				CHAT_ASSERT(reqCon != 0, "ID used to send the request is in Reserved state (ID is not yet associated with a client)");
+				auto result = SendStringToConnection(reqCon, &strRequest);
 				CHAT_ASSERT(result != EResult::InvalidParam, "The request is too big or connection is invalid");
+				CHAT_EXPECT(result == EResult::Success, "Request sending not succeeded");
 				if(result != EResult::Success)
-					list.push_front({client.second->GetUserID(), result});
-					
+					OnErrorSendingRequest(std::move(strRequest), rInfo, result);
+				continue;
 			}
-		}
+		}	// ValueLockGuard scope end
+
+		//SEND REQUEST TO EVERYONE EXCEPT RequestInfo::id
+		IDResultList list;
+		
+		{	//lock guard scope begin
+			LOCK_GUARD(m_Mutexes.clientInfoMutex);
+			for (auto &client: m_mapClients)
+			{
+				if (client.first != reqCon)
+				{
+					auto result = SendStringToConnection(client.first, &strRequest);
+					CHAT_ASSERT(result != EResult::InvalidParam, "The request is too big or connection is invalid");
+					if(result != EResult::Success)
+						list.push_front({client.second->GetUserID(), result});
+
+				}
+			}
+		}	//lock guard scope end
 		if(!list.empty())
 			OnErrorSendingRequestToAll(std::move(strRequest), rInfo, std::move(list));
 	}
@@ -241,10 +295,13 @@ EState ChatServer::GetUserIDState(UserID_t id)
 
 EState ChatServer::ReserveUserID(UserID_t id)
 {
-	EState state = GetUserIDState(id);
-	if(state == EState::Free)
-		m_mapConnections[id] = 0;
-	return state;
+	{
+		LOCK_GUARD(m_Mutexes.clientInfoMutex);
+		EState state = GetUserIDState(id);
+		if(state == EState::Free)
+			m_mapConnections[id] = 0;
+		return state;
+	}
 }
 
 
@@ -262,6 +319,10 @@ EResult ChatServer::OnPreAcceptClient(ConnectionInfo*) { return EResult::Success
 void    ChatServer::OnAcceptClient( ConnectionInfo *, UserID_t, EResult) {};
 void    ChatServer::OnBadIncomingRequest(std::string, UserID_t, EResult) {};
 void 	ChatServer::OnErrorSendingRequestToAll(std::string, RequestInfo, std::forward_list<std::pair<UserID_t, EResult>>) {};
+
+
+void	ChatServer::LockClient(UserID_t id) { m_UserIDLock.Lock(id); }
+void	ChatServer::UnlockClient(UserID_t id) { m_UserIDLock.Unlock(id); }
 
 EResult ChatServer::AcceptClient(ConnectionInfo *pInfo)
 {
@@ -293,6 +354,7 @@ EResult ChatServer::RemoveClient(HSteamNetConnection conn)
 	m_mapClients.erase(iter);
 	return EResult::Success;
 }
+
 
 void ChatServer::OnSteamNetConnectionStatusChanged(ConnectionInfo *pInfo)
 {

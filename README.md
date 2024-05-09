@@ -1,3 +1,6 @@
+## Chat library ##
+
+N1ckSV/Chat is a simple network library that represents Chat Server's and Client's sockets and based on.
 
 
 1) including GameNetworkingSockets as submodule seems bad:

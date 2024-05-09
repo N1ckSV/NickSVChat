@@ -1,0 +1,31 @@
+Requirements for MyChatApp
+
+
+
+
+ChatAPI ***
+
+Chat GUI ***
+
+Console Chat Client
+{
+	//Handles chat
+
+	#include ChatAPI
+
+	1. 
+}
+
+Chat Server
+{
+	//Background process + Console
+	
+	#include ChatAPI
+
+	1. Console ***
+
+	2. DataBase for msgs ***
+
+	3. ***
+	
+}
