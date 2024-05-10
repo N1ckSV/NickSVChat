@@ -28,7 +28,7 @@ endif()
 #endif()
 
 target_include_directories(NickSVChatTest
-    PUBLIC "${PROJECT_SOURCE_DIR}/include"
+    PUBLIC NickSVChat_INCLUDE_DIRS
     )
 
 if(WIN32)

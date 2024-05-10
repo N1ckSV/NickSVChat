@@ -98,10 +98,10 @@
         "c++11"
     ],
     "c-cpp-flylint.excludeFromWorkspacePaths": [
-        "include/steam"
+        "external"
     ],
     "C_Cpp.files.exclude": {
-        "include/steam/**": true,
+        "external/**": true,
         "**/.vscode": true,
         "**/.vs": true
     }
