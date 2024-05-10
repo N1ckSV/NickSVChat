@@ -17,6 +17,10 @@ find_package(GameNetworkingSockets REQUIRED
     HINTS ${GameNetworkingSockets_DIR_HINTS} 
 )
 set(NickSVChat_INCLUDE_DIR include)
+set(NickSVChat_INCLUDE_DIRS
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/GameNetworkingSockets/include/"
+    )
 get_target_property(GameNetworkingSockets_INCLUDEDIR GameNetworkingSockets::GameNetworkingSockets INTERFACE_INCLUDE_DIRECTORIES)
 message(STATUS "GameNetworkingSockets_INCLUDEDIR: ${GameNetworkingSockets_INCLUDEDIR}")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -93,7 +97,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 #-----------------------------------------------
 #CONFIGURING LIBRARY
 #-----------------------------------------------
-configure_file(cmake/ChatConfig.h.in "${CMAKE_CURRENT_SOURCE_DIR}/include/NickSV/Chat/ChatConfig.h")
+configure_file(cmake/ChatConfig.h.in include/NickSV/Chat/ChatConfig.h)
 add_library(${PROJECT_NAME} 
     src/ChatSocket.cpp
     src/ChatClient.cpp
@@ -106,7 +110,7 @@ add_library(${PROJECT_NAME}
     src/Utils.cpp
     )
 target_include_directories(NickSVChat PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>"
+    "$<BUILD_INTERFACE:${NickSVChat_INCLUDE_DIRS}>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 target_link_libraries(${PROJECT_NAME} 
@@ -153,13 +157,13 @@ install(FILES
 	DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NickSVChat"
 	)
 install(
-    DIRECTORY   "${NickSVChat_INCLUDE_DIR}/"
+    DIRECTORY   ${NickSVChat_INCLUDE_DIRS}
     DESTINATION "${CMAKE_INSTALL_FULL_INCLUDEDIR}/"
 )
 if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
-    add_subdirectory("include/NickSV/Tools/tests")
+    add_subdirectory(include/NickSV/Tools/tests)
 endif()
 
 if(BUILD_EXAMPLES)
