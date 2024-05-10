@@ -1,6 +1,6 @@
 ## N1ckSVChat library ##
 
-N1ckSVChat is a simple network library that represents Chat Server's and Client's sockets and based on GameNetworkingSockets.
+N1ckSVChat is a simple network library that represents Chat Server and Client sockets and based on GameNetworkingSockets.
 
 WARNINGS:
 1) including GameNetworkingSockets as submodule seems bad:
