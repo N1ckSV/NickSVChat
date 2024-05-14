@@ -9,7 +9,7 @@
                 "CMAKE_CXX_COMPILER": "g++.exe",
                 "CMAKE_C_COMPILER": "gcc.exe",
                 "CMAKE_MAKE_PROGRAM": "mingw32-make.exe",
-                "BUILD_EXAMPLES": "ON"
+                "BUILD_EXAMPLES": "ON"  //, "CHARACTER_TYPE": "USE_CHAR16"
             },
             "condition": {
                 "type": "equals",

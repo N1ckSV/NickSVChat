@@ -1,20 +1,20 @@
 
 -make vcpkg
 
+-CPack
+
 -MAYBE ChatServer and ChatClient should be singleton
 
 -add linux support (https://metamod-p.sourceforge.net/cross-compiling.on.windows.for.linux.html)
 
 -DONT FORGET TO COMMENT EVERYTHING
 
--FIX FIXME ISSUES 
+-explore more GNS stuff (identity, authinfication, SteamNetConnectionInfo_t)
 
--CPack
+-FIX FIXME ISSUES 
 
 -add msvc dll support (dlliexport/import stuff)
 
-3) mb change const Request* and Request* to Request& (mb bad converting)
+-add doxygen comments
 
-2) explore more GNS stuff (identity, authinfication, SteamNetConnectionInfo_t)
-
-1) complete Handle<known request> functions
+1) implement entity that can signal about request being handled/sended

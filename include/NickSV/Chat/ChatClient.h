@@ -43,8 +43,8 @@ public:
     // and m_handleRequestsQueue overflow by yourself.
     // 
     // NOTE: OnBadIncomingRequest() does not supposed to be overrided
-    // to handle API user added requests with other ERequestType. 
-    // We don't treat API user defined requests as BAD. Because 
+    // to handle library user added requests with other ERequestType. 
+    // We don't treat library user defined requests as BAD. Because 
     // OnBadIncomingRequest() is called with result == InvalidRequest 
     // only if incoming data size is less than size of ERequestType,
     // so use OnPreHandleRequest() or OnHandleRequest() for this.
@@ -66,7 +66,7 @@ private:
     static void     SteamNetConnectionStatusChangedCallback(ConnectionInfo*);
     HSteamNetConnection         m_hConnection;
     std::unique_ptr<ClientInfo> m_upClientInfo;
-    static ChatClient*          s_pCallbackInstance;
+    static ChatClient*          s_pCallbackClientInstance;
 };
 
 

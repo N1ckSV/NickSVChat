@@ -90,7 +90,7 @@ bool ChatSocket::ValidateClientInfo(const ClientInfo* pClientInfo)
 	if(!OnValidateClientInfo(pClientInfo))
 		return false;
 	
-	bool result = pClientInfo->GetUserID() >= Constant::ApiReservedUserIDs;
+	bool result = pClientInfo->GetUserID() >= Constant::LibReservedUserIDs;
 	return result;
 }
 

@@ -24,7 +24,6 @@
 #include "NickSV/Chat/ChatServer.h"
 
 #include "NickSV/Tools/ValueLock.h"
-
 #include "NickSV/Tools/Testing.h"
 
 #include <type_traits>
@@ -37,6 +36,7 @@
 #endif
 
 
+using namespace NickSV;
 using namespace NickSV::Chat;
 
 size_t client_info_test()
@@ -76,7 +76,7 @@ size_t client_info_serializers_and_parsers_test()
 template<typename CharT>
 size_t basic_serializers_and_parsers_test()
 {
-    std::basic_string<CharT> text = basic_string_cast<CharT>("Hello there, I am a test text!");
+    std::basic_string<CharT> text = Tools::basic_string_cast<CharT>("Hello there, I am a test text!");
     std::string str = Serializer<std::basic_string<CharT>>(&text).ToString();
     std::basic_string<CharT> text2 = MakeFromString<std::basic_string<CharT>>(str);
     TEST_CHECK_STAGE(text == text2);
@@ -85,7 +85,7 @@ size_t basic_serializers_and_parsers_test()
     text2 = MakeFromString<std::basic_string<CharT>>(str);
     TEST_CHECK_STAGE(text2 == std::basic_string<CharT>());
 
-    text = basic_string_cast<CharT>("Hello there, I am a test message!");
+    text = Tools::basic_string_cast<CharT>("Hello there, I am a test message!");
     const BasicMessage<CharT> BasicMessage1(text);
     BasicMessage<CharT> BasicMessage2;
     str = BasicMessage1.GetSerializer()->ToString();
@@ -122,7 +122,7 @@ size_t requests_serializers_and_parsers_test()
     iter = Parser<Request>().FromString(str);
     TEST_CHECK_STAGE(iter == str.begin());
 
-    auto text = basic_string_cast<CHAT_CHAR>("Hello there, I am a test nickname!");
+    auto text = Tools::basic_string_cast<CHAT_CHAR>("Hello there, I am a test nickname!");
     const Message Message1(text);
           Message Message2;
     const MessageRequest messageRequest;
@@ -189,20 +189,24 @@ class TestChatServerException : public std::exception
 
 class TestChatServer : public ChatServer
 {
-    void OnHandleRequest(const Request* pcR, RequestInfo rInfo, NickSV::Chat::EResult outsideResult) override
+    void OnHandleMessageRequest(const MessageRequest* pcRer, RequestInfo reqInfo,  NickSV::Chat::EResult outsideResult) override
     {
-        if(pcR->GetType() == ERequestType::Message)
-            g_Message = *static_cast<const MessageRequest*>(pcR)->GetMessage();
+        if(outsideResult != NickSV::Chat::EResult::Success)
+            return;
+
+        g_Message = *pcRer->GetMessage();
     }
-    void OnBadIncomingRequest(std::string str, UserID_t, NickSV::Chat::EResult outsideResult) override
-    {
-        throw TestChatServerException();
-    }
+
     // If we do not require the client to send their information,
     // set client's state as Active to allow message exchange
-    void OnAcceptClient(ConnectionInfo* pInfo, UserID_t id, NickSV::Chat::EResult res)
+	void OnAcceptClient(ConnectionInfo* pInfo, ClientInfo* pClientInfo, NickSV::Chat::EResult res) override
     {
-        GetClientInfo(id).GetState() = EState::Active;
+        pClientInfo->GetState() = EState::Active;
+    }
+
+	void OnBadIncomingRequest(std::string strReq, NotNull<ClientInfo*> pClientInfo, NickSV::Chat::EResult res) override
+    {
+        throw TestChatServerException();
     }
 };
 
@@ -252,16 +256,16 @@ size_t client_server_data_exchange_test()
 
 int main(int arc, const char ** argv)
 {
-    static_assert(is_char<char>::value);
-    static_assert(is_char<wchar_t>::value);
-    static_assert(is_char<char16_t>::value);
-    static_assert(is_char<char32_t>::value);
+    static_assert(Tools::is_char<char>::value);
+    static_assert(Tools::is_char<wchar_t>::value);
+    static_assert(Tools::is_char<char16_t>::value);
+    static_assert(Tools::is_char<char32_t>::value);
 
-    static_assert(is_char<const char>::value);
-    static_assert(is_char<volatile wchar_t>::value);
-    static_assert(is_char<const volatile char16_t>::value);
+    static_assert(Tools::is_char<const char>::value);
+    static_assert(Tools::is_char<volatile wchar_t>::value);
+    static_assert(Tools::is_char<const volatile char16_t>::value);
 
-    static_assert(!is_char<int>::value);
+    static_assert(!Tools::is_char<int>::value);
 
     TEST_VERIFY(client_info_test());
     TEST_VERIFY(client_info_serializers_and_parsers_test());
@@ -279,7 +283,7 @@ int main(int arc, const char ** argv)
 
     TEST_VERIFY(client_server_data_exchange_test());
 
-    std::cout << '\n' << NickSV::Testing::TestsFailed << " subtests failed" << std::endl;
+    std::cout << '\n' << Tools::Testing::TestsFailed << " subtests failed" << std::endl;
     
-    return NickSV::Testing::TestsFailed;
+    return Tools::Testing::TestsFailed;
 }

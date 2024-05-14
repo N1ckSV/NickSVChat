@@ -4,9 +4,11 @@
 #pragma once
 
 
-#include "NickSV/Chat/Defines.h"
+#include "NickSV/Chat/Definitions.h"
 #include "NickSV/Chat/Utils.h"
 #include "NickSV/Chat/Parsers/ClientInfoParser.h"
+
+#include "NickSV/Tools/TypeTraits.h"
 
 
 
@@ -38,15 +40,15 @@ inline std::string::const_iterator Parser<ClientInfo>::FromString(const std::str
 
 std::string::const_iterator Parser<ClientInfo>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
-    constexpr size_t atleastSize = sizeof(APIVersionType) + sizeof(EState) + sizeof(UserIDType);
-    type_integrity_assert<ClientInfo, atleastSize + 8>();
+    constexpr size_t atleastSize = sizeof(LibVersionType) + sizeof(EState) + sizeof(UserIDType);
+    Tools::type_integrity_assert<ClientInfo, atleastSize + 8>();
     if(begin + atleastSize > end)
         return begin; //BAD INPUT. Range size has to be atleastSize bytes long
 
-    Transfer<APIVersionType> ver;
-    std::copy(begin, begin + sizeof(APIVersionType), ver.CharArr);
-    auto iter = begin + sizeof(APIVersionType);
-    GetObject()->GetAPIVer() = ver.Base;
+    Transfer<LibVersionType> ver;
+    std::copy(begin, begin + sizeof(LibVersionType), ver.CharArr);
+    auto iter = begin + sizeof(LibVersionType);
+    GetObject()->GetLibVer() = ver.Base;
     Transfer<EState> state;
     std::copy(iter, iter + sizeof(EState), state.CharArr);
     iter += sizeof(EState);

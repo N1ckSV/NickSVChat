@@ -16,8 +16,19 @@
 
 #include "NickSV/Chat/Utils.h"
 
+#include "NickSV/Tools/Memory.h"
+
 
 namespace NickSV::Chat {
+
+
+
+
+template<typename T>
+using NotNull = Tools::NotNull<T>;
+
+
+
 
 class ChatSocket: public IChatSocket
 {
@@ -42,7 +53,7 @@ public:
     EResult QueueRequest( Request*, RequestInfo)             override final;
     void    HandleRequest(Request*, RequestInfo)             override final;
 
-    using RequestsQueue = std::queue<std::pair<std::string, RequestInfo>>;
+    using RequestsQueue_t = std::queue<std::pair<std::string, RequestInfo>>;
 
     virtual EResult OnPreRun(const ChatIPAddr &serverAddr, ChatErrorMsg&);
     virtual EResult OnPreQueueRequest( Request*, RequestInfo&);
@@ -59,18 +70,18 @@ public:
     virtual void    OnHandleMessageRequest(const MessageRequest*, RequestInfo, EResult outsideResult);
 	// Parameter ConnectionInfo* pInfo is alias of GNS type
     // SteamNetConnectionStatusChangedCallback_t
-	// and api user needs to include GNS headers to work 
+	// and library user needs to include GNS headers to work 
 	// with overrided OnConnectionStatusChanged
     virtual void    OnConnectionStatusChanged(ConnectionInfo *pInfo, EResult);
 
     // Function name says everything.
     //
-    // ATTENTION:
-    // This function is CLIENT STATE THREAD PROTECTED
-    // (id field of given RequestInfo is locked, 
-    // so no other threads should modify ClientInfo binded to it
-    // and you do not want to lock this RequestInfo's id again to avoid DEADLOCK).
-    virtual void    OnErrorSendingRequest(std::string, RequestInfo, EResult);
+    // ATTENTION for ChatServer socket:
+    //     This function is CLIENT STATE THREAD PROTECTED
+    //     (id field of given RequestInfo is locked, 
+    //     so no other threads should modify ClientInfo binded to it
+    //     and you do not want to lock this RequestInfo's id again to avoid DEADLOCK).
+    virtual void    OnErrorSendingRequest(std::string msg, RequestInfo, EResult);
     virtual void    OnFatalError(const std::string& errorMsg);
     // Fatal error means socket going to shut down. FIXME add some error codes
             void    FatalError(const std::string& errorMsg = "Unknown Error");
@@ -100,13 +111,12 @@ protected:
     //cppcheck-suppress unusedStructMember
     ISteamNetworkingSockets* m_pInterface;
     //cppcheck-suppress unusedStructMember
-    RequestsQueue            m_sendRequestsQueue;
-    RequestsQueue            m_handleRequestsQueue;
+    RequestsQueue_t          m_sendRequestsQueue;
+    RequestsQueue_t          m_handleRequestsQueue;
     struct 
     {
         std::mutex           sendRequestMutex;
         std::mutex           handleRequestMutex;
-        std::mutex           clientInfoMutex;
     } m_Mutexes;
 };
 

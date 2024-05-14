@@ -6,7 +6,7 @@
 
 
 
-#include "NickSV/Chat/Defines.h"
+#include "NickSV/Chat/Definitions.h"
 #include "NickSV/Chat/Utils.h"
 
 #include "NickSV/Chat/Parsers/BStringParser.h"
@@ -43,25 +43,21 @@ std::string::const_iterator Parser<std::basic_string<CharT>>::FromString(std::st
     if(begin + sizeof(size_t) > end)
         return begin; //BAD INPUT. Range size has to be at least sizeof(size_t) bytes long
 
-    union
-    {
-        size_t Size = 0;
-        char CharArr[sizeof(size_t)];
-    } textSize;
+    Transfer<size_t> textSize;
     std::copy(begin, begin + sizeof(size_t), textSize.CharArr);
     auto iter = begin + sizeof(size_t);
-    if(iter + sizeof(CharType) * textSize.Size > end)
-        return begin; //BAD INPUT. Range size has to be at least sizeof(APIVersionType) + sizeof(size_t) bytes long
+    if(iter + sizeof(CharType) * textSize.Base > end)
+        return begin; //BAD INPUT. Range size has to be at least sizeof(LibVersionType) + sizeof(size_t) bytes long
     
     union 
     {
         CharType* charType;
         char* Char;
     } pStr;
-    GetObject()->resize(textSize.Size); 
+    GetObject()->resize(textSize.Base); 
     pStr.charType = GetObject()->data();
-    std::copy(iter, iter + sizeof(CharType) * textSize.Size, pStr.Char);
-    iter += sizeof(CharType) * textSize.Size;
+    std::copy(iter, iter + sizeof(CharType) * textSize.Base, pStr.Char);
+    iter += sizeof(CharType) * textSize.Base;
     return iter;
 }
 

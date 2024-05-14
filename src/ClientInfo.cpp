@@ -11,7 +11,7 @@ namespace NickSV::Chat {
 
 
 /*
-API CLIENT INFO.
+CLIENT INFO.
 App's additional information should be inheritated from this struct
 */
 
@@ -24,15 +24,15 @@ m_nUserID(id)
 ClientInfo::UserIDType& ClientInfo::GetUserID() { return m_nUserID; }
 ClientInfo::UserIDType ClientInfo::GetUserID() const { return m_nUserID; }
 
-ClientInfo::APIVersionType& ClientInfo::GetAPIVer() { return m_nAPIVer; }
-ClientInfo::APIVersionType ClientInfo::GetAPIVer() const { return m_nAPIVer; }
+ClientInfo::LibVersionType& ClientInfo::GetLibVer() { return m_nLibVer; }
+ClientInfo::LibVersionType ClientInfo::GetLibVer() const { return m_nLibVer; }
 
 EState& ClientInfo::GetState() { return m_eState; }
 EState ClientInfo::GetState() const { return m_eState; }
 
 bool ClientInfo::operator==(const ClientInfo& other) const
 { 
-    return m_nAPIVer == other.m_nAPIVer &&
+    return m_nLibVer == other.m_nLibVer &&
            m_nUserID == other.m_nUserID &&
            m_eState  == other.m_eState;
 }

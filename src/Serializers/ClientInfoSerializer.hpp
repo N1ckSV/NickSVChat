@@ -4,7 +4,7 @@
 #pragma once
 
 
-#include "NickSV/Chat/Defines.h"
+#include "NickSV/Chat/Definitions.h"
 #include "NickSV/Chat/Utils.h"
 #include "NickSV/Chat/Serializers/BStringSerializer.h"
 #include "NickSV/Chat/Serializers/ClientInfoSerializer.h"
@@ -34,7 +34,7 @@ inline const ClientInfo* const Serializer<ClientInfo>::GetObject() const
 inline size_t Serializer<ClientInfo>::GetSize() const
 {
     size_t size = 
-      sizeof(APIVersionType) +
+      sizeof(LibVersionType) +
       sizeof(EState) +
       sizeof(UserIDType); 
     return size + OnGetSize(size);
@@ -53,9 +53,9 @@ std::string Serializer<ClientInfo>::ToString() const
 std::string::iterator Serializer<ClientInfo>::ToString(std::string::iterator begin, std::string::iterator end) const
 {
     CHAT_ASSERT(end >= begin + GetSize(), invalid_range_size_ERROR_MESSAGE);
-    Transfer<APIVersionType> ver;
-    ver.Base = GetObject()->GetAPIVer();
-    auto iter = std::copy(ver.CharArr, ver.CharArr + sizeof(APIVersionType), begin);
+    Transfer<LibVersionType> ver;
+    ver.Base = GetObject()->GetLibVer();
+    auto iter = std::copy(ver.CharArr, ver.CharArr + sizeof(LibVersionType), begin);
     Transfer<EState> state;
     state.Base = GetObject()->GetState();
     iter = std::copy(state.CharArr, state.CharArr + sizeof(EState), iter);

@@ -20,7 +20,7 @@ class Parser<ClientInfo> : public IParser
 {
 public:
     using UserIDType = ClientInfo::UserIDType;
-    using APIVersionType = ClientInfo::APIVersionType;
+    using LibVersionType = ClientInfo::LibVersionType;
 
     Parser();
     

@@ -7,12 +7,87 @@
 
 #include <cstdint>
 
-#include "NickSV/Chat/Defines.h"
+#include "NickSV/Chat/Definitions.h"
 
 #include "steam/steamnetworkingtypes.h"
 
 
 namespace NickSV::Chat {
+
+
+
+/** @property Client
+ * 
+ *  @brief Entity/term that means a client.
+ * 
+ *  The Client is not yet settled whether it means 
+ *  the User or the unit of the running program 
+ *  using the @ref ChatSocket .
+ *  Also Client is not a C++ class (maybe not yet).
+ *  The C++ class descriptor for Client is @ref ClientInfo .
+ * 
+ *  @todo define what Client means
+*/
+
+
+/** @property CLIENT_DEPENDENT_OBJECT
+ * 
+ *  @brief 
+ *  A general object concept/property/term (not C++20 concept).
+ * 
+ *  This property tells that the object is somehow 
+ *  binded to all @ref Client 's or a specific @ref Client
+ *  managed by @ref ChatServer .
+ *  For example:
+ *  @ref ChatServer::m_hPollGroup ;
+ *  @ref ChatServer::m_mapClients ;
+ *  @ref ChatServer::m_mapConnections .
+ *  So when you work with ChatServer's methods
+ *  that are changing any info about @ref Client ,
+ *  these methods are handling CLIENT_DEPENDENT_OBJECTs
+ *  and should be marked with attention note if
+ *  they are @ref CLIENT_STATE_THREAD_PROTECTED property or NOT.
+ *  See @see CLIENT_STATE_THREAD_PROTECTED .
+ * 
+ *  @attention 
+ *  This term is closely related to the CLIENT_STATE_THREAD_PROTECTED property.
+ * 
+*/
+
+
+/** @property CLIENT_STATE_THREAD_PROTECTED
+ * 
+ *  @brief 
+ *  A general object concept/property/term (not C++20 concept).
+ * 
+ *  This property tells that the function or method is
+ *  handling @ref Client safely by locking special
+ *  mutex-like object @ref ChatServer::m_ClientLock of
+ *  class @ref ValueLock
+ *  binded to all @ref Client 's or a specific @ref Client
+ *  managed by @ref ChatServer .
+ *  For example:
+ *  @ref ChatServer::m_hPollGroup ;
+ *  @ref ChatServer::m_mapClients ;
+ *  @ref ChatServer::m_mapConnections .
+ *  So when you work with ChatServer's methods
+ *  that are changing any info about @ref Client ,
+ *  these methods are handling CLIENT_DEPENDENT_OBJECTs
+ *  and should be marked with attention note if
+ *  they are @ref CLIENT_STATE_THREAD_PROTECTED property or NOT.
+ *  See @see CLIENT_STATE_THREAD_PROTECTED .
+ * 
+ *  @attention 
+ *  This term is closely related to the CLIENT_STATE_THREAD_PROTECTED property.
+ * 
+*/
+
+
+
+
+
+
+
 
 enum class EResult
 {
@@ -26,7 +101,9 @@ enum class EResult
     InvalidSize,
     InvalidParam,
     InvalidRequest,
-    InvalidConnection
+    InvalidConnection,
+
+    ClosedConnection
 };
 
 enum class ERequestType : uint32_t
@@ -51,9 +128,9 @@ enum class EState : uint32_t
 struct Constant
 {
     //cppcheck-suppress unusedStructMember
-    static const int MaxSendRequestsQueueSize = 100;
+    constexpr static int MaxSendRequestsQueueSize = 100;
     //cppcheck-suppress unusedStructMember
-    static const int ApiReservedUserIDs = 256;
+    constexpr static int LibReservedUserIDs = 256;
 };
 
 using ChatStatusMsg = char[1024];
@@ -117,7 +194,6 @@ union Transfer {
     Type Base; 
     char CharArr[sizeof(Type)]; 
 };
-
 
 } /*END OF NAMESPACES*/
 

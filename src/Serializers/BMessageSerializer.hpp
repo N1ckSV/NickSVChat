@@ -5,7 +5,7 @@
 
 
 
-#include "NickSV/Chat/Defines.h"
+#include "NickSV/Chat/Definitions.h"
 #include "NickSV/Chat/Utils.h"
 #include "NickSV/Chat/BasicMessage.h"
 #include "NickSV/Chat/Serializers/BStringSerializer.h"

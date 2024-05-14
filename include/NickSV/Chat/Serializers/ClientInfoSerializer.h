@@ -30,7 +30,7 @@ class Serializer<ClientInfo> : public ISerializer
     */
 public:
     using UserIDType = typename ClientInfo::UserIDType;
-    using APIVersionType = typename ClientInfo::APIVersionType;
+    using LibVersionType = typename ClientInfo::LibVersionType;
 
     Serializer() = delete;
     explicit Serializer(ClientInfo const * const);
