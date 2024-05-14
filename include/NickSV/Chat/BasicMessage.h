@@ -11,6 +11,8 @@
 #include "NickSV/Chat/Utils.h"
 #include "NickSV/Chat/Interfaces/ISerializable.h"
 
+#include "NickSV/Tools/TypeTraits.h"
+
 
 namespace NickSV::Chat {
 
@@ -22,7 +24,7 @@ struct BasicMessage : public ISerializable
     Simple data struct.
 
     */
-    static_assert(is_char<CharT>::value, is_char_ERROR_MESSAGE);
+    static_assert(Tools::is_char<CharT>::value, is_char_ERROR_MESSAGE);
     using CharType = CharT;
     using TextType = std::basic_string<CharT>;
     using UserIDType = UserID_t;

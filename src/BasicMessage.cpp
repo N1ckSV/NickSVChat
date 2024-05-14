@@ -11,7 +11,7 @@ namespace NickSV::Chat {
 
 
 /*
-API MESSAGE.
+MESSAGE.
 Struct that user is sending to server
 */
 

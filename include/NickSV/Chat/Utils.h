@@ -4,9 +4,7 @@
 #pragma once
 
 
-#include <type_traits>
 #include <string>
-#include <cstring>
 #include <memory>
 
 #include "NickSV/Chat/Types.h"
@@ -17,41 +15,6 @@
 
 namespace NickSV::Chat {
 
-
-/*
-Character-like type-traits.
-See is_char_ERROR_MESSAGE
-*/
-
-template<typename CharT>
-struct is_char_helper : std::false_type {};
-template<>
-struct is_char_helper<char> : std::true_type {};
-template<>
-struct is_char_helper<wchar_t> : std::true_type {};
-template<>
-struct is_char_helper<char16_t> : std::true_type {};
-template<>
-struct is_char_helper<char32_t> : std::true_type {};
-
-template<typename CharT>
-struct is_char : is_char_helper<typename std::remove_cv<CharT>::type> {};
-
-/*
- Runtime conversation from [char const *] to [std::basic_string<CharT>]
-*/
-template <typename CharT>
-std::basic_string<CharT> basic_string_cast(char const *pcszToConvert)
-{
-    std::basic_string<CharT> bstr;
-    size_t sz = strlen(pcszToConvert);
-    bstr.resize(sz);
-    std::copy(pcszToConvert, pcszToConvert + sz, bstr.begin());
-    return bstr; 
-}
-
-template <>
-std::string inline basic_string_cast<char>(char const * pcszToConvert) { return std::string(pcszToConvert); };
 
 
 /*
@@ -107,66 +70,6 @@ struct ChatIPAddr : public SteamNetworkingIPAddr
 };
 
 
-template<typename T>
-struct SizeOfType {
-    static constexpr size_t value = sizeof(T);
-};
-
-template<typename... Types>
-struct TotalSizeOfTypes {
-    //cppcheck-suppress unusedStructMember
-    static constexpr size_t value = (SizeOfType<Types>::value + ...);
-};
-
-template<>
-struct TotalSizeOfTypes<> {
-    //cppcheck-suppress unusedStructMember
-    static constexpr size_t value = 0;
-};
-
-
-
-template<typename Type, size_t additionalSize, typename... Types>
-constexpr inline void type_integrity_assert()
-{
-#ifndef CHAT_TYPE_INTEGRITY_NO_ASSERTION
-    if(std::is_polymorphic<Type>::value){
-        static_assert(additionalSize,
-            R"(
-                Your Type is polymorphic, so you need to increase additionalSize 
-                by 8 or 4 (__SIZEOF_POINTER__) for each abstract base class that Type has. 
-                Define CHAT_TYPE_INTEGRITY_NO_ASSERTION to dismiss this assertion
-            )");}
-
-    static_assert((TotalSizeOfTypes<Types...>::value + additionalSize == sizeof(Type)),
-        R"(
-            Sensitive code part for Type fields. 
-            Seems like you edited fields of Type and should edit code here as well. 
-            Define CHAT_TYPE_INTEGRITY_NO_ASSERTION to dismiss this assertion"
-        )");
-#endif
-}
-
-template<typename Type, typename... Types>
-constexpr inline void type_integrity_assert()
-{
-#ifndef CHAT_TYPE_INTEGRITY_NO_ASSERTION
-    static_assert(std::is_polymorphic<Type>::value,
-        R"(
-            Your Type is polymorphic, so you need to use 
-            type_integrity_assert<Type, additionalSize, ... Types>() 
-            and increase additionalSize by 8 or 4 (__SIZEOF_POINTER__) 
-            for each abstract base class that Type has. 
-            Define CHAT_TYPE_INTEGRITY_NO_ASSERTION to dismiss this assertion
-        )");
-    static_assert((TotalSizeOfTypes<Types...>::value  == sizeof(Type)),
-        R"(
-            Sensitive code part for Type fields. 
-            Seems like you edited fields of Type and should edit code here as well. 
-            Define CHAT_TYPE_INTEGRITY_NO_ASSERTION to dismiss this assertion"
-        )");
-#endif
-}
 
 } /*END OF NAMESPACES*/
 

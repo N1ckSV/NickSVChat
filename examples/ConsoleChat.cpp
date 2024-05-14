@@ -1,6 +1,7 @@
 
 #include "NickSV/Chat/Types.h"
 #include "NickSV/Chat/Utils.h"
+#include "NickSV/Chat/Parsers/BStringParser.h"
 
 #include "NickSV/Chat/Requests/Request.h"
 #include "NickSV/Chat/Requests/MessageRequest.h"
@@ -18,28 +19,81 @@
 #include <chrono>
 #include <iostream>
 #include <random>
+#include <iomanip>
+#include <cstdio>
 
 
+#ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
+#else // Supposed Linux here
+#endif
+
+
+#undef GetMessage
+
+using namespace NickSV;
 using namespace NickSV::Chat;
+
+struct ExampleChatServerException : std::runtime_error
+{
+    ExampleChatServerException() : std::runtime_error(
+        "ExampleServer got bad request") {}
+};
+
+bool SetConsoleMode()
+{
+#ifdef _WIN32
+	std::flush(std::wcout);
+	return ((_setmode(_fileno(stdin ), _O_U16TEXT) != -1) &&
+	   		(_setmode(_fileno(stdout), _O_U16TEXT) != -1));
+#else // Supposed Linux here
+#endif
+}
+
 
 class ExampleServer : public ChatServer
 {
-    void OnHandleRequest(const Request* pcRer, RequestInfo reqInfo,  NickSV::Chat::EResult outsideResult) override
+    void OnHandleMessageRequest(const MessageRequest* pcRer, RequestInfo reqInfo,  NickSV::Chat::EResult outsideResult) override
     {
         if(outsideResult != NickSV::Chat::EResult::Success)
             return;
 
-        if(pcRer->GetType() == ERequestType::Message)
-        {
-            auto pcmReq = static_cast<const MessageRequest*>(pcRer);
-			#undef GetMessage
-            std::wcout << pcmReq->GetMessage()->GetText() << std::endl;
-        }
+        std::wcout << pcRer->GetMessage()->GetText() << std::endl;
+		std::wcout <<  Tools::basic_string_cast<CHAT_CHAR>("Converted wchar_t: ") << *reinterpret_cast<const uint16_t*>(pcRer->GetMessage()->GetText().c_str()) << std::endl;
+		if(pcRer->GetMessage()->GetText() == Tools::basic_string_cast<CHAT_CHAR>("/exit"))
+			this->CloseSocket();
+	}
+	void OnAcceptClient(ConnectionInfo* pInfo, ClientInfo* pClientInfo, NickSV::Chat::EResult res) override
+    {
+        pClientInfo->GetState() = EState::Active;
+		std::wcout << "\nNew CLient connected with id: " << pClientInfo->GetUserID() << std::endl;
+    }
+	void OnBadIncomingRequest(std::string strReq, NotNull<ClientInfo*> pClientInfo, NickSV::Chat::EResult res) override
+    {
+		union 
+    	{
+    	    CHAT_CHAR* charType;
+    	    char* Char;
+    	} pStr;
+		std::basic_string<CHAT_CHAR> bstring;
+    	bstring.resize(size_t(float(strReq.size())/sizeof(CHAT_CHAR)) + ((strReq.size() % sizeof(CHAT_CHAR)) > 0));
+    	pStr.charType = bstring.data();
+    	std::copy(strReq.begin(), strReq.end(), pStr.Char);
+		std::wcout 	<< Tools::basic_string_cast<CHAT_CHAR>("\nBad request received with Result: ")
+		<< int(res) << Tools::basic_string_cast<CHAT_CHAR>(". Raw request text: \"")
+		<< bstring 	<< Tools::basic_string_cast<CHAT_CHAR>("\"") << std::endl;
+        throw ExampleChatServerException();
     }
 };
 
 int main(int argc, const char *argv[])
 {
+	if(!SetConsoleMode())
+	{
+		std::wcout << "Cannot set console mode" << std::endl;
+		return -1;
+	}
 	bool bServer = false;
 	bool bClient = false;
 	ChatIPAddr addrServer; addrServer.Clear();
@@ -73,14 +127,17 @@ int main(int argc, const char *argv[])
         std::basic_string<CHAT_CHAR> cmd;
         while(client.IsRunning())
         {
-			std::wcout << L"Type message (or /exit): "; 
+			std::wcout << Tools::basic_string_cast<CHAT_CHAR>("Type message (or /exit): "); 
             std::wcin >> cmd;
-			if(cmd == L"/exit"){
-				client.CloseSocket();
-				break;}
+			std::wcout << Tools::basic_string_cast<CHAT_CHAR>("You typed: ") << cmd << std::endl;
+			std::wcout << Tools::basic_string_cast<CHAT_CHAR>("Converted wchar_t: ") << *reinterpret_cast<const uint16_t*>(cmd.c_str()) << std::endl;
             MessageRequest mReq;
             *mReq.GetMessage() = Message(cmd);
             client.QueueRequest(&mReq, {0,0});
+        	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			if(cmd == Tools::basic_string_cast<CHAT_CHAR>("/exit")){
+				client.CloseSocket();
+				break;}
         }
 		client.Wait();
 	}
@@ -88,9 +145,9 @@ int main(int argc, const char *argv[])
 	{
 		ExampleServer server;
 		server.Run(addrServer);
-        std::this_thread::sleep_for(std::chrono::seconds(100));
-		server.CloseSocket();
 		server.Wait();
+		std::wcout << std::endl << Tools::basic_string_cast<CHAT_CHAR>("Server is shut down");
+        std::this_thread::sleep_for(std::chrono::seconds(10));
 	}
     return 0;
 }

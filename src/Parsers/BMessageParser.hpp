@@ -5,7 +5,7 @@
 
 
 
-#include "NickSV/Chat/Defines.h"
+#include "NickSV/Chat/Definitions.h"
 #include "NickSV/Chat/Utils.h"
 #include "NickSV/Chat/Parsers/BStringParser.h"
 #include "NickSV/Chat/Parsers/BMessageParser.h"
@@ -41,7 +41,7 @@ template<typename CharT>
 std::string::const_iterator Parser<BasicMessage<CharT>>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
     constexpr size_t atleastSize = sizeof(size_t);
-    type_integrity_assert<BasicMessage<CharT>, 8, std::string>();
+    Tools::type_integrity_assert<BasicMessage<CharT>, 8, std::string>();
     if(begin + atleastSize > end)
         return begin; //BAD INPUT. Range size has to be atleastSize bytes long
         

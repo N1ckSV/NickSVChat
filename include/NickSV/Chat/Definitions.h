@@ -1,12 +1,12 @@
 
-#ifndef _NICKSV_CHAT_DEFINES
-#define _NICKSV_CHAT_DEFINES
+#ifndef _NICKSV_CHAT_DEFINITIONS
+#define _NICKSV_CHAT_DEFINITIONS
 #pragma once
 
 
 #include "ChatConfig.h"
 
-#include "NickSV/Tools/Defines.h"
+#include "NickSV/Tools/Definitions.h"
 
 //ASSERT STUFF (EXPECT is non-fatal one)
 #if defined(CHAT_DEBUG)
@@ -18,12 +18,6 @@
     #define CHAT_EXPECT(exp, msg) (void(0))
 #endif
 
-//Special define, that disabling type integrity assertion
-//
-#ifndef CHAT_TYPE_INTEGRITY_NO_ASSERTION
-#define CHAT_TYPE_INTEGRITY_NO_ASSERTION
-#undef CHAT_TYPE_INTEGRITY_NO_ASSERTION
-#endif
 
 
 //GameNetworkingSockets for opensource
@@ -119,4 +113,4 @@
 
 
 
-#endif // _NICKSV_CHAT_DEFINES
+#endif // _NICKSV_CHAT_DEFINITIONS

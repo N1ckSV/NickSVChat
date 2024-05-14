@@ -19,64 +19,124 @@ namespace NickSV::Chat {
 
 
 
+
 class ChatServer: public ChatSocket
 {
 public:
     ChatServer();
     virtual ~ChatServer();
     EResult Run(const ChatIPAddr &serverAddr = ChatIPAddr()) override final;
-    //ClientsMap is client's connection to client info map
-    using ClientsMap = std::map<HSteamNetConnection, std::unique_ptr<ClientInfo>>;
-    //ConnectionsMap is client's id to client's connection map
-    using ConnectionsMap = std::unordered_map<UserID_t, HSteamNetConnection>;
+    //ClientsMap_t is client's connection to client info map
+    using ClientsMap_t = std::map<HSteamNetConnection, std::unique_ptr<ClientInfo>>;
+    //ConnectionsMap_t is client's id to client's connection map
+    using ConnectionsMap_t = std::unordered_map<UserID_t, HSteamNetConnection>;
 
     // .first is a user id we failed send request to and
     // .second is an error result why we failed
-    using IDResultList = std::forward_list<std::pair<UserID_t, EResult>>;
+    using IDResultList_t = std::forward_list<std::pair<UserID_t, EResult>>;
 
-    // If we cant find client info with specific id,
-    // ref to const InvalidClientInfo returned
+    // ClientLock_t (same as Tools::ValueLock<UserID_t, 2>) is a class
+    // that helps to control CLIENT_DEPENDENT_OBJECT through all threads
+    // by locking and unlocking internal std::mutex'es.
+    // See description of NickSV::Tools::ValueLock for more info.
+    //
+    // See also: m_ClientLock and GetClientLock()
+    //
+    // CLIENT_DEPENDENT_OBJECT:
+    //     m_mapClients, m_mapConnections, m_hPollGroup and etc.
+    //
+    // ClientLock_t methods:
+    //     Lock(UserID_t) - locks Client with given UserID_t;
+    //     Unlock(UserID_t) - unlocks Client with given UserID_t;
+    //     LockAll() - locks all Clients;
+    //     UnlockAll() - unlocks all Clients;
+    //     LockAll(UserID_t) - locks all Clients except given UserID_t;
+    //     UnlockAll(UserID_t) - unlocks all Clients except given UserID_t;
+    //     You can combine these methods.
     //
     // ATTENTION:
-    // This function is NOT CLIENT STATE THREAD PROTECTED inside.
-    // So in order to get and modify valid ClientInfo
-    // lock UserID_t first by calling this->LockClient(UserID_t).
+    //     1) Remember - you don't want to lock the same Client twice,
+    //        because ClientLock_t will lock inner std::mutex twice and deadlock possible
+    //        (See description of NickSV::Tools::ValueLock for more info).
+    // 
+    //     2) When you overriding event methods that 
+    //        should work with CLIENT_DEPENDENT_OBJECT
+    //        and you need to lock all Clients or specific Client,
+    //        this may have already been done by an external method,
+    //        so check description of overrided methods for 
+    //        CLIENT_STATE_THREAD_PROTECTED attention note
+    //
+    using ClientLock_t = Tools::ValueLock<UserID_t, 2>;
+    using UniqueUnlocker = std::unique_ptr<ClientLock_t, ClientLock_t::Unlocker>;
+    using ClientLockGuard = Tools::ValueLockGuard<ClientLock_t>;
+    using ClientAllLockGuard = Tools::ValueLockAllGuard<ClientLock_t>;
+
+    // If we cant find client info with specific id
+    // reference to const InvalidClientInfo returned
+    //
+    // ATTENTION:
+    //     This function is NOT CLIENT_STATE_THREAD_PROTECTED inside.
+    //     So in order to get and modify valid ClientInfo
+    //     your code should look like this:
+    //
+    //          UserID_t id = ... ; // got id somehow
+    //          GetClientLock().LockAll();
+    //          auto& client = GetClientInfo(id);
+    //          if(&client != &InvalidClientInfo)
+    //          {        
+    //              GetClientLock().UnlockAll(id);
+    //              ... do something with client
+    //              GetClientLock().Unlock(id);
+    //          }
+    //          else
+    //          {
+    //              GetClientLock().UnlockAll();
+    //              ... do something if client not found
+    //          }
+    //
+    //     Code above can be also done with 
+    //     ClientLockGuard or ClientLockAllGuard or UniqueUnlocker
+    //     or their combination.
+    //          
     ClientInfo&         GetClientInfo(UserID_t);
 
-    // RETURNS:
-    //  • Success if client is removed;
-    //  • NoAction if client wasn't found
+    /** 
+     * @todo not implemented yet
+    */
     EResult             RemoveClient(UserID_t);
 
-    // Locks given UserID_t (Client) in current thread.
-    // Don't forget to call UnlockClientInfo()
-    // after handling given UserID_t.
-    //
-    // This works as a mutex:
-    // 1) if UserID_t wasn't locked yet - locking it,
-    //    so no other threads will* modify ClientInfo 
-    //    binded to it until unlock called (* - its only
-    //    guarunteed when other threads also locking it);
-    // 2) if UserID_t already locked - blocking current thread
-    //    and waiting for unlocking by other threads.
-    //
-    // THROWS:
-    //     The same exceptions as ValueLock::lock(UserID_t) throws.
-    //
-    // ATTENTION: 
-    //     When you overriding event functions that should work with
-    //     UserID_t or ClientInfo binded to it
-    //     and this function is called by ChatServer owned threads
-    //     UserID_t could already be locked, so check description
-    //     of overrided functions for CLIENT STATE THREAD PROTECTED 
-    //     attention note
-    void                LockClient(UserID_t);
 
-    // Unlocks given UserID_t in current thread. See LockClientInfo().
-    //
-    // THROWS:
-    //     The same exceptions as ValueLock::unlock(UserID_t) throws
-    void                UnlockClient(UserID_t);
+    /** 
+     * @brief Returns reference to ClientLock_t
+     * 
+     * ClientLock_t (same as Tools::ValueLock<UserID_t, 2>) object
+     * helps to control @ref CLIENT_DEPENDENT_OBJECT through all threads
+     * by locking and unlocking internal std::mutex'es.
+     * See description of NickSV::Tools::ValueLock for more info.
+     *
+     *
+     * ClientLock_t methods:
+     *     Lock(UserID_t) - locks Client with given UserID_t;
+     *     Unlock(UserID_t) - unlocks Client with given UserID_t;
+     *     LockAll() - locks all Clients;
+     *     UnlockAll() - unlocks all Clients;
+     *     LockAll(UserID_t) - locks all Clients except given UserID_t;
+     *     UnlockAll(UserID_t) - unlocks all Clients except given UserID_t;
+     *     You can combine these methods.
+     *
+     * @attention
+     *     1) Remember - you don't want to lock the same Client twice,
+     *        because ClientLock_t will lock inner std::mutex twice and deadlock possible
+     *        (See description of NickSV::Tools::ValueLock for more info).
+     * 
+     *     2) When you overriding event methods that 
+     *        should work with CLIENT_DEPENDENT_OBJECT
+     *        and you need to lock all Clients or specific Client,
+     *        this may have already been done by an external method,
+     *        so check description of overrided methods for 
+     *        CLIENT_STATE_THREAD_PROTECTED attention note
+    */
+    ClientLock_t& GetClientLock();
 
     // RETURNS:
     //  • EState::Busy     - UserID_t is busy
@@ -84,22 +144,55 @@ public:
     //  • EState::Reserved - UserID_t is reserved
     //
     // ATTENTION:
-    // This function is NOT CLIENT STATE THREAD PROTECTED inside.
-    // So if you did not call this->LockClient(UserID_t) (see decl.)
-    // the real state of this UserID_t can be changed by other threads
-    // just after this returned or during its call and
-    // returned EState value can be different from real one.
+    //     This function is NOT CLIENT_STATE_THREAD_PROTECTED inside.
+    //     So if you did not call this->GetClientLock().Lock(UserID_t),
+    //     the real state of this UserID_t can be changed by other threads
+    //     just after this returned or during its call and
+    //     returned EState value can be different from real one.
     EState              GetUserIDState(UserID_t);
-    EState              ReserveUserID(UserID_t);
 
-    virtual EResult     OnPreAcceptClient(ConnectionInfo*);
-    virtual void        OnAcceptClient(ConnectionInfo*, UserID_t, EResult);
+    /** 
+     * @brief Reserves @ref UserID_t.
+     * 
+     *  Reserves only if it was in EState::Free state.
+     *  Returns old UserID_t state.
+     * 
+     * @param id UserID_t to reserve
+     * 
+     * @return - EState::Free     - UserID_t has been successully reserved
+     *                              and you are allowed to use it;
+     * @return - EState::Reserved - UserID_t is already reserved
+     *                              and you are NOT allowed to use it;
+     * @return - EState::Busy     - UserID_t is already reserved and binded to Client
+     *                              and you are NOT allowed to use it;
+     * 
+     * @attention
+     *     This function is CLIENT_STATE_THREAD_PROTECTED inside
+     * @warning
+     *     CLIENT_STATE_THREAD_PROTECTED inside means that you should
+     *     not lock UserID_t before calling this function
+     *     or there will be a DEADLOCK
+    */ 
+    EState              ReserveUserID(UserID_t id);
+
+    /**
+     * @attention
+     *     This function is NOT CLIENT_STATE_THREAD_PROTECTED outside
+     *     because ClientInfo and UserID_t have not yet been created.
+    */
+    virtual EResult     OnPreAcceptClient(ConnectionInfo* pInfo);
+
+    /**
+     * @attention
+     *     This function is CLIENT_STATE_THREAD_PROTECTED outside.
+    */
+    virtual void        OnAcceptClient(ConnectionInfo* pInfo, ClientInfo* pClientInfo, EResult result);
 
     
      
-    // rawRequest - a data we got from client
+    // rawRequest - a data we got from Client
     //
-    // userID - an ID of client we got request from
+    // pClientInfo - a pointer to Client's ClientInfo we got request from
     //
     // result - read next
     //
@@ -110,43 +203,48 @@ public:
     // 3) m_handleRequestsQueue is overflowed [result == Overflow].
     //
     // ATTENTION:
-    // 1) This function is CLIENT STATE THREAD PROTECTED
-    //    (called when ClientInfo with given userID is already locked,
-    //    so no other threads should modify it and you do not want
-    //    to lock this userID again to avoid DEADLOCK).
-    // 2) All 3 function call cases (listed above)
-    //    can happen at the same time but result will 
-    //    still be InvalidRequest, because we are calling this
-    //    function in the validating order given above, so when you got 
-    //    InvalidRequest, check for an unauthorized client
-    //    and m_handleRequestsQueue overflow by yourself. 
-    //    FIXME m_handleRequestsQueue is private so api user cant check for overflow
+    //  1) This function is CLIENT_STATE_THREAD_PROTECTED outside
+    //     (called when Client with given pClientInfo is already locked,
+    //     so no other threads should modify it and you do not want
+    //     to lock this Client again to avoid DEADLOCK).
+    //  2) All 3 function call cases (listed above)
+    //     can happen at the same time but result will 
+    //     still be InvalidRequest, because we are calling this
+    //     function in the validating order given above, so when you got 
+    //     InvalidRequest, check for an unauthorized client
+    //     and m_handleRequestsQueue overflow by yourself. 
+    //     FIXME m_handleRequestsQueue is private so library user cant check for overflow
     // 
     // NOTE:
-    // OnBadIncomingRequest() does not supposed to be overrided
-    // to handle API user added requests with other ERequestType. 
-    // We don't treat API user defined requests as BAD. Because 
-    // OnBadIncomingRequest() is called with result == InvalidRequest 
-    // only if incoming data size is less than size of ERequestType,
-    // so use OnHandleRequest() for this. This is also does not mean that
-    // all requests that don't trigger OnBadIncomingRequest() are good.
-    // They may be garbage and parsing them inside OnHandleRequest() 
-    // will indicate their validity.
-    virtual void    OnBadIncomingRequest(std::string rawRequest, UserID_t userID, EResult result);
+    //     OnBadIncomingRequest() does not supposed to be overrided
+    //     to handle library user added requests with other ERequestType. 
+    //     We don't treat library user defined requests as BAD. Because 
+    //     OnBadIncomingRequest() is called with result == InvalidRequest 
+    //     only if incoming data size is less than size of ERequestType,
+    //     so use OnHandleRequest() for this. This is also does not mean that
+    //     all requests that don't trigger OnBadIncomingRequest() are good.
+    //     They may be garbage and parsing them inside OnHandleRequest() 
+    //     will indicate their validity.
+    virtual void    OnBadIncomingRequest(std::string rawRequest, NotNull<ClientInfo*> pClientInfo, EResult result);
 
     // Same as ChatSocket::OnErrorSendingRequest(), but when
     // server sending request to multiple clients and we failed
-    // to send request to some of them with a specific result. See IDResultList.
+    // to send request to some of them with a specific result. See IDResultList_t.
     //
     // ATTENTION:
-    // IDResultList is NOT CLIENT STATE THREAD PROTECTED
-    // (so each ClientInfo binded to UserID_t in given failedList 
-    // can be modified by other threads during this function call)
-    virtual void    OnErrorSendingRequestToAll(std::string rawRequest, RequestInfo rInfoInitial, IDResultList failedList);
+    //     IDResultList_t is NOT CLIENT_STATE_THREAD_PROTECTED
+    //     (so each Client binded to UserID_t in given failedList 
+    //     can be modified by other threads during this function call)
+    virtual void    OnErrorSendingRequestToAll(std::string rawRequest, RequestInfo rInfoInitial, IDResultList_t failedList);
 private:
     EResult         AcceptClient(ConnectionInfo*);
     
-    // Returns Success if removed and NoAction if not found
+    /**
+     * @return - Success          - if Client found and removed;
+     * @return - ClosedConnection - if Client is not found, 
+     *                              but the connection is found and released;
+     * @return - NoAction         - if Client and connection are not found
+    */
     EResult         RemoveClient(HSteamNetConnection);
     UserID_t        GenerateUniqueUserID();
     void            ConnectionThreadFunction() override final;
@@ -160,13 +258,12 @@ private:
     HSteamListenSocket       m_hListenSock;
 	HSteamNetPollGroup       m_hPollGroup;
     //cppcheck-suppress unusedStructMember
-    static ChatServer*       s_pCallbackInstance;
+    static ChatServer*       s_pCallbackServerInstance;
     //cppcheck-suppress unusedStructMember
-	ClientsMap               m_mapClients;
-    ConnectionsMap           m_mapConnections;
-    std::mutex               m_handleClientInfoMutex;
-    UserID_t                 m_lastFreeID = Constant::ApiReservedUserIDs;
-    Tools::ValueLock<UserID_t, 2>   m_UserIDLock;
+	ClientsMap_t             m_mapClients;
+    ConnectionsMap_t         m_mapConnections;
+    UserID_t                 m_lastFreeID = Constant::LibReservedUserIDs;
+    ClientLock_t             m_ClientLock;
 };
 
 

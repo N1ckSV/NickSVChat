@@ -43,7 +43,7 @@ inline std::string::const_iterator Parser<ClientInfoRequest>::FromString(const s
 
 std::string::const_iterator Parser<ClientInfoRequest>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
-    type_integrity_assert<ClientInfoRequest, 16, std::unique_ptr<ClientInfo>>();
+    Tools::type_integrity_assert<ClientInfoRequest, 16, std::unique_ptr<ClientInfo>>();
     if(begin + sizeof(ERequestType) > end)
         return begin; //BAD INPUT. Range size has to be at least sizeof(ERequestType) bytes long
 

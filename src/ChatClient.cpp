@@ -79,7 +79,7 @@ void ChatClient::PollIncomingRequests()
 		pIncomingMsg->Release();
 
 		///
-		/// FIXME unnecessary strReq assign if OnBadIncomingRequest not needed here for api user,
+		/// FIXME unnecessary strReq assign if OnBadIncomingRequest not needed here for library user,
 		/// so better think about config thingy
 		///
 
@@ -117,7 +117,7 @@ void ChatClient::PollQueuedRequests()
 
 void ChatClient::PollConnectionChanges()
 {
-	s_pCallbackInstance = this;
+	s_pCallbackClientInstance = this;
 	m_pInterface->RunCallbacks();
 }
 
@@ -149,9 +149,11 @@ void ChatClient::HandleClientInfoRequest(ClientInfoRequest* pClientInfoRequest, 
 	
 	GetClientInfo().GetUserID() = pClientInfoRequest->GetClientInfo()->GetUserID();
 	GetClientInfo().GetState()  = pClientInfoRequest->GetClientInfo()->GetState();
-	CHAT_EXPECT(GetClientInfo().GetUserID() >= Constant::ApiReservedUserIDs, "Invalid user id given");
+	CHAT_EXPECT(GetClientInfo().GetUserID() >= Constant::LibReservedUserIDs, "Invalid user id given");
+	// TODO: CLIENT_INFO_ALLOWED_STATES is only for initial states, so we need to change it to virtual function
+	// or allow macro redefinition 
 	CHAT_EXPECT(CLIENT_INFO_ALLOWED_STATES(GetClientInfo().GetState()), "Invalid client info state given");
-	if(GetClientInfo().GetUserID() < Constant::ApiReservedUserIDs || !CLIENT_INFO_ALLOWED_STATES(GetClientInfo().GetState())){
+	if(GetClientInfo().GetUserID() < Constant::LibReservedUserIDs || !CLIENT_INFO_ALLOWED_STATES(GetClientInfo().GetState())){
 		OnHandleClientInfoRequest(pClientInfoRequest, rInfo, EResult::InvalidRequest);
 		return;}
 
@@ -177,11 +179,11 @@ void ChatClient::HandleMessageRequest(MessageRequest* pMessageRequest, RequestIn
 }
 
 
-ChatClient *ChatClient::s_pCallbackInstance = nullptr;
+ChatClient* ChatClient::s_pCallbackClientInstance = nullptr;
 
 void ChatClient::SteamNetConnectionStatusChangedCallback(ConnectionInfo *pInfo)
 {
-	s_pCallbackInstance->OnSteamNetConnectionStatusChanged(pInfo);
+	s_pCallbackClientInstance->OnSteamNetConnectionStatusChanged(pInfo);
 }
 
 void ChatClient::OnSteamNetConnectionStatusChanged(ConnectionInfo *pInfo)

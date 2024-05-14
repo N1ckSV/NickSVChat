@@ -26,7 +26,7 @@ struct ClientInfo : public ISerializable
     Server stores all ClientInfo for each connected client.
     */
     using UserIDType = UserID_t;
-    using APIVersionType = Version_t;
+    using LibVersionType = Version_t;
 
     ClientInfo() = default;
     explicit ClientInfo(const UserIDType&);
@@ -60,12 +60,12 @@ struct ClientInfo : public ISerializable
     /*
     FIXME add comment
     */
-    CHAT_NODISCARD APIVersionType& GetAPIVer();
+    CHAT_NODISCARD LibVersionType& GetLibVer();
     
     /*
     FIXME add comment
     */
-    CHAT_NODISCARD APIVersionType GetAPIVer() const;
+    CHAT_NODISCARD LibVersionType GetLibVer() const;
 
     /*
     FIXME add comment
@@ -83,7 +83,7 @@ struct ClientInfo : public ISerializable
     const std::unique_ptr<ISerializer> GetSerializer() const override;
 
 private:
-    APIVersionType m_nAPIVer = ConvertVersions(NICKSVCHAT_VERSION_MAJOR, NICKSVCHAT_VERSION_MINOR, NICKSVCHAT_VERSION_PATCH, 0);
+    LibVersionType m_nLibVer = ConvertVersions(NICKSVCHAT_VERSION_MAJOR, NICKSVCHAT_VERSION_MINOR, NICKSVCHAT_VERSION_PATCH, 0);
     EState         m_eState = EState::Unauthorized;
 	UserIDType     m_nUserID;
 };
