@@ -13,7 +13,8 @@
 
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
@@ -41,7 +42,7 @@ template<typename CharT>
 std::string::const_iterator Parser<BasicMessage<CharT>>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
     constexpr size_t atleastSize = sizeof(size_t);
-    Tools::type_integrity_assert<BasicMessage<CharT>, 8, std::string>();
+    Tools::type_integrity_assert<BasicMessage<CharT>, COMPILER_AWARE_VALUE(8, 8, 8) + sizeof(typename BasicMessage<CharT>::TextType)>();
     if(begin + atleastSize > end)
         return begin; //BAD INPUT. Range size has to be atleastSize bytes long
         
@@ -55,7 +56,9 @@ std::string::const_iterator Parser<BasicMessage<CharT>>::FromString(std::string:
 }
 
 template<typename CharT>
-std::string::const_iterator inline Parser<BasicMessage<CharT>>::OnFromString(std::string::const_iterator begin, std::string::const_iterator end)
+std::string::const_iterator inline Parser<BasicMessage<CharT>>::OnFromString(
+    std::string::const_iterator begin,
+    std::string::const_iterator)
 { 
     return begin; 
 }
@@ -70,7 +73,7 @@ template class Parser<BasicMessage<char16_t>>;
 template class Parser<BasicMessage<char32_t>>;
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

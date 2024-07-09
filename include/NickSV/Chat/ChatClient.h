@@ -7,7 +7,8 @@
 #include "NickSV/Chat/ChatSocket.h"
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 class ChatClient: public ChatSocket
 {
@@ -52,18 +53,18 @@ public:
     // OnBadIncomingRequest() are good. They may be garbage and parsing 
     // them inside OnPreHandleRequest() or OnHandleRequest() 
     // will indicate their validity.
-    virtual void    OnBadIncomingRequest(std::string rawRequest, EResult result);
-    ClientInfo&     GetClientInfo();
+    virtual void OnBadIncomingRequest(std::string rawRequest, EResult result);
+    ClientInfo&  GetClientInfo();
 private:
-    EResult         SendStringToServer(const std::string*);
-    void            ConnectionThreadFunction() override final;
-    void            PollIncomingRequests()     override final;
-	void            PollQueuedRequests()       override final;
-	void            PollConnectionChanges()    override final;
-    void            HandleClientInfoRequest(ClientInfoRequest*, RequestInfo) override final;
-    void            HandleMessageRequest(MessageRequest*, RequestInfo)       override final;
-    void            OnSteamNetConnectionStatusChanged(ConnectionInfo*)       override final;
-    static void     SteamNetConnectionStatusChangedCallback(ConnectionInfo*);
+    EResult      SendStringToServer(const std::string&);
+    static void  SteamNetConnectionStatusChangedCallback(ConnectionInfo*);
+    void         ConnectionThreadFunction() override final;
+    void         PollIncomingRequests()     override final;
+	void         PollQueuedRequests()       override final;
+	void         PollConnectionChanges()    override final;
+    void         OnSteamNetConnectionStatusChanged(ConnectionInfo*)       override final;
+    EResult      HandleClientInfoRequest(ClientInfoRequest&, RequestInfo) override final;
+    EResult      HandleMessageRequest(MessageRequest&, RequestInfo)       override final;
     HSteamNetConnection         m_hConnection;
     std::unique_ptr<ClientInfo> m_upClientInfo;
     static ChatClient*          s_pCallbackClientInstance;
@@ -71,7 +72,7 @@ private:
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 #endif // _NICKSV_CHAT_CLIENT_T

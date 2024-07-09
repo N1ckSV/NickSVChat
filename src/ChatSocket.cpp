@@ -14,9 +14,10 @@
 #include "NickSV/Chat/Parsers/RequestParser.h"
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
-EResult ChatSocket::Run(const ChatIPAddr &serverAddr)
+EResult ChatSocket::Run(const ChatIPAddr &)
 {
 	CHAT_ASSERT(!IsRunning(), "Connection is already running");
 	CHAT_EXPECT(!m_pConnectionThread, "m_pConnectionThread is expected to be nullptr");
@@ -64,33 +65,34 @@ ChatSocket::~ChatSocket()
 	delete m_pRequestThread;
 }
 
-void    ChatSocket::HandleClientInfoRequest(ClientInfoRequest*, RequestInfo) 							   {};
-void    ChatSocket::HandleMessageRequest(MessageRequest*, RequestInfo) 								 	   {};
+EResult ChatSocket::HandleClientInfoRequest(ClientInfoRequest&, RequestInfo) 	 { return EResult::Success; };
+EResult ChatSocket::HandleMessageRequest(MessageRequest&, RequestInfo) 			 { return EResult::Success; };
 
-EResult ChatSocket::OnPreRun(const ChatIPAddr &serverAddr, ChatErrorMsg &errMsg) { return EResult::Success; };
-EResult ChatSocket::OnPreQueueRequest(Request*, RequestInfo&)				 	 { return EResult::Success; };
-EResult ChatSocket::OnPreHandleRequest(Request*, RequestInfo&)			 		 { return EResult::Success; };
-EResult ChatSocket::OnPreHandleClientInfoRequest(ClientInfoRequest*, RequestInfo){ return EResult::Success; };
-EResult ChatSocket::OnPreHandleMessageRequest(MessageRequest*, RequestInfo)	 	 { return EResult::Success; };
+EResult ChatSocket::OnPreRun(const ChatIPAddr &, ChatErrorMsg &) 				 { return EResult::Success; };
+EResult ChatSocket::OnPreQueueRequest(Request&, RequestInfo&)				 	 { return EResult::Success; };
+EResult ChatSocket::OnPreHandleRequest(Request&, RequestInfo&)			 		 { return EResult::Success; };
+EResult ChatSocket::OnPreHandleClientInfoRequest(ClientInfoRequest&,RequestInfo&){ return EResult::Success; };
+EResult ChatSocket::OnPreHandleMessageRequest(MessageRequest&, RequestInfo&)	 { return EResult::Success; };
 void 	ChatSocket::OnPreCloseSocket() 														  	 	 	   {};
-void 	ChatSocket::OnRun(const ChatIPAddr &serverAddr, EResult outsideResult, ChatErrorMsg &errMsg) 	   {};
+
+void 	ChatSocket::OnRun(const ChatIPAddr &, EResult , ChatErrorMsg &) 	   							   {};
 void 	ChatSocket::OnCloseSocket()    																 	   {};
-void 	ChatSocket::OnQueueRequest(const Request*, RequestInfo, EResult)				 			 	   {};
-void 	ChatSocket::OnHandleRequest(const Request*, RequestInfo, EResult) 							 	   {};
-void    ChatSocket::OnHandleClientInfoRequest(const ClientInfoRequest*, RequestInfo, EResult outsideResult){};
-void    ChatSocket::OnHandleMessageRequest(const MessageRequest*, RequestInfo, EResult outsideResult)	   {};
+void 	ChatSocket::OnQueueRequest(const Request&, RequestInfo, EResult, std::future<EResult>&)			   {};
+void 	ChatSocket::OnHandleRequest(const Request&, RequestInfo, EResult) 							 	   {};
+void    ChatSocket::OnHandleClientInfoRequest(const ClientInfoRequest&, RequestInfo, EResult)			   {};
+void    ChatSocket::OnHandleMessageRequest(const MessageRequest&, RequestInfo, EResult)	   			  	   {};
 void    ChatSocket::OnConnectionStatusChanged(ConnectionInfo*, EResult)	 							 	   {};
 void    ChatSocket::OnErrorSendingRequest(std::string , RequestInfo, EResult)	 					 	   {};
 void    ChatSocket::OnFatalError(const std::string&)	 											 	   {};
-bool    ChatSocket::OnValidateClientInfo(const ClientInfo* pClientInfo) 					 { return true; };
+bool    ChatSocket::OnValidateClientInfo(const ClientInfo&) 								 { return true; };
 
 
-bool ChatSocket::ValidateClientInfo(const ClientInfo* pClientInfo)
+bool ChatSocket::ValidateClientInfo(const ClientInfo& rClientInfo)
 {
-	if(!OnValidateClientInfo(pClientInfo))
+	if(!OnValidateClientInfo(rClientInfo))
 		return false;
 	
-	bool result = pClientInfo->GetUserID() >= Constant::LibReservedUserIDs;
+	bool result = rClientInfo.GetUserID() >= Constant::LibReservedUserIDs;
 	return result;
 }
 
@@ -100,9 +102,9 @@ void ChatSocket::FatalError(const std::string& errorMsg)
 	CloseSocket();
 }
 
-EResult ChatSocket::SendStringToConnection(HSteamNetConnection conn, const std::string* pStr)
+EResult ChatSocket::SendStringToConnection(HSteamNetConnection conn, const std::string& rStr)
 {
-	auto gnsResult = m_pInterface->SendMessageToConnection(conn, pStr->data(), (uint32)pStr->size(), 
+	auto gnsResult = m_pInterface->SendMessageToConnection(conn, rStr.data(), (uint32)rStr.size(), 
 		k_nSteamNetworkingSend_Reliable, nullptr);
 	switch (gnsResult)
 	{
@@ -117,65 +119,74 @@ EResult ChatSocket::SendStringToConnection(HSteamNetConnection conn, const std::
 
 std::unique_ptr<ClientInfo> ChatSocket::MakeClientInfo() { return std::make_unique<ClientInfo>(); }
 
-EResult ChatSocket::QueueRequest(Request* pcReq, RequestInfo rInfo)
+
+EResult ChatSocket::QueueRequest(Request& rReq, RequestInfo rInfo, std::future<EResult>& sendResult)
 {
-	auto result = OnPreQueueRequest(pcReq, rInfo);
-	if(result != EResult::Success) { 
-		OnQueueRequest(pcReq, rInfo, result); 
+	std::promise<EResult> sendResultPromise;
+	sendResult = sendResultPromise.get_future();
+	auto result = OnPreQueueRequest(rReq, rInfo);
+	if(result != EResult::Success) {
+		sendResultPromise.set_value(result);
+		OnQueueRequest(rReq, rInfo, result, sendResult); 
 		return result; }
 
-	CHAT_EXPECT(pcReq, "Function called with (Request*) pcReq == nullptr");
-	CHAT_EXPECT(pcReq->GetType() != ERequestType::Unknown, 
+	CHAT_EXPECT(rReq.GetType() != ERequestType::Unknown, 
 		"Function supposed to work with known request");
 
-	if(!pcReq || pcReq->GetType() == ERequestType::Unknown) { 
-		OnQueueRequest(pcReq, rInfo, EResult::InvalidParam); 
+	if(rReq.GetType() == ERequestType::Unknown) { 
+		sendResultPromise.set_value(EResult::InvalidParam);
+		OnQueueRequest(rReq, rInfo, EResult::InvalidParam, sendResult); 
 		return EResult::InvalidParam; }
 
 	CHAT_EXPECT(m_sendRequestsQueue.size() < Constant::MaxSendRequestsQueueSize, 
 		"Function called but queue is overflowed");
 	if(m_sendRequestsQueue.size() >= Constant::MaxSendRequestsQueueSize) { 
-		OnQueueRequest(pcReq, rInfo, EResult::Overflow); 
+		sendResultPromise.set_value(EResult::Overflow);
+		OnQueueRequest(rReq, rInfo, EResult::Overflow, sendResult); 
 		return EResult::Overflow; }
 
-	auto serializer = pcReq->GetSerializer();
+	auto serializer = rReq.GetSerializer();
 	CHAT_ASSERT(serializer, something_went_wrong_ERROR_MESSAGE);
 	std::string strRequest = serializer->ToString();
 	CHAT_ASSERT(strRequest.size() >= sizeof(ERequestType), 
 		"Serializer of Request must always return a string containing at least ERequestType");
-	std::pair<std::string, RequestInfo> para(std::move(strRequest), rInfo);
 	m_Mutexes.sendRequestMutex.lock();
-	m_sendRequestsQueue.push(std::move(para));
+	m_sendRequestsQueue.push({ std::move(strRequest), rInfo, std::move(sendResultPromise) });
 	m_Mutexes.sendRequestMutex.unlock();
-	OnQueueRequest(pcReq, rInfo, EResult::Success);
+	OnQueueRequest(rReq, rInfo, EResult::Success, sendResult);
 	return EResult::Success;
 }
 
-void ChatSocket::HandleRequest(Request* pcReq, RequestInfo rInfo)
+EResult ChatSocket::QueueRequest(Request& rReq, RequestInfo rInfo)
 {
-	auto result = OnPreHandleRequest(pcReq, rInfo);
+	std::future<EResult> _;
+	return QueueRequest(rReq, rInfo, _);
+}
+
+EResult ChatSocket::HandleRequest(Request& rReq, RequestInfo rInfo)
+{
+	auto result = OnPreHandleRequest(rReq, rInfo);
 	if(result != EResult::Success){
-		OnHandleRequest(pcReq, rInfo, result);
-		return;}
+		OnHandleRequest(rReq, rInfo, result); 
+		return result;}
 
-	CHAT_EXPECT(pcReq, "Function called with (Request*) pcReq == nullptr");
-	CHAT_EXPECT(pcReq->GetType() != ERequestType::Unknown, "Function supposed to work with known request");
-	if(!pcReq || pcReq->GetType() == ERequestType::Unknown){
-		OnHandleRequest(pcReq, rInfo, EResult::InvalidParam);
-		return;}
+	CHAT_EXPECT(rReq.GetType() != ERequestType::Unknown, "This function supposed to work with known request");
+	if(rReq.GetType() == ERequestType::Unknown){
+		OnHandleRequest(rReq, rInfo, EResult::InvalidParam);
+		return EResult::InvalidParam;}
 
-	switch(pcReq->GetType())
+	switch(rReq.GetType())
 	{
 	case ERequestType::ClientInfo:
-		HandleClientInfoRequest(static_cast<ClientInfoRequest*>(pcReq), rInfo);
+		result = HandleClientInfoRequest(static_cast<ClientInfoRequest&>(rReq), rInfo);
 		break;
 	case ERequestType::Message:
-		HandleMessageRequest(static_cast<MessageRequest*>(pcReq), rInfo);
+		result = HandleMessageRequest(static_cast<MessageRequest&>(rReq), rInfo);
 		break;
-	default:
-		break;
+	default: break;
 	}	
-	OnHandleRequest(pcReq, rInfo, EResult::Success);;
+	OnHandleRequest(rReq, rInfo, result);
+	return result;
 }
 
 void ChatSocket::ConnectionThreadFunction()
@@ -203,15 +214,16 @@ void ChatSocket::RequestThreadFunction()
 		while(!m_handleRequestsQueue.empty())
 		{
 			m_Mutexes.handleRequestMutex.lock();
-			strReq = std::move(m_handleRequestsQueue.front().first);
-			rInfo = m_handleRequestsQueue.front().second;
+			strReq = std::move(std::get<0>(m_handleRequestsQueue.front()));
+			rInfo  = std::get<1>(m_handleRequestsQueue.front());
 			m_handleRequestsQueue.pop();
 			m_Mutexes.handleRequestMutex.unlock();
 			parser.FromString(strReq);
-			HandleRequest(parser.GetObject().get(), rInfo);
+			// HandleRequest returns EResult, but it is only needed for manual calls
+			HandleRequest(*parser.GetObject(), rInfo);
 		}
     }
 }
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/

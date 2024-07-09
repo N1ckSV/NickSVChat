@@ -8,7 +8,8 @@
 #include "NickSV/Chat/Requests/Request.h"
 #include "NickSV/Chat/Interfaces/ISerializer.h"
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 //-----------------------------------------------------------------------------------
@@ -38,7 +39,7 @@ RequestInfo::RequestInfo(UserID_t _id, uint32_t flags) : id(_id), sendFlags(flag
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

@@ -16,13 +16,15 @@ find_package(Protobuf REQUIRED)
 find_package(GameNetworkingSockets REQUIRED
     HINTS ${GameNetworkingSockets_DIR_HINTS} 
 )
-set(NickSVChat_INCLUDE_DIR include)
-set(NickSVChat_INCLUDE_DIRS
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/"
+set(NickSVChat_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/")
+set(NickSVChat_EXTERNAL_INCLUDE_DIRS
     "${CMAKE_CURRENT_SOURCE_DIR}/external/GameNetworkingSockets/include/"
     )
-get_target_property(GameNetworkingSockets_INCLUDEDIR GameNetworkingSockets::GameNetworkingSockets INTERFACE_INCLUDE_DIRECTORIES)
-message(STATUS "GameNetworkingSockets_INCLUDEDIR: ${GameNetworkingSockets_INCLUDEDIR}")
+
+set(NickSVChat_ALL_INCLUDE_DIRS "${NickSVChat_INCLUDE_DIR};${NickSVChat_EXTERNAL_INCLUDE_DIRS}")
+message(STATUS "NickSVChat_ALL_INCLUDE_DIRS: ${NickSVChat_ALL_INCLUDE_DIRS}")
+#get_target_property(GameNetworkingSockets_INCLUDEDIR GameNetworkingSockets::GameNetworkingSockets INTERFACE_INCLUDE_DIRECTORIES)
+#message(STATUS "GameNetworkingSockets_INCLUDEDIR: ${GameNetworkingSockets_INCLUDEDIR}")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 if(WIN32)
     set(MINIMUM_DEPENDENCIES_COUNT_TO_SKIP_INSTALL 3 CACHE STRING "If there are fewer dll/so files in the
@@ -31,7 +33,6 @@ if(WIN32)
 else()
     set(MINIMUM_DEPENDENCIES_COUNT_TO_SKIP_INSTALL 1 CACHE STRING "Read description above ^^^")
 endif()
-
 
 
 #-----------------------------------------------
@@ -72,20 +73,29 @@ endif()
 #COMPILER SETTINGS
 #-----------------------------------------------
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    message("-- Found MSVC compiler")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   ")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}    ")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}     ")
 else()
-    message("-- Found GNU compiler")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall") #-static -static-libgcc -static-libstdc++
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wattributes -Wpedantic -Wextra -Werror") #-static -static-libgcc -static-libstdc++
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 endif()
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D${CHARACTER_TYPE}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DCHAT_DEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+
+message(STATUS "\n\n\n\n")
+message(STATUS "C++ Standart: ${CMAKE_CXX_STANDARD}")
+message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "C++ Make program: ${CMAKE_MAKE_PROGRAM}")
+message(STATUS "C++ Make generator: ${CMAKE_GENERATOR}")
+message(STATUS "C++ Make generator: ${CMAKE_GENERATOR}")
+message(STATUS "C++ Make generator instance: ${CMAKE_GENERATOR_INSTANCE}")
+message(STATUS "C++ Make generator platform: ${CMAKE_GENERATOR_PLATFORM}")
+message(STATUS "C++ Make generator toolset: ${CMAKE_GENERATOR_TOOLSET}")
+message(STATUS "\n\n\n\n")
 #-----------------------------------------------
 #-----------------------------------------------
 #-----------------------------------------------
@@ -110,9 +120,14 @@ add_library(${PROJECT_NAME}
     src/Utils.cpp
     )
 target_include_directories(NickSVChat PUBLIC
-    "$<BUILD_INTERFACE:${NickSVChat_INCLUDE_DIRS}>"
+    "$<BUILD_INTERFACE:${NickSVChat_INCLUDE_DIR}>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
+target_include_directories(NickSVChat SYSTEM PUBLIC
+    "$<BUILD_INTERFACE:${NickSVChat_EXTERNAL_INCLUDE_DIRS}>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
+
 target_link_libraries(${PROJECT_NAME} 
     GameNetworkingSockets::GameNetworkingSockets
 )
@@ -157,7 +172,7 @@ install(FILES
 	DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NickSVChat"
 	)
 install(
-    DIRECTORY   ${NickSVChat_INCLUDE_DIRS}
+    DIRECTORY   ${NickSVChat_ALL_INCLUDE_DIRS}
     DESTINATION "${CMAKE_INSTALL_FULL_INCLUDEDIR}/"
 )
 if(BUILD_TESTS)

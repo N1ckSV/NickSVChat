@@ -5,9 +5,10 @@
 
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 //TODO
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/

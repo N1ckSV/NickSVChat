@@ -15,7 +15,8 @@
 
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
@@ -136,7 +137,7 @@ public:
      *        so check description of overrided methods for 
      *        CLIENT_STATE_THREAD_PROTECTED attention note
     */
-    ClientLock_t& GetClientLock();
+    ClientLock_t&       GetClientLock();
 
     // RETURNS:
     //  • EState::Busy     - UserID_t is busy
@@ -180,19 +181,19 @@ public:
      *     This function is NOT CLIENT_STATE_THREAD_PROTECTED outside
      *     because ClientInfo and UserID_t have not yet been created.
     */
-    virtual EResult     OnPreAcceptClient(ConnectionInfo* pInfo);
+    virtual EResult     OnPreAcceptClient(ConnectionInfo& rInfo);
 
     /**
      * @attention
      *     This function is CLIENT_STATE_THREAD_PROTECTED outside.
     */
-    virtual void        OnAcceptClient(ConnectionInfo* pInfo, ClientInfo* pClientInfo, EResult result);
+    virtual void        OnAcceptClient(ConnectionInfo& rInfo, ClientInfo* pClientInfo, EResult result);
 
     
      
     // rawRequest - a data we got from Client
     //
-    // pClientInfo - a pointer to Client's ClientInfo we got request from
+    // rClientInfo - a ref to Client's ClientInfo we got request from
     //
     // result - read next
     //
@@ -225,7 +226,7 @@ public:
     //     all requests that don't trigger OnBadIncomingRequest() are good.
     //     They may be garbage and parsing them inside OnHandleRequest() 
     //     will indicate their validity.
-    virtual void    OnBadIncomingRequest(std::string rawRequest, NotNull<ClientInfo*> pClientInfo, EResult result);
+    virtual void    OnBadIncomingRequest(std::string rawRequest, ClientInfo& rClientInfo, EResult result);
 
     // Same as ChatSocket::OnErrorSendingRequest(), but when
     // server sending request to multiple clients and we failed
@@ -237,7 +238,7 @@ public:
     //     can be modified by other threads during this function call)
     virtual void    OnErrorSendingRequestToAll(std::string rawRequest, RequestInfo rInfoInitial, IDResultList_t failedList);
 private:
-    EResult         AcceptClient(ConnectionInfo*);
+    EResult         AcceptClient(ConnectionInfo&);
     
     /**
      * @return - Success          - if Client found and removed;
@@ -247,14 +248,14 @@ private:
     */
     EResult         RemoveClient(HSteamNetConnection);
     UserID_t        GenerateUniqueUserID();
+    static void     SteamNetConnectionStatusChangedCallback(ConnectionInfo*);
     void            ConnectionThreadFunction() override final;
 	void            PollIncomingRequests()     override final;
 	void            PollQueuedRequests()       override final;
 	void            PollConnectionChanges()    override final;
-    void            HandleClientInfoRequest(ClientInfoRequest*, RequestInfo) override final;
-    void            HandleMessageRequest(MessageRequest*, RequestInfo)       override final;
     void            OnSteamNetConnectionStatusChanged(ConnectionInfo*)       override final;
-    static void     SteamNetConnectionStatusChangedCallback(ConnectionInfo*);
+    EResult         HandleClientInfoRequest(ClientInfoRequest&, RequestInfo) override final;
+    EResult         HandleMessageRequest(MessageRequest&, RequestInfo)       override final;
     HSteamListenSocket       m_hListenSock;
 	HSteamNetPollGroup       m_hPollGroup;
     //cppcheck-suppress unusedStructMember
@@ -278,7 +279,7 @@ private:
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 #endif // _NICKSV_CHAT_SERVER_T

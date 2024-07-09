@@ -10,7 +10,8 @@
 #include "NickSV/Chat/Serializers/ClientInfoSerializer.h"
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
@@ -26,7 +27,7 @@ Serializer<ClientInfo>::Serializer(const ClientInfo* const cpcClientInfo) : m_cp
     CHAT_ASSERT(m_cpcClientInfo, "Serializer constructor parameter must not be nullptr");
 };
 
-inline const ClientInfo* const Serializer<ClientInfo>::GetObject() const
+inline const ClientInfo* Serializer<ClientInfo>::GetObject() const
 { 
     return m_cpcClientInfo;
 };
@@ -40,7 +41,7 @@ inline size_t Serializer<ClientInfo>::GetSize() const
     return size + OnGetSize(size);
 }
 
-inline size_t Serializer<ClientInfo>::OnGetSize(size_t baseSize) const { return 0; }
+inline size_t Serializer<ClientInfo>::OnGetSize(size_t) const { return 0; }
 
 std::string Serializer<ClientInfo>::ToString() const
 {
@@ -66,7 +67,7 @@ std::string::iterator Serializer<ClientInfo>::ToString(std::string::iterator beg
     return OnToString(iter, end);
 }
 
-inline std::string::iterator Serializer<ClientInfo>::OnToString(std::string::iterator begin, std::string::iterator end) const
+inline std::string::iterator Serializer<ClientInfo>::OnToString(std::string::iterator begin, std::string::iterator) const
 {
     return begin;
 }
@@ -83,7 +84,7 @@ inline std::string::iterator Serializer<ClientInfo>::ToStringBuffer(std::string&
 template class Serializer<ClientInfo>;
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

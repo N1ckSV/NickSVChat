@@ -7,7 +7,8 @@
 #include "NickSV/Chat/Utils.h"
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 /*
@@ -50,4 +51,4 @@ template class BasicMessage<char16_t>;
 template class BasicMessage<char32_t>;
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/

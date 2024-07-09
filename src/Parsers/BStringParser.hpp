@@ -14,7 +14,8 @@
 
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
@@ -62,7 +63,9 @@ std::string::const_iterator Parser<std::basic_string<CharT>>::FromString(std::st
 }
 
 template<typename CharT>
-inline std::string::const_iterator Parser<std::basic_string<CharT>>::OnFromString(std::string::const_iterator begin, std::string::const_iterator end) 
+inline std::string::const_iterator Parser<std::basic_string<CharT>>::OnFromString(
+    std::string::const_iterator begin, 
+    std::string::const_iterator) 
 { 
     return begin; 
 };
@@ -76,7 +79,7 @@ template class Parser<std::basic_string<wchar_t>>;
 template class Parser<std::basic_string<char16_t>>;
 template class Parser<std::basic_string<char32_t>>;
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

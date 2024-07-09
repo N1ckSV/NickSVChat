@@ -14,7 +14,8 @@
 #include "NickSV/Tools/TypeTraits.h"
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 template<typename CharT>
@@ -35,23 +36,23 @@ struct BasicMessage : public ISerializable
     explicit BasicMessage(TextType&& rsText) noexcept;
 
     
-    DECLARE_RULE_OF_5_VIRTUAL_DEFAULT(BasicMessage<CharT>);
+    DECLARE_RULE_OF_5_VIRTUAL_DEFAULT(BasicMessage);
     
     /*
     Simple equal operators
     */
-    CHAT_NODISCARD bool operator==(const BasicMessage<CharT>& other) const;
-    CHAT_NODISCARD bool operator!=(const BasicMessage<CharT>& other) const;
+    [[nodiscard]] bool operator==(const BasicMessage<CharT>& other) const;
+    [[nodiscard]] bool operator!=(const BasicMessage<CharT>& other) const;
 
     /*
     FIXME add comment
     */
-    CHAT_NODISCARD TextType& GetText();
+    [[nodiscard]] TextType& GetText();
     
     /*
     FIXME add comment
     */
-    CHAT_NODISCARD const TextType& GetText() const;
+    [[nodiscard]] const TextType& GetText() const;
 
     /*
     FIXME add comment
@@ -66,7 +67,7 @@ private:
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

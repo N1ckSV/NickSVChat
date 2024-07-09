@@ -7,7 +7,8 @@
 #include "NickSV/Chat/Requests/MessageRequest.h"
 #include "NickSV/Chat/Serializers/MessageRequestSerializer.h"
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 //-----------------------------------------------------------------------------------
@@ -38,7 +39,7 @@ const  std::unique_ptr<ISerializer> MessageRequest::GetSerializer() const
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

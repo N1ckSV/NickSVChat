@@ -5,21 +5,22 @@
 
 #include "NickSV/Chat/Types.h"
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
 class IRequest
 {
 public:
-    CHAT_NODISCARD virtual ERequestType GetType() const = 0;
+    [[nodiscard]]  virtual ERequestType GetType() const = 0;
                    virtual              ~IRequest() = default;
 };
 
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

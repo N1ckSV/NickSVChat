@@ -14,7 +14,8 @@
 
 #include "NickSV/Chat/BasicMessage.h"
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
@@ -41,7 +42,7 @@ inline std::string::const_iterator Parser<MessageRequest>::FromString(const std:
 
 std::string::const_iterator Parser<MessageRequest>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
-    Tools::type_integrity_assert<MessageRequest, 16, std::unique_ptr<Message>>();
+    Tools::type_integrity_assert<MessageRequest, COMPILER_AWARE_VALUE(16, 16, 16) + sizeof(std::unique_ptr<Message>)>();
     if(begin + sizeof(ERequestType) > end)
         return begin; //BAD INPUT. Range size has to be at least sizeof(ERequestType) bytes long
 
@@ -60,7 +61,9 @@ std::string::const_iterator Parser<MessageRequest>::FromString(std::string::cons
     return OnFromString(iter, end);
 }
 
-std::string::const_iterator inline Parser<MessageRequest>::OnFromString(std::string::const_iterator begin, std::string::const_iterator end)
+std::string::const_iterator inline Parser<MessageRequest>::OnFromString(
+    std::string::const_iterator begin,
+    std::string::const_iterator)
 { 
     return begin; 
 }
@@ -72,7 +75,7 @@ std::string::const_iterator inline Parser<MessageRequest>::OnFromString(std::str
 template class Parser<MessageRequest>;
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

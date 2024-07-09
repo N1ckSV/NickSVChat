@@ -12,7 +12,8 @@
 
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
@@ -25,7 +26,7 @@ namespace NickSV::Chat {
 class ISerializable
 {
 public:
-    CHAT_NODISCARD virtual const std::unique_ptr<ISerializer> GetSerializer() const = 0;
+    [[nodiscard]]  virtual const std::unique_ptr<ISerializer> GetSerializer() const = 0;
                    virtual                                    ~ISerializable() = default;
 };
 //------------------------------------------------------------------------------------
@@ -35,7 +36,7 @@ public:
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

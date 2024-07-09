@@ -13,7 +13,8 @@
 
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
@@ -41,7 +42,7 @@ inline std::string::const_iterator Parser<ClientInfo>::FromString(const std::str
 std::string::const_iterator Parser<ClientInfo>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
     constexpr size_t atleastSize = sizeof(LibVersionType) + sizeof(EState) + sizeof(UserIDType);
-    Tools::type_integrity_assert<ClientInfo, atleastSize + 8>();
+    Tools::type_integrity_assert<ClientInfo, atleastSize + COMPILER_AWARE_VALUE(8, 8, 8)>();
     if(begin + atleastSize > end)
         return begin; //BAD INPUT. Range size has to be atleastSize bytes long
 
@@ -62,7 +63,9 @@ std::string::const_iterator Parser<ClientInfo>::FromString(std::string::const_it
 }
 
 
-std::string::const_iterator inline Parser<ClientInfo>::OnFromString(std::string::const_iterator begin, std::string::const_iterator end)
+std::string::const_iterator inline Parser<ClientInfo>::OnFromString(
+    std::string::const_iterator begin,
+    std::string::const_iterator)
 { 
     return begin; 
 }
@@ -75,7 +78,7 @@ std::string::const_iterator inline Parser<ClientInfo>::OnFromString(std::string:
 template class Parser<ClientInfo>;
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

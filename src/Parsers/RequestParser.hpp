@@ -17,7 +17,8 @@
 #include "NickSV/Chat/Parsers/MessageRequestParser.h"
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
@@ -89,7 +90,9 @@ std::string::const_iterator Parser<Request>::FromString(std::string::const_itera
     return OnFromString(iter, end);
 }
 
-std::string::const_iterator inline Parser<Request>::OnFromString(std::string::const_iterator begin, std::string::const_iterator end)
+std::string::const_iterator inline Parser<Request>::OnFromString(
+    std::string::const_iterator begin,
+    std::string::const_iterator)
 { 
     return begin;
 }
@@ -102,7 +105,7 @@ std::string::const_iterator inline Parser<Request>::OnFromString(std::string::co
 template class Parser<Request>;
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

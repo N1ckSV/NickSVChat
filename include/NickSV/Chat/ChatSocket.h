@@ -10,6 +10,7 @@
 #include <queue>
 #include <memory>
 #include <mutex>
+#include <tuple>
 
 
 #include "NickSV/Chat/Interfaces/IChatSocket.h"
@@ -19,7 +20,8 @@
 #include "NickSV/Tools/Memory.h"
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
@@ -50,24 +52,26 @@ public:
     // Same as IsRunning() but blocks current thread  
     // and waits for all socket threads to finish 
     void    Wait()                                           override final;
-    EResult QueueRequest( Request*, RequestInfo)             override final;
-    void    HandleRequest(Request*, RequestInfo)             override final;
+    EResult QueueRequest( Request&, RequestInfo)             override final;
+    EResult HandleRequest(Request&, RequestInfo)             override final;
+    EResult QueueRequest( Request&, RequestInfo, std::future<EResult>&);
 
-    using RequestsQueue_t = std::queue<std::pair<std::string, RequestInfo>>;
+    using SendRequestsQueue_t = std::queue<std::tuple<std::string, RequestInfo, std::promise<EResult>>>;
+    using HandleRequestsQueue_t = std::queue<std::tuple<std::string, RequestInfo>>;
 
     virtual EResult OnPreRun(const ChatIPAddr &serverAddr, ChatErrorMsg&);
-    virtual EResult OnPreQueueRequest( Request*, RequestInfo&);
-    virtual EResult OnPreHandleRequest(Request*, RequestInfo&);
-    virtual EResult OnPreHandleClientInfoRequest(ClientInfoRequest*, RequestInfo);
-    virtual EResult OnPreHandleMessageRequest(MessageRequest*, RequestInfo);
+    virtual EResult OnPreQueueRequest( Request&, RequestInfo&);
+    virtual EResult OnPreHandleRequest(Request&, RequestInfo&);
+    virtual EResult OnPreHandleClientInfoRequest(ClientInfoRequest&, RequestInfo&);
+    virtual EResult OnPreHandleMessageRequest(MessageRequest&, RequestInfo&);
     virtual void    OnPreCloseSocket();
 
     virtual void    OnRun(const ChatIPAddr &serverAddr, EResult outsideResult, ChatErrorMsg&);
     virtual void    OnCloseSocket();
-    virtual void    OnQueueRequest( const Request*, RequestInfo, EResult outsideResult);
-    virtual void    OnHandleRequest(const Request*, RequestInfo, EResult outsideResult);
-    virtual void    OnHandleClientInfoRequest(const ClientInfoRequest*, RequestInfo, EResult outsideResult);
-    virtual void    OnHandleMessageRequest(const MessageRequest*, RequestInfo, EResult outsideResult);
+    virtual void    OnQueueRequest( const Request&, RequestInfo, EResult queueResult, std::future<EResult>& sendResult);
+    virtual void    OnHandleRequest(const Request&, RequestInfo, EResult result);
+    virtual void    OnHandleClientInfoRequest(const ClientInfoRequest&, RequestInfo, EResult outsideResult);
+    virtual void    OnHandleMessageRequest(const MessageRequest&, RequestInfo, EResult outsideResult);
 	// Parameter ConnectionInfo* pInfo is alias of GNS type
     // SteamNetConnectionStatusChangedCallback_t
 	// and library user needs to include GNS headers to work 
@@ -86,8 +90,8 @@ public:
     // Fatal error means socket going to shut down. FIXME add some error codes
             void    FatalError(const std::string& errorMsg = "Unknown Error");
 
-            bool    ValidateClientInfo(const ClientInfo* pClientInfo);
-    virtual bool    OnValidateClientInfo(const ClientInfo* pClientInfo);
+            bool    ValidateClientInfo(const ClientInfo& pClientInfo);
+    virtual bool    OnValidateClientInfo(const ClientInfo& pClientInfo);
 
     virtual std::unique_ptr<ClientInfo>  MakeClientInfo();
 
@@ -98,10 +102,10 @@ protected:
 	virtual void    PollQueuedRequests()    = 0;
 	virtual void    PollConnectionChanges() = 0;
     virtual void    OnSteamNetConnectionStatusChanged(ConnectionInfo *pInfo) = 0;
-         EResult    SendStringToConnection(HSteamNetConnection, const std::string*);
+    virtual EResult HandleClientInfoRequest(ClientInfoRequest&, RequestInfo);
+    virtual EResult HandleMessageRequest(MessageRequest&, RequestInfo);
+            EResult SendStringToConnection(HSteamNetConnection, const std::string&);
     
-    virtual void    HandleClientInfoRequest(ClientInfoRequest*, RequestInfo);
-    virtual void    HandleMessageRequest(MessageRequest*, RequestInfo);
     //cppcheck-suppress unusedStructMember
     std::thread*             m_pConnectionThread;
     //cppcheck-suppress unusedStructMember
@@ -111,8 +115,8 @@ protected:
     //cppcheck-suppress unusedStructMember
     ISteamNetworkingSockets* m_pInterface;
     //cppcheck-suppress unusedStructMember
-    RequestsQueue_t          m_sendRequestsQueue;
-    RequestsQueue_t          m_handleRequestsQueue;
+    SendRequestsQueue_t      m_sendRequestsQueue;
+    HandleRequestsQueue_t    m_handleRequestsQueue;
     struct 
     {
         std::mutex           sendRequestMutex;
@@ -122,7 +126,7 @@ protected:
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 #endif // _NICKSV_CHAT_SOCKET_T

@@ -45,15 +45,12 @@
 //Default port
 #define DEFAULT_PORT 27020
 
-//Just macroed it for convenience :-)
-#ifndef CHAT_NODISCARD
-#define CHAT_NODISCARD [[nodiscard]]
-#endif
+
 
 #define VERSION_PROTOCOL_ERROR_MESSAGE "Version protocol rule violated: Each NICKSVCHAT_VERSION_<ver-name> should be between 0 to 255."
 
 #define IS_VERSION_VALID(major, minor, patch, tweak)\
-(((major) < 256) && ((minor) < 256) && ((patch) < 256) && ((tweak) < 256) && ((major) >= 0 ) && ((minor) >= 0 ) && ((patch) >= 0 ) && ((tweak) >= 0 ))
+((((major) % 256) == (major)) && (((minor) % 256) == (minor))  && (((patch) % 256) == (patch)))
 
 #if !IS_VERSION_VALID(NICKSVCHAT_VERSION_MAJOR, NICKSVCHAT_VERSION_MINOR, NICKSVCHAT_VERSION_PATCH, 0)
     #error Version protocol rule violated: Each NICKSVCHAT_VERSION_<ver-name> should be between 0 to 255.
@@ -84,7 +81,9 @@
 #else
     #error Something went wrong. No character type is used
 #endif
-#define TEXT(x) _T(x)
+
+
+#define TEXT(text, type) NickSV_TEXT(text, type)
 
 
 //Send flags

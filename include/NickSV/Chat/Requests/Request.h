@@ -3,13 +3,15 @@
 #define _NICKSV_CHAT_REQUEST_T
 #pragma once
 
+#include <future>
 
 #include "NickSV/Chat/Interfaces/IRequest.h"
 #include "NickSV/Chat/Interfaces/ISerializable.h"
 
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 class Request : public IRequest, public ISerializable
@@ -20,6 +22,12 @@ public:
     const std::unique_ptr<ISerializer> GetSerializer() const override;
 };
 
+/**
+ * @brief Struct to store some info
+ *        about Request
+ * 
+ * @warning Move-only
+ */
 struct RequestInfo
 {
     UserID_t id;
@@ -34,7 +42,7 @@ struct RequestInfo
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 
