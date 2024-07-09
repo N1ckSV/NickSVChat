@@ -12,7 +12,8 @@
 #include "steam/steamnetworkingtypes.h"
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
@@ -192,10 +193,10 @@ using MessageRequestParser = Parser<MessageRequest>;
 template<typename Type>
 union Transfer { 
     Type Base; 
-    char CharArr[sizeof(Type)]; 
+    alignas(Type) char CharArr[sizeof(Type)]; 
 };
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

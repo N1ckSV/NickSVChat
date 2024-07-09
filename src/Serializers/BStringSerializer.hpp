@@ -11,7 +11,8 @@
 #include "NickSV/Chat/Serializers/BStringSerializer.h"
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
@@ -28,7 +29,7 @@ Serializer<std::basic_string<CharT>>::Serializer(const std::basic_string<CharT>*
 };
 
 template<typename CharT>
-inline const std::basic_string<CharT>* const Serializer<std::basic_string<CharT>>::GetObject() const
+inline const std::basic_string<CharT>* Serializer<std::basic_string<CharT>>::GetObject() const
 { 
     return m_cpcBasicString;
 };
@@ -43,7 +44,7 @@ inline size_t Serializer<std::basic_string<CharT>>::GetSize() const
 }
 
 template<typename CharT>
-inline size_t Serializer<std::basic_string<CharT>>::OnGetSize(size_t dummy) const
+inline size_t Serializer<std::basic_string<CharT>>::OnGetSize(size_t) const
 {
     return 0;
 }
@@ -71,7 +72,7 @@ std::string::iterator Serializer<std::basic_string<CharT>>::ToString(std::string
 }
 
 template<typename CharT>
-inline std::string::iterator Serializer<std::basic_string<CharT>>::OnToString(std::string::iterator begin, std::string::iterator end) const
+inline std::string::iterator Serializer<std::basic_string<CharT>>::OnToString(std::string::iterator begin, std::string::iterator) const
 {
     return begin;
 }
@@ -93,7 +94,7 @@ template class Serializer<std::basic_string<wchar_t>>;
 template class Serializer<std::basic_string<char16_t>>;
 template class Serializer<std::basic_string<char32_t>>;
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

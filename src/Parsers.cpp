@@ -13,7 +13,8 @@
 
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 template ClientInfo                  MakeFromString<ClientInfo>(const std::string&);
      
@@ -27,4 +28,4 @@ template std::basic_string<wchar_t>  MakeFromString<std::basic_string<wchar_t>>(
 template std::basic_string<char16_t> MakeFromString<std::basic_string<char16_t>>(const std::string&);
 template std::basic_string<char32_t> MakeFromString<std::basic_string<char32_t>>(const std::string&);
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/

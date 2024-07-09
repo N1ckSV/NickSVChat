@@ -15,7 +15,8 @@
 #include <iostream>
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 EResult ChatServer::Run(const ChatIPAddr &serverAddr)
 {
@@ -85,7 +86,7 @@ void ChatServer::ConnectionThreadFunction()
 
 			//FIXME make send Request here
 			std::string text = "Server is shutting down.  Goodbye.";
-			SendStringToConnection(it.first, &text);
+			SendStringToConnection(it.first, text);
 
 			// Close the connection.  We use "linger mode" to ask SteamNetworkingSockets
 			// to flush this out and close gracefully.
@@ -106,35 +107,37 @@ void ChatServer::ConnectionThreadFunction()
 }
 
 
-void ChatServer::HandleClientInfoRequest(ClientInfoRequest* pClientInfoRequest, RequestInfo rInfo)
+EResult ChatServer::HandleClientInfoRequest(ClientInfoRequest& rClientInfoRequest, RequestInfo rInfo)
 {
-	EResult result = OnPreHandleClientInfoRequest(pClientInfoRequest, rInfo);
+	EResult result = OnPreHandleClientInfoRequest(rClientInfoRequest, rInfo);
 	if(result != EResult::Success){
-		OnHandleClientInfoRequest(pClientInfoRequest, rInfo, result);
-		return;}
+		OnHandleClientInfoRequest(rClientInfoRequest, rInfo, result);
+		return result;}
 	
-	if(ValidateClientInfo(pClientInfoRequest->GetClientInfo().get()))
+	if(ValidateClientInfo(*rClientInfoRequest.GetClientInfo()))
 	{
-		pClientInfoRequest->GetClientInfo()->GetState() = EState::Active;
-		pClientInfoRequest->GetClientInfo()->GetUserID() = rInfo.id;
-		GetClientInfo(rInfo.id) = *pClientInfoRequest->GetClientInfo();
+		rClientInfoRequest.GetClientInfo()->GetState() = EState::Active;
+		rClientInfoRequest.GetClientInfo()->GetUserID() = rInfo.id;
+		GetClientInfo(rInfo.id) = *rClientInfoRequest.GetClientInfo();
 	}
 	else
 		result = EResult::InvalidRequest;
 
-	OnHandleClientInfoRequest(pClientInfoRequest, rInfo, result);
+	OnHandleClientInfoRequest(rClientInfoRequest, rInfo, result);
+	return result;
 }
 
-void ChatServer::HandleMessageRequest(MessageRequest* pMessageRequest, RequestInfo rInfo)
+EResult ChatServer::HandleMessageRequest(MessageRequest& rMessageRequest, RequestInfo rInfo)
 {
-	EResult result = OnPreHandleMessageRequest(pMessageRequest, rInfo);
+	EResult result = OnPreHandleMessageRequest(rMessageRequest, rInfo);
 	if(result != EResult::Success){
-		OnHandleMessageRequest(pMessageRequest, rInfo, result);
-		return;}
+		OnHandleMessageRequest(rMessageRequest, rInfo, result);
+		return result;}
 
 	//Dunno what to add here for now TODO FIXME
 
-	OnHandleMessageRequest(pMessageRequest, rInfo, result);
+	OnHandleMessageRequest(rMessageRequest, rInfo, result);
+	return result;
 }
 
 
@@ -143,7 +146,6 @@ void ChatServer::PollIncomingRequests()
 	while (!m_bGoingExit)
 	{
 		ISteamNetworkingMessage *pIncomingMsg = nullptr;
-		std::pair<std::string, RequestInfo> para;
     	//cppcheck-suppress variableScope
 		std::string strReq;
 		
@@ -179,25 +181,22 @@ void ChatServer::PollIncomingRequests()
 		/// so better think about config thingy
 		///
 		if(mesSize < sizeof(ERequestType)){
-			OnBadIncomingRequest(std::move(strReq), pClientInfo, EResult::InvalidRequest);
+			OnBadIncomingRequest(std::move(strReq), *pClientInfo, EResult::InvalidRequest);
 			continue;}
 
 		if (pClientInfo->GetState() == EState::Unauthorized){
 			Transfer<ERequestType> type;
 			std::copy(strReq.begin(), strReq.begin() + sizeof(ERequestType), type.CharArr);
 			if(type.Base != ERequestType::ClientInfo){
-				OnBadIncomingRequest(std::move(strReq), pClientInfo, EResult::InvalidConnection);
+				OnBadIncomingRequest(std::move(strReq), *pClientInfo, EResult::InvalidConnection);
 				continue;}}
 
 		if(m_handleRequestsQueue.size() >= Constant::MaxSendRequestsQueueSize){
-			OnBadIncomingRequest(std::move(strReq), pClientInfo, EResult::Overflow);
+			OnBadIncomingRequest(std::move(strReq), *pClientInfo, EResult::Overflow);
 			continue;}
-		
-		para.first = std::move(strReq);
-		para.second = { pClientInfo->GetUserID(), 0 };
 
 		m_Mutexes.handleRequestMutex.lock();
-		m_handleRequestsQueue.push(std::move(para));
+		m_handleRequestsQueue.push( {std::move(strReq), { pClientInfo->GetUserID(), 0 } } );
 		m_Mutexes.handleRequestMutex.unlock();
 	}
 }
@@ -210,12 +209,14 @@ void ChatServer::PollQueuedRequests()
 	{
 		std::string strRequest;
 		RequestInfo rInfo;
+		std::promise<EResult> sendRequestPromise;
 		{	//lock guard scope begin
 			std::lock_guard<std::mutex> lock_g(m_Mutexes.sendRequestMutex);
 			if(m_sendRequestsQueue.empty())
 				break;
-			strRequest = std::move(m_sendRequestsQueue.front().first);
-			rInfo = m_sendRequestsQueue.front().second;
+			strRequest 		   = std::move(std::get<0>(m_sendRequestsQueue.front()));
+			rInfo 	   		   = std::move(std::get<1>(m_sendRequestsQueue.front()));
+			sendRequestPromise = std::move(std::get<2>(m_sendRequestsQueue.front()));
 			m_sendRequestsQueue.pop();
 		}	//lock guard scope end
 
@@ -245,7 +246,8 @@ void ChatServer::PollQueuedRequests()
 			if(!clientFound) //Not sending request to deleted client
 				continue; // maybe should put OnErrorSendingRequest here
 			CHAT_ASSERT(reqCon != 0, "ID used to send the request is in Reserved state (ID is not yet associated with a client)");
-			auto result = SendStringToConnection(reqCon, &strRequest);
+			auto result = SendStringToConnection(reqCon, strRequest);
+			sendRequestPromise.set_value(result);
 			CHAT_ASSERT(result != EResult::InvalidParam, "The request is too big or connection is invalid");
 			CHAT_EXPECT(result == EResult::Success, "Request sending not succeeded");
 			if(result != EResult::Success)
@@ -262,7 +264,7 @@ void ChatServer::PollQueuedRequests()
 			{
 				if (client.first != reqCon)
 				{
-					auto result = SendStringToConnection(client.first, &strRequest);
+					auto result = SendStringToConnection(client.first, strRequest);
 					CHAT_ASSERT(result != EResult::InvalidParam, "The request is too big or connection is invalid");
 					if(result != EResult::Success)
 						list.push_front({client.second->GetUserID(), result});
@@ -271,7 +273,12 @@ void ChatServer::PollQueuedRequests()
 			}
 		}	//ClientAllLockGuard scope end
 		if(!list.empty())
+		{
+			sendRequestPromise.set_value(EResult::Error);
 			OnErrorSendingRequestToAll(std::move(strRequest), rInfo, std::move(list));
+			continue;
+		}
+		sendRequestPromise.set_value(EResult::Success);		
 	}
 }
 
@@ -323,20 +330,19 @@ UserID_t ChatServer::GenerateUniqueUserID()
 	return m_lastFreeID++;
 }
 
-EResult ChatServer::OnPreAcceptClient(ConnectionInfo*) { return EResult::Success; };
-void    ChatServer::OnAcceptClient( ConnectionInfo*, ClientInfo*, EResult) {};
-void    ChatServer::OnBadIncomingRequest(std::string, NotNull<ClientInfo*>, EResult) {};
+EResult ChatServer::OnPreAcceptClient(ConnectionInfo&) { return EResult::Success; };
+void    ChatServer::OnAcceptClient( ConnectionInfo&, ClientInfo*, EResult)  	 {};
+void    ChatServer::OnBadIncomingRequest(std::string, ClientInfo&, EResult) 	 {};
 void 	ChatServer::OnErrorSendingRequestToAll(std::string, RequestInfo, std::forward_list<std::pair<UserID_t, EResult>>) {};
 
-EResult ChatServer::AcceptClient(ConnectionInfo *pInfo)
+EResult ChatServer::AcceptClient(ConnectionInfo& rInfo)
 {
-	CHAT_ASSERT(pInfo, "Invalid parameter given (pInfo == nullptr)");
-    EResult result = OnPreAcceptClient(pInfo);
+    EResult result = OnPreAcceptClient(rInfo);
 	if(result != EResult::Success) {
-		OnAcceptClient(pInfo, nullptr, result);
+		OnAcceptClient(rInfo, nullptr, result);
 		return result; }
 	
-	auto& rClientInfo = *(m_mapClients[pInfo->m_hConn] = MakeClientInfo());
+	auto& rClientInfo = *(m_mapClients[rInfo.m_hConn] = MakeClientInfo());
 	rClientInfo.GetState() = EState::Unauthorized;
 	auto id = GenerateUniqueUserID();
 	auto state = ReserveUserID(id); //CHAT_ASSERT DOES NOT INVOKE IN RELEASE
@@ -344,8 +350,8 @@ EResult ChatServer::AcceptClient(ConnectionInfo *pInfo)
 		"GenerateUniqueUserID() has to return Free id, so threads conflict maybe");
 	ClientLockGuard lock_g(m_ClientLock, id);
 	rClientInfo.GetUserID() = id;
-	m_mapConnections[id] = pInfo->m_hConn;
-	OnAcceptClient(pInfo, &rClientInfo, EResult::Success);
+	m_mapConnections[id] = rInfo.m_hConn;
+	OnAcceptClient(rInfo, &rClientInfo, EResult::Success);
 	return EResult::Success;
 }
 
@@ -401,7 +407,7 @@ void ChatServer::OnSteamNetConnectionStatusChanged(ConnectionInfo *pInfo)
 		{
 			if(m_pInterface->SetConnectionPollGroup(pInfo->m_hConn, m_hPollGroup))
 			{
-				result = AcceptClient(pInfo);
+				result = AcceptClient(*pInfo);
 				if(result == EResult::Success) break;
 			}
 		}
@@ -420,4 +426,4 @@ void ChatServer::OnSteamNetConnectionStatusChanged(ConnectionInfo *pInfo)
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/

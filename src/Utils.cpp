@@ -3,7 +3,8 @@
 
 #include <steam/isteamnetworkingutils.h>
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
@@ -21,4 +22,4 @@ ChatIPAddr::ChatIPAddr()
 //}
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/

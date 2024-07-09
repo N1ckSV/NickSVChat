@@ -11,7 +11,8 @@
 #include "NickSV/Chat/BasicMessage.h"
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 template<typename CharT>
@@ -33,7 +34,7 @@ private:
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

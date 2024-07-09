@@ -12,7 +12,8 @@
 #include "NickSV/Chat/Interfaces/ISerializable.h"
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 struct ClientInfo : public ISerializable
@@ -39,43 +40,43 @@ struct ClientInfo : public ISerializable
     Returns false if at least one member var is not equal to other one
     and true otherwise
     */
-    CHAT_NODISCARD bool operator==(const ClientInfo& other) const;
+    [[nodiscard]] bool operator==(const ClientInfo& other) const;
 
     /*
     Simple not equal operator.
     Returns !operator==
     */
-    CHAT_NODISCARD bool operator!=(const ClientInfo& other) const;
+    [[nodiscard]] bool operator!=(const ClientInfo& other) const;
 
     /*
     FIXME add comment
     */
-    CHAT_NODISCARD UserIDType& GetUserID();
+    [[nodiscard]] UserIDType& GetUserID();
 
     /*
     FIXME add comment
     */
-    CHAT_NODISCARD UserIDType GetUserID() const;
+    [[nodiscard]] UserIDType GetUserID() const;
     
     /*
     FIXME add comment
     */
-    CHAT_NODISCARD LibVersionType& GetLibVer();
+    [[nodiscard]] LibVersionType& GetLibVer();
     
     /*
     FIXME add comment
     */
-    CHAT_NODISCARD LibVersionType GetLibVer() const;
+    [[nodiscard]] LibVersionType GetLibVer() const;
 
     /*
     FIXME add comment
     */
-    CHAT_NODISCARD EState& GetState();
+    [[nodiscard]] EState& GetState();
     
     /*
     FIXME add comment
     */
-    CHAT_NODISCARD EState GetState() const;
+    [[nodiscard]] EState GetState() const;
 
     /*
     FIXME add comment
@@ -93,7 +94,7 @@ const ClientInfo InvalidClientInfo = ClientInfo(0, EState::Invalid);
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

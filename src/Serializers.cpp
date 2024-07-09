@@ -8,8 +8,9 @@
 
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/

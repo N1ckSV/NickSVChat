@@ -14,7 +14,8 @@
 #include <iostream>
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 EResult ChatClient::Run(const ChatIPAddr &serverAddr)
 {
@@ -91,9 +92,8 @@ void ChatClient::PollIncomingRequests()
 			OnBadIncomingRequest(std::move(strReq), EResult::Overflow);
 			continue;}
 
-		std::pair<std::string, RequestInfo> para(std::move(strReq), {0, 0});
 		m_Mutexes.handleRequestMutex.lock();
-		m_handleRequestsQueue.push(std::move(para));
+		m_handleRequestsQueue.push( { std::move(strReq), {0, 0} } );
 		m_Mutexes.handleRequestMutex.unlock();
 	}
 }
@@ -103,11 +103,11 @@ void ChatClient::PollQueuedRequests()
 	while (!m_bGoingExit && !m_sendRequestsQueue.empty())
 	{
 		m_Mutexes.sendRequestMutex.lock();
-		std::string strRequest(std::move(m_sendRequestsQueue.front().first));
-		RequestInfo rInfo = m_sendRequestsQueue.front().second;
+		std::string strRequest = std::move(std::get<0>(m_sendRequestsQueue.front()));
+		RequestInfo rInfo 	   = std::move(std::get<1>(m_sendRequestsQueue.front()));
 		m_sendRequestsQueue.pop();
 		m_Mutexes.sendRequestMutex.unlock();
-		auto result = SendStringToServer(&strRequest);
+		auto result = SendStringToServer(strRequest);
 		CHAT_ASSERT(result != EResult::InvalidParam, "The request is too big or connection is invalid");
 		CHAT_EXPECT(result == EResult::Success, "Request sending not succeeded");
 		if(result != EResult::Success)
@@ -121,9 +121,9 @@ void ChatClient::PollConnectionChanges()
 	m_pInterface->RunCallbacks();
 }
 
-EResult ChatClient::SendStringToServer(const std::string* pStr)
+EResult ChatClient::SendStringToServer(const std::string& rStr)
 {
-	return SendStringToConnection(m_hConnection, pStr);
+	return SendStringToConnection(m_hConnection, rStr);
 }
 
 void ChatClient::ConnectionThreadFunction()
@@ -140,42 +140,44 @@ ClientInfo& ChatClient::GetClientInfo()
 
 #define CLIENT_INFO_ALLOWED_STATES(state) ((state) == EState::Active) || ((state) == EState::Unauthorized)
 
-void ChatClient::HandleClientInfoRequest(ClientInfoRequest* pClientInfoRequest, RequestInfo rInfo)
+EResult ChatClient::HandleClientInfoRequest(ClientInfoRequest& rClientInfoRequest, RequestInfo rInfo)
 {
-	EResult result = OnPreHandleClientInfoRequest(pClientInfoRequest, rInfo);
+	EResult result = OnPreHandleClientInfoRequest(rClientInfoRequest, rInfo);
 	if(result != EResult::Success){
-		OnHandleClientInfoRequest(pClientInfoRequest, rInfo, result);
-		return;}
+		OnHandleClientInfoRequest(rClientInfoRequest, rInfo, result);
+		return result;}
 	
-	GetClientInfo().GetUserID() = pClientInfoRequest->GetClientInfo()->GetUserID();
-	GetClientInfo().GetState()  = pClientInfoRequest->GetClientInfo()->GetState();
+	GetClientInfo().GetUserID() = rClientInfoRequest.GetClientInfo()->GetUserID();
+	GetClientInfo().GetState()  = rClientInfoRequest.GetClientInfo()->GetState();
 	CHAT_EXPECT(GetClientInfo().GetUserID() >= Constant::LibReservedUserIDs, "Invalid user id given");
 	// TODO: CLIENT_INFO_ALLOWED_STATES is only for initial states, so we need to change it to virtual function
 	// or allow macro redefinition 
 	CHAT_EXPECT(CLIENT_INFO_ALLOWED_STATES(GetClientInfo().GetState()), "Invalid client info state given");
 	if(GetClientInfo().GetUserID() < Constant::LibReservedUserIDs || !CLIENT_INFO_ALLOWED_STATES(GetClientInfo().GetState())){
-		OnHandleClientInfoRequest(pClientInfoRequest, rInfo, EResult::InvalidRequest);
-		return;}
+		OnHandleClientInfoRequest(rClientInfoRequest, rInfo, EResult::InvalidRequest);
+		return EResult::InvalidRequest;}
 
 	if(GetClientInfo().GetState() == EState::Unauthorized)
 	{
-		*(pClientInfoRequest->GetClientInfo()) = GetClientInfo();
-		result = QueueRequest(pClientInfoRequest, {0,0});
+		*(rClientInfoRequest.GetClientInfo()) = GetClientInfo();
+		result = QueueRequest(rClientInfoRequest, {0,0});
 	}
 
-	OnHandleClientInfoRequest(pClientInfoRequest, rInfo, result);
+	OnHandleClientInfoRequest(rClientInfoRequest, rInfo, result);
+	return result;
 }
 
-void ChatClient::HandleMessageRequest(MessageRequest* pMessageRequest, RequestInfo rInfo)
+EResult ChatClient::HandleMessageRequest(MessageRequest& rMessageRequest, RequestInfo rInfo)
 {
-	EResult result = OnPreHandleMessageRequest(pMessageRequest, rInfo);
+	EResult result = OnPreHandleMessageRequest(rMessageRequest, rInfo);
 	if(result != EResult::Success){
-		OnHandleMessageRequest(pMessageRequest, rInfo, result);
-		return;}
+		OnHandleMessageRequest(rMessageRequest, rInfo, result);
+		return result;}
 
 	//Dunno what to add here for now TODO FIXME
 
-	OnHandleMessageRequest(pMessageRequest, rInfo, result);
+	OnHandleMessageRequest(rMessageRequest, rInfo, result);
+	return result;
 }
 
 
@@ -231,4 +233,4 @@ void ChatClient::OnSteamNetConnectionStatusChanged(ConnectionInfo *pInfo)
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/

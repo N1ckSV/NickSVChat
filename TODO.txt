@@ -17,4 +17,6 @@
 
 -add doxygen comments
 
+2) client_server_data_exchange_test() after windows reboot throws and program exits with code 3221225477
+
 1) implement entity that can signal about request being handled/sended

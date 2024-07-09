@@ -9,7 +9,8 @@
 #include "NickSV/Chat/Utils.h"
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
@@ -30,7 +31,7 @@ public:
     Serializer() = delete;
     explicit Serializer(const std::basic_string<CharT>* const);
 
-    inline const std::basic_string<CharT>* const GetObject() const;
+    inline const std::basic_string<CharT>* GetObject() const;
 
     size_t GetSize() const override;
     size_t OnGetSize(size_t baseSize = 0) const override;
@@ -47,7 +48,7 @@ private:
 };
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

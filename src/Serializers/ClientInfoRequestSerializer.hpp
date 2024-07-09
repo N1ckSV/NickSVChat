@@ -9,7 +9,8 @@
 #include "NickSV/Chat/Serializers/ClientInfoRequestSerializer.h"
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
@@ -24,7 +25,7 @@ Serializer<ClientInfoRequest>::Serializer(const ClientInfoRequest* const cpcClie
     CHAT_ASSERT(m_cpcClientInfoRequest, "Serializer constructor parameter must not be nullptr");
 };
 
-inline const ClientInfoRequest* const Serializer<ClientInfoRequest>::GetObject() const
+inline const ClientInfoRequest* Serializer<ClientInfoRequest>::GetObject() const
 { 
     return m_cpcClientInfoRequest;
 };
@@ -37,7 +38,7 @@ inline size_t Serializer<ClientInfoRequest>::GetSize() const
     return size + OnGetSize(size);
 }
 
-inline size_t Serializer<ClientInfoRequest>::OnGetSize(size_t baseSize) const { return 0; }
+inline size_t Serializer<ClientInfoRequest>::OnGetSize(size_t) const { return 0; }
 
 std::string Serializer<ClientInfoRequest>::ToString() const
 {
@@ -58,7 +59,7 @@ std::string::iterator Serializer<ClientInfoRequest>::ToString(std::string::itera
     return OnToString(iter, end);
 }
 
-inline std::string::iterator Serializer<ClientInfoRequest>::OnToString(std::string::iterator begin, std::string::iterator end) const
+inline std::string::iterator Serializer<ClientInfoRequest>::OnToString(std::string::iterator begin, std::string::iterator) const
 {
     return begin;
 }
@@ -76,7 +77,7 @@ template class Serializer<ClientInfoRequest>;
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

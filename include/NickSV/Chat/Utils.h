@@ -13,7 +13,8 @@
 #include <steam/steamnetworkingsockets.h>
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
@@ -71,7 +72,7 @@ struct ChatIPAddr : public SteamNetworkingIPAddr
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

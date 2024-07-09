@@ -10,7 +10,8 @@
 #include "NickSV/Chat/Utils.h"
 
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 
@@ -35,7 +36,7 @@ public:
     Serializer() = delete;
     explicit Serializer(ClientInfo const * const);
 
-    inline ClientInfo const * const GetObject() const;
+    inline const ClientInfo * GetObject() const;
 
     /*
     Returns the size in bytes of ClientInfo serialization into std::string.
@@ -87,7 +88,7 @@ private:
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 

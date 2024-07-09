@@ -24,16 +24,13 @@
 #include "NickSV/Chat/ChatServer.h"
 
 #include "NickSV/Tools/ValueLock.h"
+
+#define TEST_IGNORE_PRINT_ON_SUCCESS
+
 #include "NickSV/Tools/Testing.h"
 
 #include <type_traits>
 #include <thread>
-
-#ifdef _WIN32
-#include <Windows.h>
-#else
-#include <pthread.h>
-#endif
 
 
 using namespace NickSV;
@@ -76,7 +73,7 @@ size_t client_info_serializers_and_parsers_test()
 template<typename CharT>
 size_t basic_serializers_and_parsers_test()
 {
-    std::basic_string<CharT> text = Tools::basic_string_cast<CharT>("Hello there, I am a test text!");
+    std::basic_string<CharT> text = TEXT("Hello there, I am a test text!", CharT);
     std::string str = Serializer<std::basic_string<CharT>>(&text).ToString();
     std::basic_string<CharT> text2 = MakeFromString<std::basic_string<CharT>>(str);
     TEST_CHECK_STAGE(text == text2);
@@ -85,7 +82,7 @@ size_t basic_serializers_and_parsers_test()
     text2 = MakeFromString<std::basic_string<CharT>>(str);
     TEST_CHECK_STAGE(text2 == std::basic_string<CharT>());
 
-    text = Tools::basic_string_cast<CharT>("Hello there, I am a test message!");
+    text = TEXT("Hello there, I am a test message!", CharT);
     const BasicMessage<CharT> BasicMessage1(text);
     BasicMessage<CharT> BasicMessage2;
     str = BasicMessage1.GetSerializer()->ToString();
@@ -122,7 +119,7 @@ size_t requests_serializers_and_parsers_test()
     iter = Parser<Request>().FromString(str);
     TEST_CHECK_STAGE(iter == str.begin());
 
-    auto text = Tools::basic_string_cast<CHAT_CHAR>("Hello there, I am a test nickname!");
+    auto text = TEXT("Hello there, I am a test nickname!", CHAT_CHAR);
     const Message Message1(text);
           Message Message2;
     const MessageRequest messageRequest;
@@ -189,22 +186,23 @@ class TestChatServerException : public std::exception
 
 class TestChatServer : public ChatServer
 {
-    void OnHandleMessageRequest(const MessageRequest* pcRer, RequestInfo reqInfo,  NickSV::Chat::EResult outsideResult) override
+    void OnHandleMessageRequest(const MessageRequest& rcRer, RequestInfo,  NickSV::Chat::EResult outsideResult) override
     {
         if(outsideResult != NickSV::Chat::EResult::Success)
             return;
 
-        g_Message = *pcRer->GetMessage();
+        g_Message = *rcRer.GetMessage();
     }
 
     // If we do not require the client to send their information,
     // set client's state as Active to allow message exchange
-	void OnAcceptClient(ConnectionInfo* pInfo, ClientInfo* pClientInfo, NickSV::Chat::EResult res) override
+	void OnAcceptClient(ConnectionInfo&, ClientInfo* pClientInfo, NickSV::Chat::EResult res) override
     {
-        pClientInfo->GetState() = EState::Active;
+        if(res == NickSV::Chat::EResult::Success && pClientInfo)
+            pClientInfo->GetState() = EState::Active;
     }
 
-	void OnBadIncomingRequest(std::string strReq, NotNull<ClientInfo*> pClientInfo, NickSV::Chat::EResult res) override
+	void OnBadIncomingRequest(std::string, ClientInfo&, NickSV::Chat::EResult) override
     {
         throw TestChatServerException();
     }
@@ -229,7 +227,7 @@ size_t client_server_data_exchange_test()
     }
     TEST_CHECK_STAGE(result);
 
-    if( client.QueueRequest(&req, {0, 0}) != NickSV::Chat::EResult::Success)
+    if( client.QueueRequest(req, {0, 0}) != NickSV::Chat::EResult::Success)
     {
         server.CloseSocket();
         client.CloseSocket();
@@ -254,19 +252,8 @@ size_t client_server_data_exchange_test()
 //#include <winsock2.h>
 //#include <iphlpapi.h>
 
-int main(int arc, const char ** argv)
+int main(int, const char **)
 {
-    static_assert(Tools::is_char<char>::value);
-    static_assert(Tools::is_char<wchar_t>::value);
-    static_assert(Tools::is_char<char16_t>::value);
-    static_assert(Tools::is_char<char32_t>::value);
-
-    static_assert(Tools::is_char<const char>::value);
-    static_assert(Tools::is_char<volatile wchar_t>::value);
-    static_assert(Tools::is_char<const volatile char16_t>::value);
-
-    static_assert(!Tools::is_char<int>::value);
-
     TEST_VERIFY(client_info_test());
     TEST_VERIFY(client_info_serializers_and_parsers_test());
 

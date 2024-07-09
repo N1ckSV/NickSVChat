@@ -6,7 +6,8 @@
 #include "NickSV/Chat/Requests/ClientInfoRequest.h"
 #include "NickSV/Chat/Serializers/ClientInfoRequestSerializer.h"
 
-namespace NickSV::Chat {
+namespace NickSV {
+namespace Chat {
 
 
 //-----------------------------------------------------------------------------------
@@ -37,7 +38,7 @@ const  std::unique_ptr<ISerializer> ClientInfoRequest::GetSerializer() const
 
 
 
-} /*END OF NAMESPACES*/
+}}  /*END OF NAMESPACES*/
 
 
 
