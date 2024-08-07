@@ -31,7 +31,7 @@ public:
     std::string::const_iterator FromString(std::string::const_iterator, std::string::const_iterator) override final;
     std::string::const_iterator OnFromString(std::string::const_iterator, std::string::const_iterator) override;
 private:
-    std::unique_ptr<ClientInfo> m_upClientInfo; //FIXME maybe const is redundant
+    std::unique_ptr<ClientInfo> m_upClientInfo;
 };
 
 

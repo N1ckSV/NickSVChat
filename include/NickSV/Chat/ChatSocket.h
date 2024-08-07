@@ -14,7 +14,7 @@
 
 
 #include "NickSV/Chat/Interfaces/IChatSocket.h"
-
+#include "NickSV/Chat/Requests/Request.h"
 #include "NickSV/Chat/Utils.h"
 
 #include "NickSV/Tools/Memory.h"
@@ -28,7 +28,6 @@ namespace Chat {
 
 template<typename T>
 using NotNull = Tools::NotNull<T>;
-
 
 
 
@@ -52,48 +51,105 @@ public:
     // Same as IsRunning() but blocks current thread  
     // and waits for all socket threads to finish 
     void    Wait()                                           override final;
-    EResult QueueRequest( Request&, RequestInfo)             override final;
-    EResult HandleRequest(Request&, RequestInfo)             override final;
-    EResult QueueRequest( Request&, RequestInfo, std::future<EResult>&);
 
-    using SendRequestsQueue_t = std::queue<std::tuple<std::string, RequestInfo, std::promise<EResult>>>;
-    using HandleRequestsQueue_t = std::queue<std::tuple<std::string, RequestInfo>>;
+    /**
+     * @brief Send Request to other socket.
+     * Just calls return QueueRequest(...).GetInitialResult()
+     * 
+     * @param rReq ref to Request, should be known request object
+     * (e.g ClientInfoRequest, MessageRequest or LIB user defined)
+     * @param reqInfo request sending information
+     * (ID of user to send to etc.)
+     * 
+     * @return EResult of QUEUEING that request, NOT SENDING.
+     * For EResult of SENDING see @ref QueueRequest().
+     * 
+     * @sa @ref RequestInfo
+     * @sa @ref QueueRequest
+     * 
+     * @todo better comment
+     * 
+     * @attention
+     * RequestInfo ignored in ChatClient socket.
+     * OnPreQueueRequest and OnQueueRequest also triggers here
+     */
+    EResult SendRequest(  Request& rReq, RequestInfo reqInfo = RequestInfo{ Constant::InvalidUserID }) override final;
+    EResult HandleRequest(Request& rReq, RequestInfo reqInfo) override final;
+
+    /**
+     * @brief Queue Request for sending to other socket.
+     * Same as SendRequest, but with information 
+     * whether the request was sent
+     * 
+     * @param rReq ref to Request, should be known request object
+     * (e.g ClientInfoRequest or MessageRequest)
+     * @param reqInfo request sending information
+     * (ID of user to send to etc.)
+     * 
+     * @return TaskInfo object that holds EResult of QUEUEING that request, NOT SENDING,
+     * and std::future<EResult> with EResult of SENDING.
+     * 
+     * @sa @ref RequestInfo
+     * 
+     * @todo better comment
+     * 
+     * @attention
+     * RequestInfo ignored in ChatClient socket
+     */
+    TaskInfo QueueRequest( Request& rReq, RequestInfo reqInfo = RequestInfo{ Constant::InvalidUserID });
+
+    using SendRequestsQueue_t = SafeQueue<std::tuple<std::string, RequestInfo, std::promise<EResult>>>;
+    using HandleRequestsQueue_t = SafeQueue<std::tuple<std::string, RequestInfo>>;
 
     virtual EResult OnPreRun(const ChatIPAddr &serverAddr, ChatErrorMsg&);
     virtual EResult OnPreQueueRequest( Request&, RequestInfo&);
     virtual EResult OnPreHandleRequest(Request&, RequestInfo&);
-    virtual EResult OnPreHandleClientInfoRequest(ClientInfoRequest&, RequestInfo&);
-    virtual EResult OnPreHandleMessageRequest(MessageRequest&, RequestInfo&);
     virtual void    OnPreCloseSocket();
 
     virtual void    OnRun(const ChatIPAddr &serverAddr, EResult outsideResult, ChatErrorMsg&);
     virtual void    OnCloseSocket();
-    virtual void    OnQueueRequest( const Request&, RequestInfo, EResult queueResult, std::future<EResult>& sendResult);
+    virtual void    OnQueueRequest( const Request&, RequestInfo, EResult queueResult);
     virtual void    OnHandleRequest(const Request&, RequestInfo, EResult result);
-    virtual void    OnHandleClientInfoRequest(const ClientInfoRequest&, RequestInfo, EResult outsideResult);
-    virtual void    OnHandleMessageRequest(const MessageRequest&, RequestInfo, EResult outsideResult);
-	// Parameter ConnectionInfo* pInfo is alias of GNS type
-    // SteamNetConnectionStatusChangedCallback_t
-	// and library user needs to include GNS headers to work 
-	// with overrided OnConnectionStatusChanged
+    /**
+     * @brief Function name says everything
+     * 
+     * @param pInfo ConnectionInfo (alias of GNS type SteamNetConnectionStatusChangedCallback_t)
+     * 
+     * @attention
+     * Library user needs to include GNS headers to work 
+	 * with overrided OnConnectionStatusChanged
+     */
     virtual void    OnConnectionStatusChanged(ConnectionInfo *pInfo, EResult);
 
-    // Function name says everything.
-    //
-    // ATTENTION for ChatServer socket:
-    //     This function is CLIENT STATE THREAD PROTECTED
-    //     (id field of given RequestInfo is locked, 
-    //     so no other threads should modify ClientInfo binded to it
-    //     and you do not want to lock this RequestInfo's id again to avoid DEADLOCK).
-    virtual void    OnErrorSendingRequest(std::string msg, RequestInfo, EResult);
-    virtual void    OnFatalError(const std::string& errorMsg);
-    // Fatal error means socket going to shut down. FIXME add some error codes
-            void    FatalError(const std::string& errorMsg = "Unknown Error");
 
-            bool    ValidateClientInfo(const ClientInfo& pClientInfo);
-    virtual bool    OnValidateClientInfo(const ClientInfo& pClientInfo);
+    /**
+     * @brief Function name says everything
+     * 
+     * @param pInfo ConnectionInfo (alias of GNS type SteamNetConnectionStatusChangedCallback_t)
+     * 
+     * @attention
+     * Library user needs to include GNS headers to work 
+	 * with overrided OnConnectionStatusChanged
+     */
+    virtual void    OnErrorSendingRequest(std::string rawRequest, RequestInfo, EResult);
+    virtual void    OnFatalError(const std::string& errorMsg);
+    
+    /**
+     * @brief Call it when fatal error occured
+     * 
+     * @warning Automatically calls CloseSocket()
+     * 
+     * @param errorMsg error message
+     */
+    void            FatalError(const std::string& errorMsg = "Unknown Error");
 
     virtual std::unique_ptr<ClientInfo>  MakeClientInfo();
+
+    
+    /**
+     * @returns true if UserID_t is reserved by Lib and false otherwise
+     */
+    bool            IsLibReservedID(UserID_t);
 
 protected:
     virtual void    ConnectionThreadFunction();
@@ -102,8 +158,8 @@ protected:
 	virtual void    PollQueuedRequests()    = 0;
 	virtual void    PollConnectionChanges() = 0;
     virtual void    OnSteamNetConnectionStatusChanged(ConnectionInfo *pInfo) = 0;
-    virtual EResult HandleClientInfoRequest(ClientInfoRequest&, RequestInfo);
-    virtual EResult HandleMessageRequest(MessageRequest&, RequestInfo);
+    virtual EResult HandleRequest(ClientInfoRequest&, RequestInfo);
+    virtual EResult HandleRequest(MessageRequest&, RequestInfo);
             EResult SendStringToConnection(HSteamNetConnection, const std::string&);
     
     //cppcheck-suppress unusedStructMember

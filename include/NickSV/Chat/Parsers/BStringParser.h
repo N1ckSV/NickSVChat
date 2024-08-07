@@ -29,7 +29,7 @@ public:
     std::string::const_iterator FromString(std::string::const_iterator, std::string::const_iterator) override final;
     std::string::const_iterator OnFromString(std::string::const_iterator, std::string::const_iterator) override;
 private:
-     std::unique_ptr<std::basic_string<CharT>>  m_upBasicString; //FIXME maybe second const is redundant
+     std::unique_ptr<std::basic_string<CharT>>  m_upBasicString;
 };
 
 

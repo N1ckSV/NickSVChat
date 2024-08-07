@@ -26,7 +26,7 @@ namespace Chat {
 template<typename CharT>
 Serializer<BasicMessage<CharT>>::Serializer(const BasicMessage<CharT> * const  cpcBasicMessage) : m_cpcBasicMessage(cpcBasicMessage)
 { 
-    CHAT_ASSERT(m_cpcBasicMessage, "m_cpBasicMessage must not be nullptr");
+    CHAT_ASSERT(m_cpcBasicMessage, "m_cpcBasicMessage must not be nullptr");
 };
 
 template<typename CharT>
@@ -38,7 +38,13 @@ inline const BasicMessage<CharT>* Serializer<BasicMessage<CharT>>::GetObject() c
 template<typename CharT>
 inline size_t Serializer<BasicMessage<CharT>>::GetSize() const
 {
+    Tools::type_integrity_assert<BasicMessage<CharT>, 
+        COMPILER_AWARE_VALUE(8, 8, 8) +
+        sizeof(UserIDType) + 
+        sizeof(TextType)>();
+
     size_t size = 
+      sizeof(UserIDType) +
       sizeof(GetObject()->GetText().size()) +
       sizeof(CharType) * GetObject()->GetText().size();
     return size + OnGetSize(size);
@@ -59,8 +65,17 @@ std::string Serializer<BasicMessage<CharT>>::ToString() const
 template<typename CharT>
 std::string::iterator Serializer<BasicMessage<CharT>>::ToString(std::string::iterator begin, std::string::iterator end) const
 {
-    CHAT_ASSERT(end >= begin + GetSize(), invalid_range_size_ERROR_MESSAGE);
-    auto iter = Serializer<std::basic_string<CharT>>(&GetObject()->GetText()).ToString(begin, end);
+    CHAT_ASSERT(end >= GetSize() + begin, invalid_range_size_ERROR_MESSAGE);
+
+    Tools::type_integrity_assert<BasicMessage<CharT>, 
+        COMPILER_AWARE_VALUE(8, 8, 8) +
+        sizeof(UserIDType) + 
+        sizeof(TextType)>();
+
+    Transfer<UserIDType> id;
+    id.Base = GetObject()->GetSenderID();
+    auto iter = std::copy(id.CharArr, id.CharArr + sizeof(UserIDType), begin);
+    iter = Serializer<std::basic_string<CharT>>(&GetObject()->GetText()).ToString(iter, end);
     CHAT_ASSERT(iter <= end, something_went_wrong_ERROR_MESSAGE);
     return OnToString(iter, end);
 }

@@ -36,7 +36,7 @@
 using namespace NickSV;
 using namespace NickSV::Chat;
 
-size_t client_info_test()
+static size_t client_info_test()
 {
     ClientInfo info1, info2;
     info1.GetUserID() = 12345;
@@ -53,7 +53,7 @@ size_t client_info_test()
 }
 
 
-size_t client_info_serializers_and_parsers_test()
+static size_t client_info_serializers_and_parsers_test()
 {
     UserID_t id = 2;
     const auto ClientInfo1 = ClientInfo(id);
@@ -96,13 +96,12 @@ size_t basic_serializers_and_parsers_test()
     return TEST_SUCCESS;
 }
 
-size_t requests_serializers_and_parsers_test()
+static size_t requests_serializers_and_parsers_test()
 {
     UserID_t id = 123123414;
     const ClientInfo ClientInfo1(id);
           ClientInfo ClientInfo2;
-    const ClientInfoRequest clientInfoRequest;
-    *clientInfoRequest.GetClientInfo() = ClientInfo1;
+    const ClientInfoRequest clientInfoRequest(ClientInfo1);
     std::string str = clientInfoRequest.GetSerializer()->ToString();
     auto parser = Parser<Request>();
     auto iter = parser.FromString(str);
@@ -113,7 +112,7 @@ size_t requests_serializers_and_parsers_test()
 
     Request* pRequest = parser.GetObject().get();
     ClientInfoRequest* pClientInfoRequest = static_cast<ClientInfoRequest*>(pRequest);
-    TEST_CHECK_STAGE(*pClientInfoRequest->GetClientInfo() == ClientInfo1);
+    TEST_CHECK_STAGE(pClientInfoRequest->GetClientInfo() == ClientInfo1);
 
     str.resize(str.size()-1);
     iter = Parser<Request>().FromString(str);
@@ -122,10 +121,8 @@ size_t requests_serializers_and_parsers_test()
     auto text = TEXT("Hello there, I am a test nickname!", CHAT_CHAR);
     const Message Message1(text);
           Message Message2;
-    const MessageRequest messageRequest;
-    
+    const MessageRequest messageRequest(Message1);
 	#undef GetMessage
-    *messageRequest.GetMessage() = Message1;
     str = messageRequest.GetSerializer()->ToString();
     iter = parser.FromString(str);
     TEST_CHECK_STAGE(iter != str.begin());
@@ -134,16 +131,18 @@ size_t requests_serializers_and_parsers_test()
 
     pRequest = parser.GetObject().get();
     MessageRequest* pMessageRequest = static_cast<MessageRequest*>(pRequest);
-    TEST_CHECK_STAGE(*pMessageRequest->GetMessage() == Message1);
+    TEST_CHECK_STAGE(pMessageRequest->GetMessage() == Message1);
 
     str.resize(str.size()-1);
-    iter = Parser<Request>().FromString(str);
+    iter = parser.FromString(str);
+    MessageRequest* pReq = static_cast<MessageRequest*>(parser.GetObject().get());
+    (void)pReq;
     TEST_CHECK_STAGE(iter == str.begin());
 
     return TEST_SUCCESS;
 }
 
-size_t version_conversation_test()
+static size_t version_conversation_test()
 {
     
     Version_t ver = ConvertVersions(NICKSVCHAT_VERSION_MAJOR, NICKSVCHAT_VERSION_MINOR, NICKSVCHAT_VERSION_PATCH, 0);
@@ -156,7 +155,7 @@ size_t version_conversation_test()
 }
 
 
-size_t requests_test()
+static size_t requests_test()
 {
     
     Request Req;
@@ -186,20 +185,16 @@ class TestChatServerException : public std::exception
 
 class TestChatServer : public ChatServer
 {
-    void OnHandleMessageRequest(const MessageRequest& rcRer, RequestInfo,  NickSV::Chat::EResult outsideResult) override
+	using ChatServer::OnHandleRequest;
+	
+    void OnHandleRequest(const MessageRequest& rcRer, RequestInfo,
+                                 NickSV::Chat::EResult outsideResult,
+                                 TaskInfo) override
     {
         if(outsideResult != NickSV::Chat::EResult::Success)
             return;
 
-        g_Message = *rcRer.GetMessage();
-    }
-
-    // If we do not require the client to send their information,
-    // set client's state as Active to allow message exchange
-	void OnAcceptClient(ConnectionInfo&, ClientInfo* pClientInfo, NickSV::Chat::EResult res) override
-    {
-        if(res == NickSV::Chat::EResult::Success && pClientInfo)
-            pClientInfo->GetState() = EState::Active;
+        g_Message = rcRer.GetMessage();
     }
 
 	void OnBadIncomingRequest(std::string, ClientInfo&, NickSV::Chat::EResult) override
@@ -208,16 +203,15 @@ class TestChatServer : public ChatServer
     }
 };
 
-size_t client_server_data_exchange_test()
+static size_t client_server_data_exchange_test()
 {
     
     TestChatServer server;
     ChatClient client;
     MessageRequest req;
-    *req.GetMessage() = Message(_T("Hello guys, ima test message"));
+    req.GetMessage() = Message(_T("Hello guys, ima test message"));
     TEST_CHECK_STAGE(server.Run() != NickSV::Chat::EResult::Error);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     bool result = true;
     if(client.Run() == NickSV::Chat::EResult::Error)
     {
@@ -227,7 +221,9 @@ size_t client_server_data_exchange_test()
     }
     TEST_CHECK_STAGE(result);
 
-    if( client.QueueRequest(req, {0, 0}) != NickSV::Chat::EResult::Success)
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    if( client.QueueRequest(req).GetFutureResult() != NickSV::Chat::EResult::Success)
     {
         server.CloseSocket();
         client.CloseSocket();
@@ -242,7 +238,7 @@ size_t client_server_data_exchange_test()
     client.CloseSocket();
     server.Wait();
     client.Wait();
-    TEST_CHECK_STAGE(g_Message == Message(_T("Hello guys, ima test message")));
+    TEST_CHECK_STAGE(g_Message.GetText() == _T("Hello guys, ima test message"));
 
     
     return TEST_SUCCESS;
@@ -270,7 +266,7 @@ int main(int, const char **)
 
     TEST_VERIFY(client_server_data_exchange_test());
 
-    std::cout << '\n' << Tools::Testing::TestsFailed << " subtests failed" << std::endl;
+    std::cout << '\n' << NickSV::Tools::Testing::TestsFailed << " subtests failed\n";
     
-    return Tools::Testing::TestsFailed;
+    return NickSV::Tools::Testing::TestsFailed;
 }

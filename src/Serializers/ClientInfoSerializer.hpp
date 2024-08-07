@@ -9,6 +9,8 @@
 #include "NickSV/Chat/Serializers/BStringSerializer.h"
 #include "NickSV/Chat/Serializers/ClientInfoSerializer.h"
 
+#include "NickSV/Tools/TypeTraits.h"
+
 
 namespace NickSV {
 namespace Chat {
@@ -34,11 +36,11 @@ inline const ClientInfo* Serializer<ClientInfo>::GetObject() const
 
 inline size_t Serializer<ClientInfo>::GetSize() const
 {
-    size_t size = 
-      sizeof(LibVersionType) +
-      sizeof(EState) +
-      sizeof(UserIDType); 
-    return size + OnGetSize(size);
+    constexpr size_t atleastSize = sizeof(LibVersionType) + sizeof(EState) + sizeof(UserIDType);
+
+    Tools::type_integrity_assert<ClientInfo, atleastSize + COMPILER_AWARE_VALUE(8, 8, 8)>();
+
+    return atleastSize + OnGetSize(atleastSize);
 }
 
 inline size_t Serializer<ClientInfo>::OnGetSize(size_t) const { return 0; }
@@ -54,6 +56,10 @@ std::string Serializer<ClientInfo>::ToString() const
 std::string::iterator Serializer<ClientInfo>::ToString(std::string::iterator begin, std::string::iterator end) const
 {
     CHAT_ASSERT(end >= begin + GetSize(), invalid_range_size_ERROR_MESSAGE);
+
+    constexpr size_t atleastSize = sizeof(LibVersionType) + sizeof(EState) + sizeof(UserIDType);
+    Tools::type_integrity_assert<ClientInfo, atleastSize + COMPILER_AWARE_VALUE(8, 8, 8)>();
+
     Transfer<LibVersionType> ver;
     ver.Base = GetObject()->GetLibVer();
     auto iter = std::copy(ver.CharArr, ver.CharArr + sizeof(LibVersionType), begin);

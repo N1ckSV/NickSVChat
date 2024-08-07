@@ -29,9 +29,9 @@ const std::unique_ptr<ISerializer> Request::GetSerializer() const
 //-----------------------------------------------------------------------------------
 // Impementation of RequestInfo
 //-----------------------------------------------------------------------------------
-RequestInfo::RequestInfo() : id(0), sendFlags(0) {};
-RequestInfo::RequestInfo(UserID_t _id) : id(_id), sendFlags(0) {};
-RequestInfo::RequestInfo(UserID_t _id, uint32_t flags) : id(_id), sendFlags(flags) {};
+RequestInfo::RequestInfo() : userID(0), sendFlags(0), extraInfo{0} {};
+RequestInfo::RequestInfo(UserID_t _id) : userID(_id), sendFlags(0), extraInfo{0} {};
+RequestInfo::RequestInfo(UserID_t _id, uint64_t flags) : userID(_id), sendFlags(flags), extraInfo{0} {};
 //-----------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------

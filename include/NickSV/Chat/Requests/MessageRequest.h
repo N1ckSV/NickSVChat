@@ -20,9 +20,10 @@ class MessageRequest : public Request
     static_assert(is_serializable<Message>::value, is_serializable_ERROR_MESSAGE);
 public:
     MessageRequest();
+    MessageRequest(Message);
 
-    std::unique_ptr<Message>& GetMessage();
-    const std::unique_ptr<Message>& GetMessage() const;
+    Message& GetMessage();
+    const Message& GetMessage() const;
 
     ERequestType GetType() const override;
     const std::unique_ptr<ISerializer> GetSerializer() const override;

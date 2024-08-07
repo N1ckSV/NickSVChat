@@ -44,7 +44,7 @@ private:
     /*
     Pointer to std::basic_string object where "this" serializes from or parses to.
     */
-    const std::basic_string<CharT>* const m_cpcBasicString; //FIXME maybe const is redundant
+    const std::basic_string<CharT>* const m_cpcBasicString;
 };
 
 

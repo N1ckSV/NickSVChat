@@ -20,9 +20,10 @@ class ClientInfoRequest : public Request
     static_assert(is_serializable<ClientInfo>::value, is_serializable_ERROR_MESSAGE);
 public:
     ClientInfoRequest();
+    ClientInfoRequest(ClientInfo);
 
-    std::unique_ptr<ClientInfo>& GetClientInfo();
-    const std::unique_ptr<ClientInfo>& GetClientInfo() const;
+    ClientInfo& GetClientInfo();
+    const ClientInfo& GetClientInfo() const;
 
     ERequestType GetType() const override;
     const std::unique_ptr<ISerializer> GetSerializer() const override;

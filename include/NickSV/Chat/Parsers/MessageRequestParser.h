@@ -30,7 +30,7 @@ public:
     std::string::const_iterator FromString(std::string::const_iterator, std::string::const_iterator) override final;
     std::string::const_iterator OnFromString(std::string::const_iterator, std::string::const_iterator) override;
 private:
-    std::unique_ptr<MessageRequest>  m_upMessageRequest; //FIXME maybe const is redundant
+    std::unique_ptr<MessageRequest>  m_upMessageRequest;
 };
 
 

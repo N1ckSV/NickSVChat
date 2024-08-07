@@ -46,7 +46,7 @@ private:
     /*
     Pointer to BasicMessage object where "this" serializes from or parses to.
     */
-    const MessageRequest* const m_cpcMessageRequest; //FIXME maybe const is redundant
+    const MessageRequest* const m_cpcMessageRequest;
 };
 
 

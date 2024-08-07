@@ -32,8 +32,9 @@ struct BasicMessage : public ISerializable
 
     //Simple default constructor
     BasicMessage() = default;
-    explicit BasicMessage(const TextType& rsText);
-    explicit BasicMessage(TextType&& rsText) noexcept;
+    explicit BasicMessage(UserIDType senderID);
+    explicit BasicMessage(TextType rsText);
+    BasicMessage(UserIDType senderID, TextType rsText);
 
     
     DECLARE_RULE_OF_5_VIRTUAL_DEFAULT(BasicMessage);
@@ -54,13 +55,24 @@ struct BasicMessage : public ISerializable
     */
     [[nodiscard]] const TextType& GetText() const;
 
+    
+    /*
+    FIXME add comment
+    */
+    [[nodiscard]] UserIDType& GetSenderID();
+
+    /*
+    FIXME add comment
+    */
+    [[nodiscard]] UserIDType GetSenderID() const;
+
     /*
     FIXME add comment
     */
     const std::unique_ptr<ISerializer> GetSerializer() const override;
 
 private:
-    //UserIDType m_nUserID;
+    UserIDType m_nSenderID = 0;
 	TextType m_sText;
 };
 

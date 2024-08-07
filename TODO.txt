@@ -3,11 +3,7 @@
 
 -CPack
 
--MAYBE ChatServer and ChatClient should be singleton
-
 -add linux support (https://metamod-p.sourceforge.net/cross-compiling.on.windows.for.linux.html)
-
--DONT FORGET TO COMMENT EVERYTHING
 
 -explore more GNS stuff (identity, authinfication, SteamNetConnectionInfo_t)
 
@@ -17,6 +13,19 @@
 
 -add doxygen comments
 
-2) client_server_data_exchange_test() after windows reboot throws and program exits with code 3221225477
+-client_server_data_exchange_test() after windows reboot throws
+and program exits with code  3221225477
+12.07.24       error code is 3221225785
+12.07.24 later error code is 3221226505
+12.07.24 later error code is 3221225477 (after some fixes)
+12.07.24 later error code is 3221225477
+next day                     3221225785
+next day                     3221226505
+this test did not fail for a long time!!!
+and again appeared           3221225477
 
-1) implement entity that can signal about request being handled/sended
+-Client infinitly reconnects to server if it is turned off, so need to add timeout
+
+-make more frequent state connection update
+
+-change result != EResult::Success to ResultIsOneOf

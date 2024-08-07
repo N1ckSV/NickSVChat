@@ -20,6 +20,8 @@ class Parser<BasicMessage<CharT>> : public IParser
 {
 public:
     using CharType = typename BasicMessage<CharT>::CharType;
+    using TextType = typename BasicMessage<CharT>::TextType;
+    using UserIDType = typename BasicMessage<CharT>::UserIDType;
 
     Parser();
     
@@ -29,7 +31,7 @@ public:
     std::string::const_iterator FromString(std::string::const_iterator, std::string::const_iterator) override final;
     std::string::const_iterator OnFromString(std::string::const_iterator, std::string::const_iterator) override;
 private:
-     std::unique_ptr<BasicMessage<CharT>>  m_upBasicMessage; //FIXME maybe second const is redundant
+     std::unique_ptr<BasicMessage<CharT>>  m_upBasicMessage;
 };
 
 

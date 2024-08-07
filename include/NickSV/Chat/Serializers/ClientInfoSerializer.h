@@ -59,9 +59,7 @@ public:
     */
     std::string ToString() const override final;
 
-    /*
-    FIXME
-    */
+    
     std::string::iterator ToString(std::string::iterator,std::string::iterator) const override final;
 
     /*
@@ -82,7 +80,7 @@ private:
     /*
     Pointer to ClientInfo object where "this" serializes from or parses to.
     */
-    const ClientInfo* const m_cpcClientInfo; //FIXME maybe const is redundant
+    const ClientInfo* const m_cpcClientInfo;
 };
 
 
