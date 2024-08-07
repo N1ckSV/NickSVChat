@@ -9,16 +9,17 @@
 #include "NickSV/Tools/Definitions.h"
 
 //ASSERT STUFF (EXPECT is non-fatal one)
-#if defined(CHAT_DEBUG)
+#if !defined(NDEBUG) || defined(_DEBUG) 
     #include <assert.h>
     #define CHAT_ASSERT(exp, msg) assert((exp) && (msg))
     #define CHAT_EXPECT(exp, msg) do { if (!(exp)){fprintf(stderr, "%s failed in %s:%d\n", #exp, __FILE__, __LINE__);}} while(0)
+    #define CHAT_DEBUG(...) (__VA_ARGS__)
+    #define _CHAT_DEBUG
 #else
     #define CHAT_ASSERT(exp, msg) (void(0))
     #define CHAT_EXPECT(exp, msg) (void(0))
+    #define CHAT_DEBUG(...)       (void(0))
 #endif
-
-
 
 //GameNetworkingSockets for opensource
 #ifndef STEAMNETWORKINGSOCKETS_OPENSOURCE
@@ -63,19 +64,19 @@
 // STRING STUFF
 //REDEFINE YOUR CHARACTER-LIKE TYPE HERE
 #if defined (USE_CHAR)
-    typedef char CHAT_CHAR;
+    using CHAT_CHAR = char;
     #define _T(a) a
     #define sout std::cout
 #elif defined (USE_CHAR16)
-    typedef char16_t CHAT_CHAR;
+    using CHAT_CHAR = char16_t;
     #define _T(a) u##a
     #define sout
 #elif defined (USE_CHAR32)
-    typedef char32_t CHAT_CHAR;
+    using CHAT_CHAR = char32_t;
     #define _T(a) U##a
     #define sout
 #elif defined (USE_WCHAR)
-    typedef wchar_t CHAT_CHAR;
+    using CHAT_CHAR = wchar_t;
     #define _T(a) L##a
     #define sout std::wcout
 #else
@@ -87,8 +88,9 @@
 
 
 //Send flags
-#define SF_SEND_TO_ALL 0
-#define SF_SEND_TO_ONE 1
+#define SF_SEND_TO_ALL    0
+#define SF_SEND_TO_ONE    1
+#define SF_SEND_TO_ACTIVE 2
 
 
 //ERROR MESSAGES

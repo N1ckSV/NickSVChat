@@ -38,7 +38,7 @@ private:
     /*
     Pointer to ClientInfoRequest object where "this" serializes from or parses to.
     */
-    const ClientInfoRequest* const m_cpcClientInfoRequest; //FIXME maybe const is redundant
+    const ClientInfoRequest* const m_cpcClientInfoRequest;
 };
 
 

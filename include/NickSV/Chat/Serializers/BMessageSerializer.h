@@ -29,7 +29,9 @@ class Serializer<BasicMessage<CharT>> : public ISerializer
 
     */
 public:
-    using CharType = CharT;
+    using CharType = typename BasicMessage<CharT>::CharType;
+    using TextType = typename BasicMessage<CharT>::TextType;
+    using UserIDType = typename BasicMessage<CharT>::UserIDType;
 
     Serializer() = delete;
     explicit Serializer(const BasicMessage<CharT>* const);
@@ -47,7 +49,7 @@ private:
     /*
     Pointer to BasicMessage object where "this" serializes from or parses to.
     */
-    const BasicMessage<CharT>* const m_cpcBasicMessage; //FIXME maybe const is redundant
+    const BasicMessage<CharT>* const m_cpcBasicMessage;
 };
 
 

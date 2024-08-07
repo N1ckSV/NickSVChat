@@ -59,8 +59,8 @@ std::string::const_iterator Parser<ClientInfoRequest>::FromString(std::string::c
     if(newIter <= iter)
         return begin;
 
-    std::swap(GetObject()->GetClientInfo(), parser->GetObject());
-    return OnFromString(iter, end);
+    std::swap(GetObject()->GetClientInfo(), *parser->GetObject());
+    return OnFromString(newIter, end);
 }
 
 std::string::const_iterator inline Parser<ClientInfoRequest>::OnFromString(

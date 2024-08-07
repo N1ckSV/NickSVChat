@@ -16,14 +16,13 @@ namespace Chat {
 
 class IChatSocket
 {
-//FIXME Add const things and return EResult
 public:
     [[nodiscard]]  virtual EResult Run(const ChatIPAddr &serverAddr) = 0;
     [[nodiscard]]  virtual    bool IsRunning()   = 0;
                    virtual    void CloseSocket() = 0;
                    virtual    void Wait()        = 0;
     //Queue request for sending
-    [[nodiscard]]  virtual EResult QueueRequest( Request&, RequestInfo) = 0;
+    [[nodiscard]]  virtual EResult SendRequest( Request&, RequestInfo) = 0;
                    virtual EResult HandleRequest(Request&, RequestInfo) = 0;
                    virtual         ~IChatSocket() = default;
 };

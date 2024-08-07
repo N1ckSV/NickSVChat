@@ -15,14 +15,16 @@ namespace Chat {
 //-----------------------------------------------------------------------------------
 ClientInfoRequest::ClientInfoRequest() : m_upClientInfo(std::make_unique<ClientInfo>()) {};
 
-std::unique_ptr<ClientInfo>& ClientInfoRequest::GetClientInfo()
+ClientInfoRequest::ClientInfoRequest(ClientInfo clientInfo) : m_upClientInfo(std::make_unique<ClientInfo>(std::move(clientInfo))) {};
+
+ClientInfo& ClientInfoRequest::GetClientInfo()
 {
-    return m_upClientInfo;
+    return *m_upClientInfo;
 }
 
-const std::unique_ptr<ClientInfo>& ClientInfoRequest::GetClientInfo() const
+const ClientInfo& ClientInfoRequest::GetClientInfo() const
 {
-    return m_upClientInfo;
+    return *m_upClientInfo;
 }
 
 ERequestType ClientInfoRequest::GetType() const { return ERequestType::ClientInfo; }

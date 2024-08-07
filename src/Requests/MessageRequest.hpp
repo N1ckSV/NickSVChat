@@ -16,14 +16,16 @@ namespace Chat {
 //-----------------------------------------------------------------------------------
 MessageRequest::MessageRequest() : m_upMessage(std::make_unique<Message>()) {};
 
-std::unique_ptr<Message>& MessageRequest::GetMessage()
+MessageRequest::MessageRequest(Message msg) : m_upMessage(std::make_unique<Message>(std::move(msg))) {};
+
+Message& MessageRequest::GetMessage()
 {
-    return m_upMessage;
+    return *m_upMessage;
 }
 
-const std::unique_ptr<Message>& MessageRequest::GetMessage() const
+const Message& MessageRequest::GetMessage() const
 {
-    return m_upMessage;
+    return *m_upMessage;
 }
 
 ERequestType MessageRequest::GetType() const { return ERequestType::Message; }

@@ -41,18 +41,27 @@ inline std::string::const_iterator Parser<BasicMessage<CharT>>::FromString(const
 template<typename CharT>
 std::string::const_iterator Parser<BasicMessage<CharT>>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
-    constexpr size_t atleastSize = sizeof(size_t);
-    Tools::type_integrity_assert<BasicMessage<CharT>, COMPILER_AWARE_VALUE(8, 8, 8) + sizeof(typename BasicMessage<CharT>::TextType)>();
+    constexpr size_t atleastSize = sizeof(UserIDType) + sizeof(size_t);
+    Tools::type_integrity_assert<BasicMessage<CharT>, 
+        COMPILER_AWARE_VALUE(8, 8, 8) +
+        sizeof(UserIDType) + 
+        sizeof(TextType)>();
+
     if(begin + atleastSize > end)
         return begin; //BAD INPUT. Range size has to be atleastSize bytes long
-        
-    auto parser = Parser<std::basic_string<CharT>>();
-    auto iter = parser.FromString(begin, end);
-    if(iter <= begin)
+    
+    Transfer<UserIDType> id;
+    std::copy(begin, begin + sizeof(UserIDType), id.CharArr);
+    auto iter = begin + sizeof(UserIDType);
+    GetObject()->GetSenderID() = id.Base;
+
+    auto parser = Parser<TextType>();
+    auto newIter = parser.FromString(iter, end);
+    if(newIter <= iter)
         return begin; //BAD INPUT. Parsed size doesnt match with input size
 
-    std::swap(GetObject()->GetText(), *parser.GetObject());
-    return OnFromString(iter, end);
+    std::swap(GetObject()->GetText(), *(parser.GetObject()));
+    return OnFromString(newIter, end);
 }
 
 template<typename CharT>

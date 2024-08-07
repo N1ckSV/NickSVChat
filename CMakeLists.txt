@@ -7,6 +7,8 @@ include(GNUInstallDirs)
 include(CheckSymbolExists)
 
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(GameNetworkingSockets_DIR "" CACHE STRING "Path where to find GameNetworkingSockets")
 #added API author's path to GNS
 set(GameNetworkingSockets_DIR_HINTS ${GameNetworkingSockets_DIR} "E:/SDK/GameNetworkingSockets/install")
@@ -77,16 +79,25 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}    ")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}     ")
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wattributes -Wpedantic -Wextra -Werror") #-static -static-libgcc -static-libstdc++
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
+    -std=c++11 \
+    -pedantic -Wall -Wextra -Wattributes -Wpedantic -Wconversion \
+    -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization \
+    -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations \
+    -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual \
+    -Wredundant-decls -Wshadow -Wsign-promo \
+    -Wstrict-null-sentinel -Wstrict-overflow=5 -Wswitch-default -Wundef -Werror -Wno-unused"
+    ) #-static -static-libgcc -static-libstdc++
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+
 endif()
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D${CHARACTER_TYPE}")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DCHAT_DEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}  ")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 
-message(STATUS "\n\n\n\n")
+message(STATUS "\n\n")
 message(STATUS "C++ Standart: ${CMAKE_CXX_STANDARD}")
 message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "C++ Make program: ${CMAKE_MAKE_PROGRAM}")
@@ -95,7 +106,7 @@ message(STATUS "C++ Make generator: ${CMAKE_GENERATOR}")
 message(STATUS "C++ Make generator instance: ${CMAKE_GENERATOR_INSTANCE}")
 message(STATUS "C++ Make generator platform: ${CMAKE_GENERATOR_PLATFORM}")
 message(STATUS "C++ Make generator toolset: ${CMAKE_GENERATOR_TOOLSET}")
-message(STATUS "\n\n\n\n")
+message(STATUS "\n\n")
 #-----------------------------------------------
 #-----------------------------------------------
 #-----------------------------------------------

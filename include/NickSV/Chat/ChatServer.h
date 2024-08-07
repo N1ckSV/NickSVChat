@@ -27,226 +27,419 @@ public:
     ChatServer();
     virtual ~ChatServer();
     EResult Run(const ChatIPAddr &serverAddr = ChatIPAddr()) override final;
-    //ClientsMap_t is client's connection to client info map
-    using ClientsMap_t = std::map<HSteamNetConnection, std::unique_ptr<ClientInfo>>;
-    //ConnectionsMap_t is client's id to client's connection map
-    using ConnectionsMap_t = std::unordered_map<UserID_t, HSteamNetConnection>;
+
+    struct HClient
+    {
+        HSteamNetConnection Connection;
+        std::unique_ptr<ClientInfo> upClientInfo;
+    };
+    /**
+     * @brief std::map UserID -> pair of connection and ClientInfo
+     * 
+     * @sa @ref ConnectionsMap_t
+     */
+    using ClientsMap_t = std::map<UserID_t, HClient>;
+    /**
+     * @brief std::unordered_map connection -> UserID
+     * 
+     * @sa @ref ClientsMap_t
+     */
+    using ConnectionsMap_t = std::unordered_map<HSteamNetConnection, UserID_t>;
 
     // .first is a user id we failed send request to and
     // .second is an error result why we failed
     using IDResultList_t = std::forward_list<std::pair<UserID_t, EResult>>;
 
-    // ClientLock_t (same as Tools::ValueLock<UserID_t, 2>) is a class
-    // that helps to control CLIENT_DEPENDENT_OBJECT through all threads
-    // by locking and unlocking internal std::mutex'es.
-    // See description of NickSV::Tools::ValueLock for more info.
-    //
-    // See also: m_ClientLock and GetClientLock()
-    //
-    // CLIENT_DEPENDENT_OBJECT:
-    //     m_mapClients, m_mapConnections, m_hPollGroup and etc.
-    //
-    // ClientLock_t methods:
-    //     Lock(UserID_t) - locks Client with given UserID_t;
-    //     Unlock(UserID_t) - unlocks Client with given UserID_t;
-    //     LockAll() - locks all Clients;
-    //     UnlockAll() - unlocks all Clients;
-    //     LockAll(UserID_t) - locks all Clients except given UserID_t;
-    //     UnlockAll(UserID_t) - unlocks all Clients except given UserID_t;
-    //     You can combine these methods.
-    //
-    // ATTENTION:
-    //     1) Remember - you don't want to lock the same Client twice,
-    //        because ClientLock_t will lock inner std::mutex twice and deadlock possible
-    //        (See description of NickSV::Tools::ValueLock for more info).
-    // 
-    //     2) When you overriding event methods that 
-    //        should work with CLIENT_DEPENDENT_OBJECT
-    //        and you need to lock all Clients or specific Client,
-    //        this may have already been done by an external method,
-    //        so check description of overrided methods for 
-    //        CLIENT_STATE_THREAD_PROTECTED attention note
-    //
-    using ClientLock_t = Tools::ValueLock<UserID_t, 2>;
+    /** 
+     * @brief
+     * ClientLock_t ( @ref NickSV::Tools::DynamicValueLock<UserID_t> ) is a class
+     * that helps to control @ref CLIENT_DEPENDENT_OBJECT through all threads
+     * by locking and unlocking internal std::mutex'es.
+     * See description of @ref NickSV::Tools::DynamicValueLock for more info.
+     *
+     * 
+     * @details
+     * @ref CLIENT_DEPENDENT_OBJECT :
+     *     @ref m_mapClients, @ref m_mapConnections, @ref m_hPollGroup and etc.
+     *
+     * ClientLock_t methods:
+     *     Lock(UserID_t) - locks @ref Client with given UserID_t;
+     *     Unlock(UserID_t) - unlocks @ref Client with given UserID_t;
+     *     LockAll() - locks all @ref Client "Clients" ;
+     *     UnlockAll() - unlocks all @ref Client "Clients" ;
+     *     LockAll(UserID_t) - locks all @ref Client "Clients" except given UserID_t;
+     *     UnlockAll(UserID_t) - unlocks all @ref Client "Clients" except given UserID_t;
+     *     You can combine these methods.
+     * 
+     * @sa @ref GetClientLock()
+     * 
+     * @note
+     * Locking two different Clients is allowed
+     *
+     * @warning
+     * 1) Remember - you don't want to lock the same @ref Client twice,
+     * because ClientLock_t will lock inner std::mutex twice and deadlock possible.
+     * See description of @ref NickSV::Tools::ValueLock for more info.
+     * 
+     * @warning
+     * 2) When you overriding event methods that 
+     * should work with @ref CLIENT_DEPENDENT_OBJECT
+     * and you need to lock specific @ref Client or lock all @ref Client "Clients",
+     * this may have already been done by an external method,
+     * so check description of overrided methods for 
+     * @ref CLIENT_STATE_CONCURRENCY_PROTECTED attention note
+     * 
+     */
+    using ClientLock_t = Tools::DynamicValueLock<UserID_t>;
     using UniqueUnlocker = std::unique_ptr<ClientLock_t, ClientLock_t::Unlocker>;
     using ClientLockGuard = Tools::ValueLockGuard<ClientLock_t>;
-    using ClientAllLockGuard = Tools::ValueLockAllGuard<ClientLock_t>;
+    using ClientLockAllGuard = Tools::ValueLockAllGuard<ClientLock_t>;
 
-    // If we cant find client info with specific id
-    // reference to const InvalidClientInfo returned
-    //
-    // ATTENTION:
-    //     This function is NOT CLIENT_STATE_THREAD_PROTECTED inside.
-    //     So in order to get and modify valid ClientInfo
-    //     your code should look like this:
-    //
-    //          UserID_t id = ... ; // got id somehow
-    //          GetClientLock().LockAll();
-    //          auto& client = GetClientInfo(id);
-    //          if(&client != &InvalidClientInfo)
-    //          {        
-    //              GetClientLock().UnlockAll(id);
-    //              ... do something with client
-    //              GetClientLock().Unlock(id);
-    //          }
-    //          else
-    //          {
-    //              GetClientLock().UnlockAll();
-    //              ... do something if client not found
-    //          }
-    //
-    //     Code above can be also done with 
-    //     ClientLockGuard or ClientLockAllGuard or UniqueUnlocker
-    //     or their combination.
-    //          
+    class ClientsIterator {
+    public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = ClientInfo;
+        using difference_type = std::ptrdiff_t;
+        using pointer = ClientInfo*;
+        using reference = ClientInfo&;
+
+        explicit ClientsIterator(ClientsMap_t::iterator it) : it_(it) {}
+
+        reference operator*() const { return *(it_->second.upClientInfo); }
+        pointer operator->() const { return it_->second.upClientInfo.get(); }
+
+        ClientsIterator& operator++() { ++it_; return *this; }
+        ClientsIterator operator++(int) { ClientsIterator tmp = *this; ++(*this); return tmp; }
+
+        friend bool operator==(const ClientsIterator& a, const ClientsIterator& b) { return a.it_ == b.it_; }
+        friend bool operator!=(const ClientsIterator& a, const ClientsIterator& b) { return !(a == b); }
+
+    private:
+        ClientsMap_t::iterator  it_;
+    };
+
+    class ConstClientsIterator {
+    public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = ClientInfo;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const ClientInfo*;
+        using reference = const ClientInfo&;
+
+        explicit ConstClientsIterator(ClientsMap_t::const_iterator it) : it_(it) {}
+
+        reference operator*() const { return *(it_->second.upClientInfo); }
+        pointer operator->() const { return it_->second.upClientInfo.get(); }
+
+        ConstClientsIterator& operator++() { ++it_; return *this; }
+        ConstClientsIterator operator++(int) { ConstClientsIterator tmp = *this; ++(*this); return tmp; }
+
+        friend bool operator==(const ConstClientsIterator& a, const ConstClientsIterator& b) { return a.it_ == b.it_; }
+        friend bool operator!=(const ConstClientsIterator& a, const ConstClientsIterator& b) { return !(a == b); }
+
+    private:
+        ClientsMap_t::const_iterator  it_;
+    };
+
+
+    /**
+     * @brief Helper class to manage @ref ClientInfo "ClientInfos" easily.
+     * 
+     * @details
+     * Works like map of UserID_t as key and @ref ClientInfo as value.
+     * Not insertable, you only allowed to edit already 
+     * containing @ref ClientInfo "ClientInfos".
+     * All getters throw exceptions if key is not in Clients.
+     * 
+     * @note
+     * To iterate over all @ref ClientInfo "ClientInfos" 
+     * use GetClients().begin() and .end()
+     */
+    class Clients
+    {
+    public:
+        Clients() = delete;
+        explicit Clients(ClientsMap_t* const _pClientsMap);
+        DECLARE_RULE_OF_5_DELETE(Clients);
+        
+        /**
+         * @throws - std::out_of_range if the Clients does not have an client with the specified UserID_t.
+         */
+        inline ClientInfo& Get(UserID_t id);
+        /**
+         * @throws - std::out_of_range if the Clients does not have an client with the specified UserID_t.
+         */
+        inline const ClientInfo& Get(UserID_t id) const;
+
+        /**
+         * @throws - std::out_of_range if the Clients does not have an client with the specified UserID_t.
+         */
+        inline ClientInfo& At(UserID_t id);
+        /**
+         * @throws - std::out_of_range if the Clients does not have an client with the specified UserID_t.
+         */
+        const ClientInfo& At(UserID_t id) const;
+
+        /**
+         * @throws - std::out_of_range if the Clients does not have an client with the specified UserID_t.
+         */
+        ClientInfo& operator[](UserID_t id);
+        /**
+         * @throws - std::out_of_range if the Clients does not have an client with the specified UserID_t.
+         */
+        const ClientInfo& operator[](UserID_t id) const;
+
+        ClientsIterator begin();
+        ClientsIterator end();
+
+        ConstClientsIterator begin() const;
+        ConstClientsIterator end()   const;
+
+        ConstClientsIterator cbegin() const;
+        ConstClientsIterator cend()   const;
+
+        size_t Size() const;
+        bool IsEmpty() const;
+
+        ClientsIterator      Find(UserID_t id);
+        ConstClientsIterator Find(UserID_t id) const;
+
+        bool Contains(UserID_t id) const;
+
+    private:
+        ClientsMap_t* const pClientsMap;
+    };
+
+    Clients GetClients();
+
+    /**
+     * @brief ClientInfo getter by UserID
+     * 
+     * @returns - Valid client info if it is exist for given UserID
+     * @returns - @ref InvalidClientInfo if no such client info
+     *
+     * @attention
+     * This function is NOT @ref CLIENT_STATE_CONCURRENCY_PROTECTED inside
+     * 
+    */          
     ClientInfo&         GetClientInfo(UserID_t);
 
     /** 
-     * @todo not implemented yet
+     * @brief Removes client with given ID, also
+     * closing connection
+     * 
+     * @attention
+     * This function is @ref CLIENT_STATE_CONCURRENCY_PROTECTED inside
+     * 
+     * @retval - Success          - if Client found and removed;
+     * @retval - ClosedConnection - if Client is not found, but the connection is found and released;
+     * @retval - NoAction         - if Client and connection are not found
+     * @retval - InvalidParam     - if given ID is less than Constant::LibReservedUserIDs
     */
     EResult             RemoveClient(UserID_t);
 
 
     /** 
-     * @brief Returns reference to ClientLock_t
+     * @brief
+     * Returns ref to ChatServer's ClientLock_t
      * 
-     * ClientLock_t (same as Tools::ValueLock<UserID_t, 2>) object
-     * helps to control @ref CLIENT_DEPENDENT_OBJECT through all threads
-     * by locking and unlocking internal std::mutex'es.
-     * See description of NickSV::Tools::ValueLock for more info.
-     *
-     *
-     * ClientLock_t methods:
-     *     Lock(UserID_t) - locks Client with given UserID_t;
-     *     Unlock(UserID_t) - unlocks Client with given UserID_t;
-     *     LockAll() - locks all Clients;
-     *     UnlockAll() - unlocks all Clients;
-     *     LockAll(UserID_t) - locks all Clients except given UserID_t;
-     *     UnlockAll(UserID_t) - unlocks all Clients except given UserID_t;
-     *     You can combine these methods.
-     *
-     * @attention
-     *     1) Remember - you don't want to lock the same Client twice,
-     *        because ClientLock_t will lock inner std::mutex twice and deadlock possible
-     *        (See description of NickSV::Tools::ValueLock for more info).
-     * 
-     *     2) When you overriding event methods that 
-     *        should work with CLIENT_DEPENDENT_OBJECT
-     *        and you need to lock all Clients or specific Client,
-     *        this may have already been done by an external method,
-     *        so check description of overrided methods for 
-     *        CLIENT_STATE_THREAD_PROTECTED attention note
-    */
+     * @sa ClientLock_t
+     */
     ClientLock_t&       GetClientLock();
 
-    // RETURNS:
-    //  • EState::Busy     - UserID_t is busy
-    //  • EState::Free     - UserID_t is free
-    //  • EState::Reserved - UserID_t is reserved
-    //
-    // ATTENTION:
-    //     This function is NOT CLIENT_STATE_THREAD_PROTECTED inside.
-    //     So if you did not call this->GetClientLock().Lock(UserID_t),
-    //     the real state of this UserID_t can be changed by other threads
-    //     just after this returned or during its call and
-    //     returned EState value can be different from real one.
+    /**
+     * @brief
+     * Changing UserID.
+     * 
+     * @attention
+     * This function is NOT @ref CLIENT_STATE_CONCURRENCY_PROTECTED inside
+     * 
+     * @warning
+     * 1) Dangerous method if client with currentID is in Active EState,
+     * so in this case - better to change their state to Unauthorized,
+     * then wait some time for server to hanle all request to that client
+     * 
+     * @warning
+     * 2) LIB protocol requires of client to know their UserID.
+     * So after changing it send ClientInfoRequest to them with
+     * new ID.
+     */
+    EResult             ChangeClientID(UserID_t currentID, UserID_t newID);
+
+    /**
+     * 
+     * @retval - EState::Busy - UserID_t is busy     
+     *           (if ID is reserved by Lib or m_mapClients contains ID with valid HSteamNetConnection)
+     * @retval - EState::Reserved - UserID_t is reserved 
+     *           (m_mapClients contains ID with k_HSteamNetConnection_Invalid)
+     * @retval - EState::Free - UserID_t is free     
+     *           (m_mapClients not contains ID)
+     * 
+     * @attention
+     * This function is NOT @ref CLIENT_STATE_CONCURRENCY_PROTECTED inside
+    */
     EState              GetUserIDState(UserID_t);
+    
 
     /** 
      * @brief Reserves @ref UserID_t.
      * 
-     *  Reserves only if it was in EState::Free state.
-     *  Returns old UserID_t state.
+     *  Reserves only if it was in EState::Free state
+     * 
+     * @returns old state of given UserID
      * 
      * @param id UserID_t to reserve
      * 
-     * @return - EState::Free     - UserID_t has been successully reserved
+     * @retval - EState::Free     - UserID_t has been successully reserved
      *                              and you are allowed to use it;
-     * @return - EState::Reserved - UserID_t is already reserved
+     * @retval - EState::Reserved - UserID_t is already reserved
      *                              and you are NOT allowed to use it;
-     * @return - EState::Busy     - UserID_t is already reserved and binded to Client
+     * @retval - EState::Busy     - UserID_t is already reserved and binded to Client
      *                              and you are NOT allowed to use it;
      * 
      * @attention
-     *     This function is CLIENT_STATE_THREAD_PROTECTED inside
-     * @warning
-     *     CLIENT_STATE_THREAD_PROTECTED inside means that you should
-     *     not lock UserID_t before calling this function
-     *     or there will be a DEADLOCK
+     * This function is NOT @ref CLIENT_STATE_CONCURRENCY_PROTECTED inside
+     * 
     */ 
     EState              ReserveUserID(UserID_t id);
 
     /**
      * @attention
-     *     This function is NOT CLIENT_STATE_THREAD_PROTECTED outside
-     *     because ClientInfo and UserID_t have not yet been created.
+     * This function is NOT @ref CLIENT_STATE_CONCURRENCY_PROTECTED outside,
+     * because ClientInfo and UserID_t have not yet been created.
     */
     virtual EResult     OnPreAcceptClient(ConnectionInfo& rInfo);
 
     /**
+     * @param rClientInfo ClientInfo of a client we accepting,
+     * if accepting is failed rClientInfo can be InvalidClientInfo
+     * 
      * @attention
-     *     This function is CLIENT_STATE_THREAD_PROTECTED outside.
+     * This function is @ref CLIENT_STATE_CONCURRENCY_PROTECTED inside
     */
-    virtual void        OnAcceptClient(ConnectionInfo& rInfo, ClientInfo* pClientInfo, EResult result);
+    virtual void        OnAcceptClient(ConnectionInfo& rInfo, ClientInfo& rClientInfo, EResult acceptRes, TaskInfo taskInfo);
 
     
      
-    // rawRequest - a data we got from Client
-    //
-    // rClientInfo - a ref to Client's ClientInfo we got request from
-    //
-    // result - read next
-    //
-    // This function is called when:
-    // 1) incoming message cannot be treat as Request [result == InvalidRequest];
-    // 2) client we got Request from is unauthorized and request 
-    //    is not ClientInfoRequest [result == InvalidConnection];
-    // 3) m_handleRequestsQueue is overflowed [result == Overflow].
-    //
-    // ATTENTION:
-    //  1) This function is CLIENT_STATE_THREAD_PROTECTED outside
-    //     (called when Client with given pClientInfo is already locked,
-    //     so no other threads should modify it and you do not want
-    //     to lock this Client again to avoid DEADLOCK).
-    //  2) All 3 function call cases (listed above)
-    //     can happen at the same time but result will 
-    //     still be InvalidRequest, because we are calling this
-    //     function in the validating order given above, so when you got 
-    //     InvalidRequest, check for an unauthorized client
-    //     and m_handleRequestsQueue overflow by yourself. 
-    //     FIXME m_handleRequestsQueue is private so library user cant check for overflow
-    // 
-    // NOTE:
-    //     OnBadIncomingRequest() does not supposed to be overrided
-    //     to handle library user added requests with other ERequestType. 
-    //     We don't treat library user defined requests as BAD. Because 
-    //     OnBadIncomingRequest() is called with result == InvalidRequest 
-    //     only if incoming data size is less than size of ERequestType,
-    //     so use OnHandleRequest() for this. This is also does not mean that
-    //     all requests that don't trigger OnBadIncomingRequest() are good.
-    //     They may be garbage and parsing them inside OnHandleRequest() 
-    //     will indicate their validity.
+    /**
+     * @brief 
+     * If the incoming request is bad 
+     * according to lib or custom criteria
+     * this function is called
+     * 
+     * @param rawRequest - a data we got from Client
+     * @param rClientInfo - a ref to Client's ClientInfo we got request from
+     * @param result - read next
+     *
+     * @attention
+     * This function is called when:
+     * 1) incoming message cannot be treat as Request [result == InvalidRequest];
+     * 2) client we got Request from is unauthorized and request 
+     *    is not ClientInfoRequest [result == InvalidConnection];
+     * 3) Handling queue (m_handleRequestsQueue) is overflowed [result == Overflow].
+     *
+     * @attention
+     * This function is @ref CLIENT_STATE_CONCURRENCY_PROTECTED outside by given client
+     * 
+     * @warning
+     *  2) All 3 function call cases (listed above)
+     *     can happen at the same time but result will 
+     *     still be InvalidRequest, because we are calling this
+     *     function in the validating order given above
+     * 
+     * @note
+     *     OnBadIncomingRequest() does not supposed to be overrided
+     *     to handle library user added requests with other ERequestType. 
+     *     We don't treat library user defined requests as BAD. Because 
+     *     OnBadIncomingRequest() is called with result == InvalidRequest 
+     *     only if incoming data size is less than size of ERequestType,
+     *     so use OnHandleRequest() for this. This is also does not mean that
+     *     all requests that don't trigger OnBadIncomingRequest() are good.
+     *     They may be garbage and parsing them inside OnHandleRequest()
+     *     will indicate their validity.
+    */
     virtual void    OnBadIncomingRequest(std::string rawRequest, ClientInfo& rClientInfo, EResult result);
 
-    // Same as ChatSocket::OnErrorSendingRequest(), but when
-    // server sending request to multiple clients and we failed
-    // to send request to some of them with a specific result. See IDResultList_t.
-    //
-    // ATTENTION:
-    //     IDResultList_t is NOT CLIENT_STATE_THREAD_PROTECTED
-    //     (so each Client binded to UserID_t in given failedList 
-    //     can be modified by other threads during this function call)
+    /** 
+     * @brief
+     * Same as ChatSocket::OnErrorSendingRequest(), but when
+     * server sending request to multiple clients and we failed
+     * to send request to some of them with a specific result.
+     * 
+     * @sa IDResultList_t.
+     *
+     * @attention
+     * This function is NOT @ref CLIENT_STATE_CONCURRENCY_PROTECTED outside
+     */
     virtual void    OnErrorSendingRequestToAll(std::string rawRequest, RequestInfo rInfoInitial, IDResultList_t failedList);
+
+    using ChatSocket::HandleRequest;
+    using ChatSocket::OnPreHandleRequest;
+    using ChatSocket::OnHandleRequest;
+
+    /**
+     * @brief Event method that called before ChatServer
+     * handling ClientInfoRequest
+     * 
+     * @todo important info should be placed here
+     */
+    virtual EResult OnPreHandleRequest(ClientInfoRequest&, RequestInfo&);
+    virtual EResult OnPreHandleRequest(MessageRequest&, RequestInfo&);
+
+    /**
+     * @brief Event method that called after ChatServer
+     * handled ClientInfoRequest
+     * 
+     * @details
+     * If HandleRequest method is made the given @ref Client authorized
+     * (their state is EState::Active and handleRes == EResult::Success) 
+     * - it is sending authorization confirmation request.
+     * If HandleRequest processed ClientInfoRequest as invalid 
+     * (handleRes == EResult::InvalidRequest) 
+     * - it is sending new request with reauthorization.
+     * In both cases sendTaskInfo tells the results of these sending tasks,
+     * otherwise ignore sendTaskInfo.
+     * 
+     * @param req handled request,
+     * can be changed by OnPreHandleRequest or HandleRequest
+     * @param reqInfo info about request,
+     * can be changed by OnPreHandleRequest
+     * @param clientInfo ref to info about Client we got request from,
+     * can be InvalidClientInfo (handleRes should be one of errors)
+     * @param handleRes EResult of HandleRequest proccessing
+     * @param sendTaskInfo info with results of sending new request task, 
+     * only useful in cases mentioned above. 
+     * 
+     * @attention
+     * This function is @ref CLIENT_STATE_CONCURRENCY_PROTECTED outside
+     * 
+     * @todo important info should be placed here
+     */
+    virtual void    OnHandleRequest(const ClientInfoRequest& req, RequestInfo reqInfo, ClientInfo& clientInfo, EResult handleRes, TaskInfo sendTaskInfo);
+    virtual void    OnHandleRequest(const MessageRequest&, RequestInfo,  EResult handleRes, TaskInfo);
+
 private:
     EResult         AcceptClient(ConnectionInfo&);
     
+
+    ClientInfo&     GetClientInfo(HSteamNetConnection);
     /**
-     * @return - Success          - if Client found and removed;
-     * @return - ClosedConnection - if Client is not found, 
-     *                              but the connection is found and released;
-     * @return - NoAction         - if Client and connection are not found
+     * @brief Removes client with given HSteamNetConnection, also
+     * closing connection
+     * 
+     * @attention
+     * This function is @ref CLIENT_STATE_CONCURRENCY_PROTECTED inside
+     *
+     * @retval - Success          - if Client found and removed;
+     * @retval - ClosedConnection - if Client is not found, but the connection is found and released;
+     * @retval - NoAction         - if Client and connection are not found
+     * @retval - InvalidParam     - if given HSteamNetConnection is k_HSteamNetConnection_Invalid
     */
     EResult         RemoveClient(HSteamNetConnection);
+
+    /**
+     * @todo see method body
+     */
     UserID_t        GenerateUniqueUserID();
     static void     SteamNetConnectionStatusChangedCallback(ConnectionInfo*);
     void            ConnectionThreadFunction() override final;
@@ -254,14 +447,15 @@ private:
 	void            PollQueuedRequests()       override final;
 	void            PollConnectionChanges()    override final;
     void            OnSteamNetConnectionStatusChanged(ConnectionInfo*)       override final;
-    EResult         HandleClientInfoRequest(ClientInfoRequest&, RequestInfo) override final;
-    EResult         HandleMessageRequest(MessageRequest&, RequestInfo)       override final;
+    EResult         HandleRequest(ClientInfoRequest&, RequestInfo) override final;
+    EResult         HandleRequest(MessageRequest&, RequestInfo)       override final;
     HSteamListenSocket       m_hListenSock;
 	HSteamNetPollGroup       m_hPollGroup;
     //cppcheck-suppress unusedStructMember
     static ChatServer*       s_pCallbackServerInstance;
     //cppcheck-suppress unusedStructMember
 	ClientsMap_t             m_mapClients;
+    //cppcheck-suppress unusedStructMember
     ConnectionsMap_t         m_mapConnections;
     UserID_t                 m_lastFreeID = Constant::LibReservedUserIDs;
     ClientLock_t             m_ClientLock;

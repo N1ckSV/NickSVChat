@@ -23,22 +23,32 @@ public:
 };
 
 /**
- * @brief Struct to store some info
- *        about Request
- * 
- * @warning Move-only
+ * @brief Struct to store sending info of Request
  */
 struct RequestInfo
 {
-    UserID_t id;
-    //All send flags starts with SF_
-    uint32_t sendFlags;
-    RequestInfo();
-    //cppcheck-suppress noExplicitConstructor
-    RequestInfo(UserID_t id);
-    RequestInfo(UserID_t id, uint32_t flags);
-};
+    /**
+     * @brief User ID to send Request to
+     * or ignore depending on sendFlags
+     * (SF_SEND_TO_ONE and SF_SEND_TO_ALL)
+     */
+    UserID_t userID;
 
+    //All send flags starts with SF_
+    uint64_t sendFlags;
+
+    //Intended for LIB user purposes
+    union ExtraInfo
+    {
+        uint64_t AsUINT;
+        void*    AsPOINTER;
+        char     AsARRAY[sizeof(uint64_t)];
+    } extraInfo;
+    
+    RequestInfo();
+    explicit RequestInfo(UserID_t id);
+    RequestInfo(UserID_t id, uint64_t flags);
+};
 
 
 

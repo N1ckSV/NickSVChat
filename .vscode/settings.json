@@ -89,7 +89,10 @@
         "text_encoding": "cpp",
         "future": "cpp",
         "coroutine": "cpp",
-        "resumable": "cpp"
+        "resumable": "cpp",
+        "ciso646": "cpp",
+        "version": "cpp",
+        "unordered_set": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled",
     "c-cpp-flylint.enable": true,

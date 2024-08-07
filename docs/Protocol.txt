@@ -1,0 +1,34 @@
+
+
+
+1. Server ID (UserID) should always be "1" (Constant::ServerID).
+         
+std::map< UserID_t, std::pair<HSteamNetConnection, std::unique_ptr<ClientInfo>> >
+std::unordered_map<HSteamNetConnection, UserID_t>  
+2. Valid and invalid m_mapClients and m_mapConnections states:
+    "X" - any value,
+    "-" - not contains,
+    "SAME" - same value as another column with the same type (for UserID_t and HSteamNetConnection)
+    "DIFF" - different value from another column with the same type (for UserID_t and HSteamNetConnection)
+    "INV"  - invalid state (cannot exist for long time if Resolved)
+    "VAL"  - valid state (can exist for long time)
+    (it is assumed that the ClintInfo's UserID always matches the key one)
+
+    |                         m_mapClients                      |           m_mapConnections          |  STATE  |       DETAILS       
+    |-----------------------------------------------------------|-------------------------------------|---------|---------------------
+    |   UserID_t   | HSteamNetConnection | ClientInfo::m_eState | HSteamNetConnection |   UserID_t    |   ---   |        ---          
+    |      0       |          X          |           X          |         X           |       X       |   INV   |  UNRESOLVED AT ALL  
+    |      1       |          X          |           X          |         X           |       X       |   INV   |  UNRESOLVED AT ALL  
+    |      X       |          X          |           X          |         0           |       X       |   INV   |  UNRESOLVED AT ALL  
+
+    |   2 to 255   |          X          |           X          |         X           |       X       |   VAL   |  LIB RESERVED
+
+    |    >255      |          0          |           X          |         -           |       -       |   VAL   |  RESOLVED, UserID is Reserved, NO CONNECTION
+
+    |    >255      |         >0          |           X          |         -           |       -       |   INV   |  PARTIALLY RESOLVED, UserID is Busy, NO CONNECTION
+    |    >255      |         >0          |           X          |        SAME         |      DIFF     |   INV   |  PARTIALLY RESOLVED, UserID is Busy, POSSIBLE CONNECTION
+    |    >255      |         >0          |           X          |        DIFF         |      SAME     |   INV   |  UNRESOLVED AT ALL
+
+    |    >255      |         >0          |     Unauthorized     |        SAME         |      SAME     |   VAL   |  RESOLVED, UserID is Busy, CONNECTED, Client cannot communicate
+    |    >255      |         >0          |        Active        |        SAME         |      SAME     |   VAL   |  RESOLVED, UserID is Busy, CONNECTED, Client can communicate
+           

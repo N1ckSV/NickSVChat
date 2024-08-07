@@ -57,8 +57,8 @@ std::string::const_iterator Parser<MessageRequest>::FromString(std::string::cons
     if(newIter <= iter)
         return begin;
 
-    std::swap(GetObject()->GetMessage(), parser->GetObject());
-    return OnFromString(iter, end);
+    std::swap(GetObject()->GetMessage(), *parser->GetObject());
+    return OnFromString(newIter, end);
 }
 
 std::string::const_iterator inline Parser<MessageRequest>::OnFromString(
