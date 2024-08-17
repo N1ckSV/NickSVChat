@@ -14,17 +14,18 @@ namespace NickSV {
 namespace Chat {
 
 
-class IChatSocket
+class NICKSVCHAT_API IChatSocket
 {
 public:
-    [[nodiscard]]  virtual EResult Run(const ChatIPAddr &serverAddr) = 0;
-    [[nodiscard]]  virtual    bool IsRunning()   = 0;
-                   virtual    void CloseSocket() = 0;
-                   virtual    void Wait()        = 0;
+    [[nodiscard]]  virtual  EResult Run(const ChatIPAddr &serverAddr) = 0;
+    [[nodiscard]]  virtual     bool IsRunning()   = 0;
+                   virtual     void CloseSocket() = 0;
+                   virtual     void Wait()        = 0;
     //Queue request for sending
-    [[nodiscard]]  virtual EResult SendRequest( Request&, RequestInfo) = 0;
-                   virtual EResult HandleRequest(Request&, RequestInfo) = 0;
-                   virtual         ~IChatSocket() = default;
+    [[nodiscard]]  virtual  EResult SendRequest(  Request&, RequestInfo) = 0;
+    [[nodiscard]]  virtual TaskInfo QueueRequest( Request&, RequestInfo) = 0;
+                   virtual  EResult HandleRequest(Request&, RequestInfo) = 0;
+                   virtual          ~IChatSocket() = default;
 };
 
 

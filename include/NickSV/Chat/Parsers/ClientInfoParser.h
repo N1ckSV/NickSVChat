@@ -17,7 +17,7 @@ namespace Chat {
 
 
 template<>
-class Parser<ClientInfo> : public IParser
+class NICKSVCHAT_API Parser<ClientInfo> : public IParser
 {
 public:
     using UserIDType = ClientInfo::UserIDType;
@@ -25,12 +25,12 @@ public:
 
     Parser();
     
-    std::unique_ptr<ClientInfo>& GetObject();
+    ClientInfo& GetObject();
 
     std::string::const_iterator FromString(const std::string&) override final;
     std::string::const_iterator FromString(std::string::const_iterator, std::string::const_iterator) override final;
     std::string::const_iterator OnFromString(std::string::const_iterator, std::string::const_iterator) override;
-private:
+protected:
     std::unique_ptr<ClientInfo> m_upClientInfo;
 };
 

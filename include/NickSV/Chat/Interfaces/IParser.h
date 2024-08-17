@@ -3,7 +3,6 @@
 #define _NICKSV_CHAT_IPARSER_T
 #pragma once
 
-
 #include "NickSV/Chat/Types.h"
 
 
@@ -17,7 +16,7 @@ namespace Chat {
 //------------------------------------------------------------------------------------
 // Parser interface
 //------------------------------------------------------------------------------------
-class IParser
+class NICKSVCHAT_API IParser
 {
 public:
     [[nodiscard]]  virtual std::string::const_iterator        FromString(const std::string&) = 0;

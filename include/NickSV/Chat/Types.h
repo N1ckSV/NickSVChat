@@ -10,10 +10,11 @@
 
 
 #include <cstdint>
-
-#include "NickSV/Chat/Definitions.h"
+#include <type_traits>
 
 #include "steam/steamnetworkingtypes.h"
+
+#include "NickSV/Chat/Definitions.h"
 
 
 namespace NickSV {

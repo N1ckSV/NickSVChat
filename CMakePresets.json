@@ -1,89 +1,219 @@
 {
     "version": 5,
     "configurePresets": [
+        
+        ///////////////////////////////////////////////////////
+        ///HIDDEN PARENT PRESETS
+        ///////////////////////////////////////////////////////
         {
-            "name": "windows-base-mingw",
-            "generator": "MinGW Makefiles",
-            "hidden": true,            
+            "name": "base",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "BUILD_EXAMPLES": "ON" //"CHARACTER_TYPE": "USE_CHAR16"
+            }
+        },
+
+        {
+            "name": "gcc",
+            "hidden": true,
             "cacheVariables": {
                 "CMAKE_CXX_COMPILER": "g++.exe",
-                "CMAKE_C_COMPILER": "gcc.exe",
-                "CMAKE_MAKE_PROGRAM": "mingw32-make.exe",
-                "BUILD_EXAMPLES": "ON"  //, "CHARACTER_TYPE": "USE_CHAR16"
-            },
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Windows"
+                "CMAKE_C_COMPILER": "gcc.exe"
             }
         },
+
         {
-            "name": "windows-debug-mingw",
-            "inherits": "windows-base-mingw",
-            "displayName": "Windows Debug MinGW",
-            "description": "Windows Debug build using MinGW gen",
-            "binaryDir": "${sourceDir}/build/Windows/Debug",
-            "installDir": "${sourceDir}/install/Windows/Debug",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
-            }
-        },
-        {
-            "name": "windows-release-mingw",
-            "inherits": "windows-base-mingw",
-            "displayName": "Windows Release MinGW",
-            "description": "Windows Release build using MinGW gen",
-            "binaryDir": "${sourceDir}/build/Windows/Release",
-            "installDir": "${sourceDir}/install/Windows/Release",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
-            }
-        },
-        {
-            "name": "windows-debug-mingw-test",
-            "inherits": "windows-debug-mingw",
-            "displayName": "Windows Test Debug MinGW",
-            "description": "Windows Test Debug build using MinGW gen",
-            "cacheVariables": {
-                "INSTALL_RUNTIME_DEPENDENCIES": "ON",
-                "BUILD_TESTS": "ON",
-                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/Windows/Debug/bin"
-            }
-        },
-        {
-            "name": "windows-release-mingw-test",
-            "inherits": "windows-release-mingw",
-            "displayName": "Windows Test Release MinGW",
-            "description": "Windows Test Release build using MinGW gen",
-            "cacheVariables": {
-                "INSTALL_RUNTIME_DEPENDENCIES": "ON",
-                "BUILD_TESTS": "ON",
-                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/Windows/Release/bin"
-            }
-        },
-        {
-            "name": "windows-msvc",
-            "displayName": "Windows MSVC Config",
-            "description": "Windows Base build using Visual Studio gen",
+            "name": "msvc",
+            "hidden": true,
             "generator": "Visual Studio 16 2019",
-            "binaryDir": "${sourceDir}/build/Windows/",
-            "installDir": "${sourceDir}/install/Windows/${CMAKE_BUILD_TYPE}",
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "cl.exe",
-                "CMAKE_CXX_COMPILER": "cl.exe"
+                "CMAKE_CXX_COMPILER": "cl.exe",
+                "OPENSSL_ROOT_DIR": "E:/SDK/OpenSSL-Win64"
             },
             "architecture": {
                 "value": "x64",
                 "strategy": "external"
-            },
+            }
+        },
+
+        {
+            "name": "debug",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+
+        {
+            "name": "release",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+
+        {
+            "name": "windows",
+            "hidden": true,
             "condition": {
                 "type": "equals",
                 "lhs": "${hostSystemName}",
                 "rhs": "Windows"
             }
+        },
+
+        {
+            "name": "linux",
+            "hidden": true,
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            }
+        },
+
+        {
+            "name": "test",
+            "hidden": true,
+            "displayName": "Test ${displayName}",
+            "description": "Test ${description}",
+            "cacheVariables": {
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/${presetName}",
+                "INSTALL_RUNTIME_DEPENDENCIES": "ON",
+                "BUILD_TESTS": "ON"
+            }
+        },
+        
+        
+
+
+        ///////////////////////////////////////////////////////
+        ///Windows MINGW
+        ///////////////////////////////////////////////////////
+        {
+            "name": "windows-debug-mingw",
+            "displayName": "Windows Debug MinGW",
+            "description": "Windows Debug build using MinGW gen",
+            "inherits" : ["base", "gcc", "windows", "debug"],
+            "generator": "MinGW Makefiles",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": "mingw32-make.exe"
+            }
+        },
+
+        {
+            "name": "windows-release-mingw",
+            "displayName": "Windows Release MinGW",
+            "description": "Windows Release build using MinGW gen",
+            "inherits" : ["base", "gcc", "windows", "release"],
+            "generator": "MinGW Makefiles",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": "mingw32-make.exe"
+            }
+        },
+
+        
+        ///////////////////////////////////////////////////////
+        ///Windows MSVC
+        ///////////////////////////////////////////////////////
+        {
+            "name": "windows-debug-msvc",
+            "displayName": "Windows Debug MSVC",
+            "description": "Windows Debug build using MSVC",
+            "inherits" : ["base", "msvc", "windows", "debug"]
+        },
+
+        {
+            "name": "windows-release-msvc",
+            "displayName": "Windows Release MSVC",
+            "description": "Windows Release build using MSVC gen",
+            "inherits" : ["base", "msvc", "windows", "release"]
+        },
+
+
+        
+        ///////////////////////////////////////////////////////
+        ///Linux GCC NINJA
+        ///////////////////////////////////////////////////////
+        {
+            "name": "linux-debug-ninja",
+            "displayName": "Linux Debug Ninja",
+            "description": "Linux Debug build using Ninja gen",
+            "inherits" : ["base", "gcc", "linux", "debug"],
+            "generator": "Ninja"
+        },
+
+        {
+            "name": "linux-release-ninja",
+            "displayName": "Linux Release Ninja",
+            "description": "Linux Release build using Ninja gen",
+            "inherits" : ["base", "gcc","linux", "release"],
+            "generator": "Ninja"
+        },
+
+
+        
+        ///////////////////////////////////////////////////////
+        ///Windows MINGW TEST
+        ///////////////////////////////////////////////////////
+        {
+            "name": "windows-debug-mingw-test",
+            "displayName": "Test Windows Debug MinGW",
+            "description": "Test Windows Debug build using MinGW gen",
+            "inherits" : ["windows-debug-mingw", "test"]
+        },
+        {
+            "name": "windows-release-mingw-test",
+            "displayName": "Test Windows Release MinGW",
+            "description": "Test Windows Release build using MinGW gen",
+            "inherits" : ["windows-release-mingw", "test"]
+        },
+
+        
+        ///////////////////////////////////////////////////////
+        ///Windows MSVC TEST
+        ///////////////////////////////////////////////////////
+        {
+            "name": "windows-debug-msvc-test",
+            "displayName": "Test Windows Debug MSVC",
+            "description": "Test Windows Debug build using MSVC",
+            "inherits" : ["windows-debug-msvc", "test"]
+        },
+        {
+            "name": "windows-release-msvc-test",
+            "displayName": "Test Windows Release MSVC",
+            "description": "Test Windows Release build using MSVC gen",
+            "inherits" : ["windows-release-msvc", "test"]
+        },
+
+        
+        ///////////////////////////////////////////////////////
+        ///Linux GCC NINJA TEST
+        ///////////////////////////////////////////////////////
+        {
+            "name": "linux-debug-ninja-test",
+            "displayName": "Test Linux Debug Ninja",
+            "description": "Test Linux Debug build using Ninja gen",
+            "inherits" : ["linux-debug-ninja", "test"]
+        },
+        {
+            "name": "linux-release-mingw-test",
+            "displayName": "Test Linux Release Ninja",
+            "description": "Test Linux Release build using Ninja gen",
+            "inherits" : ["linux-release-mingw-test", "test"]
         }
+
+
     ],
     "buildPresets": [
+
+
+        
+        ///////////////////////////////////////////////////////
+        ///Windows MINGW
+        ///////////////////////////////////////////////////////
         {
             "name": "windows-debug-mingw",
             "displayName": "Enabled",
@@ -100,6 +230,55 @@
               "all"
             ]
         },
+
+
+        
+        
+        ///////////////////////////////////////////////////////
+        ///Windows MSVC
+        ///////////////////////////////////////////////////////
+        {
+            "name": "windows-debug-msvc",
+            "displayName": "Enabled",
+            "configurePreset": "windows-debug-msvc",
+            "targets":[
+              "all"
+            ]
+        },
+        {
+            "name": "windows-release-msvc",
+            "displayName": "Enabled",
+            "configurePreset": "windows-release-msvc",
+            "targets":[
+              "all"
+            ]
+        },
+
+        
+        
+        ///////////////////////////////////////////////////////
+        ///Linux GCC NINJA
+        ///////////////////////////////////////////////////////
+        {
+            "name": "linux-debug-ninja",
+            "displayName": "Enabled",
+            "configurePreset": "linux-debug-ninja",
+            "targets":[
+              "all"
+            ]
+        },
+        {
+            "name": "linux-release-ninja",
+            "displayName": "Enabled",
+            "configurePreset": "linux-release-ninja",
+            "targets":[
+              "all"
+            ]
+        },
+        
+        ///////////////////////////////////////////////////////
+        ///Windows MINGW TEST
+        ///////////////////////////////////////////////////////
         {
             "name": "windows-debug-mingw-test",
             "displayName": "Enabled",
@@ -117,9 +296,59 @@
               //install before test
               "install"
             ]
+        },
+
+        
+        ///////////////////////////////////////////////////////
+        ///Windows MSVC TEST
+        ///////////////////////////////////////////////////////
+        {
+            "name": "windows-debug-msvc-test",
+            "displayName": "Enabled",
+            "configurePreset": "windows-debug-msvc-test",
+            "targets":[
+              //install before test
+              "install"
+            ]
+        },
+        {
+            "name": "windows-release-msvc-test",
+            "displayName": "Enabled",
+            "configurePreset": "windows-release-msvc-test",
+            "targets":[
+              //install before test
+              "install"
+            ]
+        },
+        
+        ///////////////////////////////////////////////////////
+        ///Linux GCC NINJA TEST
+        ///////////////////////////////////////////////////////
+        {
+            "name": "linux-debug-ninja-test",
+            "displayName": "Enabled",
+            "configurePreset": "linux-debug-ninja-test",
+            "targets":[
+              //install before test
+              "install"
+            ]
+        },
+        {
+            "name": "linux-release-ninja-test",
+            "displayName": "Enabled",
+            "configurePreset": "linux-release-ninja-test",
+            "targets":[
+              //install before test
+              "install"
+            ]
         }
     ],
     "testPresets": [
+
+        
+        ///////////////////////////////////////////////////////
+        ///Windows MINGW
+        ///////////////////////////////////////////////////////
         {
             //Disabled because doing nothing
             "name": "windows-debug-mingw",
@@ -141,6 +370,72 @@
             "name": "windows-release-mingw-test",
             "displayName": "Enabled",
             "configurePreset": "windows-release-mingw-test"
+        },
+
+
+
+
+        
+        ///////////////////////////////////////////////////////
+        ///Windows MSVC 
+        ///////////////////////////////////////////////////////
+        {
+            //Disabled because doing nothing
+            "name": "windows-debug-msvc",
+            "displayName": "Disabled",
+            "configurePreset": "windows-debug-msvc"
+        },
+        {
+            //Disabled because doing nothing
+            "name": "windows-release-msvc",
+            "displayName": "Disabled",
+            "configurePreset": "windows-release-msvc"
+        },
+        {
+          "name": "windows-debug-msvc-test",
+          "displayName": "Enabled",
+          "configurePreset": "windows-debug-msvc-test",
+          "configuration": "Debug"
+        },
+        {
+            "name": "windows-release-msvc-test",
+            "displayName": "Enabled",
+            "configurePreset": "windows-release-msvc-test",
+            "configuration": "Release"
+        },
+
+
+
+        
+        
+        ///////////////////////////////////////////////////////
+        ///Linux GCC NINJA
+        ///////////////////////////////////////////////////////
+        {
+            //Disabled because doing nothing
+            "name": "linux-debug-ninja",
+            "displayName": "Disabled",
+            "configurePreset": "linux-debug-ninja"
+        },
+        {
+            //Disabled because doing nothing
+            "name": "linux-release-ninja",
+            "displayName": "Disabled",
+            "configurePreset": "linux-release-ninja"
+        },
+        {
+          "name": "linux-debug-ninja-test",
+          "displayName": "Enabled",
+          "configurePreset": "linux-debug-ninja-test"
+        },
+        {
+            "name": "linux-release-ninja-test",
+            "displayName": "Enabled",
+            "configurePreset": "linux-release-ninja-test"
         }
+
+
+
+
     ]
 }

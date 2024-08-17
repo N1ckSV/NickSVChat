@@ -19,7 +19,7 @@ namespace Chat {
 
 
 template<typename CharT>
-struct BasicMessage : public ISerializable
+struct NICKSVCHAT_API BasicMessage : public ISerializable
 {
     /*
     Simple data struct.

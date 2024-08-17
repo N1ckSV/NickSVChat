@@ -20,7 +20,7 @@ namespace Chat {
 //------------------------------------------------------------------------------------
 // Serializer interface
 //------------------------------------------------------------------------------------
-class ISerializer
+class NICKSVCHAT_API ISerializer
 {
 public:
     [[nodiscard]]  virtual inline               size_t GetSize() const = 0;

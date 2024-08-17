@@ -24,12 +24,12 @@ namespace Chat {
 // Parser<ClientInfo> implementation
 //----------------------------------------------------------------------------------------------------
 
-Parser<ClientInfo>::Parser() : m_upClientInfo(std::make_unique<ClientInfo>()) {};
+Parser<ClientInfo>::Parser() : m_upClientInfo(new ClientInfo()) {};
 
 
-std::unique_ptr<ClientInfo>& Parser<ClientInfo>::GetObject()
+ClientInfo& Parser<ClientInfo>::GetObject()
 { 
-    return m_upClientInfo;
+    return *m_upClientInfo;
 };
 
 
@@ -43,39 +43,33 @@ std::string::const_iterator Parser<ClientInfo>::FromString(std::string::const_it
 {
     constexpr size_t atleastSize = sizeof(LibVersionType) + sizeof(EState) + sizeof(UserIDType);
     Tools::type_integrity_assert<ClientInfo, atleastSize + COMPILER_AWARE_VALUE(8, 8, 8)>();
-    if(begin + atleastSize > end)
+    if(std::distance(begin, end) < static_cast<std::ptrdiff_t>(atleastSize))
         return begin; //BAD INPUT. Range size has to be atleastSize bytes long
 
-    Transfer<LibVersionType> ver;
-    std::copy(begin, begin + sizeof(LibVersionType), ver.CharArr);
-    auto iter = begin + sizeof(LibVersionType);
-    GetObject()->GetLibVer() = ver.Base;
-    Transfer<EState> state;
-    std::copy(iter, iter + sizeof(EState), state.CharArr);
-    iter += sizeof(EState);
-    GetObject()->GetState() = state.Base;
-    Transfer<UserIDType> id;
-    std::copy(iter, iter + sizeof(UserIDType), id.CharArr);
-    iter += sizeof(UserIDType);
-    GetObject()->GetUserID() = id.Base;
+    auto iter = ParseSeries(begin, end, GetObject().GetLibVer(), GetObject().GetState(), GetObject().GetUserID());
+    if(std::distance(begin, iter) <= 0)
+        return begin;
 
-    return OnFromString(iter, end);
+    auto newIter = OnFromString(iter, end);
+    if(iter == end)
+        return end;
+    if(std::distance(iter, newIter) <= 0)
+        return begin;
+    return newIter;
 }
 
 
 std::string::const_iterator inline Parser<ClientInfo>::OnFromString(
-    std::string::const_iterator begin,
-    std::string::const_iterator)
+    std::string::const_iterator,
+    std::string::const_iterator end)
 { 
-    return begin; 
+    return end; 
 }
 //----------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------
 
 
-
-template class Parser<ClientInfo>;
 
 
 }}  /*END OF NAMESPACES*/

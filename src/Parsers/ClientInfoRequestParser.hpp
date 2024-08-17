@@ -25,17 +25,13 @@ namespace Chat {
 //----------------------------------------------------------------------------------------------------
 // Parser<ClientInfoRequest> implementation
 //----------------------------------------------------------------------------------------------------
-Parser<ClientInfoRequest>::Parser() : m_upClientInfoRequest(std::make_unique<ClientInfoRequest>()) {};
+Parser<ClientInfoRequest>::Parser() : m_upClientInfoRequest(new ClientInfoRequest()) {};
 
-std::unique_ptr<ClientInfoRequest>& Parser<ClientInfoRequest>::GetObject()
+ClientInfoRequest& Parser<ClientInfoRequest>::GetObject()
 { 
-    return m_upClientInfoRequest;
+    return *m_upClientInfoRequest;
 };
 
-std::unique_ptr<Parser<ClientInfo>> Parser<ClientInfoRequest>::GetClientInfoParser()
-{
-    return std::make_unique<Parser<ClientInfo>>();
-}
 
 inline std::string::const_iterator Parser<ClientInfoRequest>::FromString(const std::string& str)
 {
@@ -45,36 +41,38 @@ inline std::string::const_iterator Parser<ClientInfoRequest>::FromString(const s
 std::string::const_iterator Parser<ClientInfoRequest>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
     Tools::type_integrity_assert<ClientInfoRequest, COMPILER_AWARE_VALUE(16, 16, 16) + sizeof(std::unique_ptr<ClientInfo>)>();
-    if(begin + sizeof(ERequestType) > end)
+    if(std::distance(begin, end) < static_cast<std::ptrdiff_t>(sizeof(ERequestType)))
         return begin; //BAD INPUT. Range size has to be at least sizeof(ERequestType) bytes long
 
-    Transfer<ERequestType> type;
-    std::copy(begin, begin + sizeof(ERequestType), type.CharArr);
-    if(type.Base != ERequestType::ClientInfo)
+    ERequestType type;
+    auto iter = ParseSeries(begin, end, type);
+    if(std::distance(begin, iter) <= 0 ||
+       type != ERequestType::ClientInfo)
+            return begin;
+
+    auto newIter = ParseSeries(iter, end, GetObject().GetClientInfo());
+    if(std::distance(iter, newIter) <= 0)
         return begin;
 
-    auto iter = begin + sizeof(ERequestType);
-    auto parser = GetClientInfoParser();
-    auto newIter = parser->FromString(iter, end);
-    if(newIter <= iter)
+    iter = OnFromString(newIter, end);
+    if(newIter == end)
+        return end;
+    if(std::distance(newIter, iter) <= 0)
         return begin;
-
-    std::swap(GetObject()->GetClientInfo(), *parser->GetObject());
-    return OnFromString(newIter, end);
+    return iter;
 }
 
 std::string::const_iterator inline Parser<ClientInfoRequest>::OnFromString(
-    std::string::const_iterator begin,
-    std::string::const_iterator)
+    std::string::const_iterator,
+    std::string::const_iterator end)
 { 
-    return begin; 
+    return end; 
 }
 //----------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------
 
 
-template class Parser<ClientInfoRequest>;
 
 
 }}  /*END OF NAMESPACES*/

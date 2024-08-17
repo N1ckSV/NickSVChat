@@ -10,7 +10,7 @@ namespace Chat {
 
 
 
-class IRequest
+class NICKSVCHAT_API IRequest
 {
 public:
     [[nodiscard]]  virtual ERequestType GetType() const = 0;

@@ -23,17 +23,12 @@ namespace Chat {
 //----------------------------------------------------------------------------------------------------
 // Parser<MessageRequest> implementation
 //----------------------------------------------------------------------------------------------------
-Parser<MessageRequest>::Parser() : m_upMessageRequest(std::make_unique<MessageRequest>()) {};
+Parser<MessageRequest>::Parser() : m_upMessageRequest(new MessageRequest()) {};
 
-std::unique_ptr<MessageRequest>& Parser<MessageRequest>::GetObject()
+MessageRequest& Parser<MessageRequest>::GetObject()
 { 
-    return m_upMessageRequest;
+    return *m_upMessageRequest;
 };
-
-std::unique_ptr<Parser<Message>> Parser<MessageRequest>::GetMessageParser()
-{
-    return std::make_unique<Parser<Message>>();
-}
 
 inline std::string::const_iterator Parser<MessageRequest>::FromString(const std::string& str)
 {
@@ -43,36 +38,37 @@ inline std::string::const_iterator Parser<MessageRequest>::FromString(const std:
 std::string::const_iterator Parser<MessageRequest>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
     Tools::type_integrity_assert<MessageRequest, COMPILER_AWARE_VALUE(16, 16, 16) + sizeof(std::unique_ptr<Message>)>();
-    if(begin + sizeof(ERequestType) > end)
+    if(std::distance(begin, end) < static_cast<ptrdiff_t>(sizeof(ERequestType)))
         return begin; //BAD INPUT. Range size has to be at least sizeof(ERequestType) bytes long
 
-    Transfer<ERequestType> type;
-    std::copy(begin, begin + sizeof(ERequestType), type.CharArr);
-    if(type.Base != ERequestType::Message)
+    ERequestType type;
+    auto iter = ParseSeries(begin, end, type);
+    if(std::distance(begin, iter) <= 0 ||
+       type != ERequestType::Message)
+            return begin;
+
+    auto newIter = ParseSeries(iter, end, GetObject().GetMessage());
+    if(std::distance(iter, newIter) <= 0)
         return begin;
 
-    auto iter = begin + sizeof(ERequestType);
-    auto parser = GetMessageParser();
-    auto newIter = parser->FromString(iter, end);
-    if(newIter <= iter)
+    iter = OnFromString(newIter, end);
+    if(newIter == end)
+        return end;
+    if(std::distance(newIter, iter) <= 0)
         return begin;
-
-    std::swap(GetObject()->GetMessage(), *parser->GetObject());
-    return OnFromString(newIter, end);
+    return iter;
 }
 
 std::string::const_iterator inline Parser<MessageRequest>::OnFromString(
-    std::string::const_iterator begin,
-    std::string::const_iterator)
+    std::string::const_iterator,
+    std::string::const_iterator end)
 { 
-    return begin; 
+    return end; 
 }
 //----------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------
 
-
-template class Parser<MessageRequest>;
 
 
 }}  /*END OF NAMESPACES*/

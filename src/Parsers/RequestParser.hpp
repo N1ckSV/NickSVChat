@@ -27,22 +27,12 @@ namespace Chat {
 // Parser<Request> implementation
 //----------------------------------------------------------------------------------------------------
 
-Parser<Request>::Parser() : m_upRequest(std::make_unique<Request>()) {};
+Parser<Request>::Parser() : m_upRequest(new Request()) {};
 
-std::unique_ptr<Request>& Parser<Request>::GetObject()
+Request& Parser<Request>::GetObject()
 { 
-    return m_upRequest;
+    return *m_upRequest;
 };
-
-std::unique_ptr<Parser<ClientInfoRequest>> Parser<Request>::GetClientInfoRequestParser()
-{
-    return std::make_unique<Parser<ClientInfoRequest>>();
-}
-
-std::unique_ptr<Parser<MessageRequest>>    Parser<Request>::GetMessageRequestParser()
-{
-    return std::make_unique<Parser<MessageRequest>>();
-}
 
 inline std::string::const_iterator Parser<Request>::FromString(const std::string& str)
 {
@@ -51,58 +41,49 @@ inline std::string::const_iterator Parser<Request>::FromString(const std::string
 
 std::string::const_iterator Parser<Request>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
-    if(begin + sizeof(ERequestType) > end)
+    if(std::distance(begin, end) < static_cast<std::ptrdiff_t>(sizeof(ERequestType)))
         return begin; //BAD INPUT. Range size has to be at least sizeof(ERequestType) bytes long
 
-    Transfer<ERequestType> type;
-    std::copy(begin, begin + sizeof(ERequestType), type.CharArr);
-    auto iter = begin;
-    switch (type.Base)
+    ERequestType type;
+    auto iter = ParseSeries(begin, end, type);
+    if(std::distance(begin, iter) <= 0)
+        return begin;
+
+    if(type == ERequestType::ClientInfo)
     {
-        case ERequestType::ClientInfo:
-        {
-            auto parser = GetClientInfoRequestParser();
-            iter = parser->FromString(begin, end);
-            if(iter == begin)
-                return begin;
-
-            std::unique_ptr<Request> request(std::move(parser->GetObject()));
-            std::swap(GetObject(), request);
-            break;
-        }
-        case ERequestType::Message:
-        {
-            auto parser = GetMessageRequestParser();
-            iter = parser->FromString(begin, end);
-            if(iter == begin)
-                return begin;
-
-            std::unique_ptr<Request> request(std::move(parser->GetObject()));
-            std::swap(GetObject(), request);
-            break;
-        }
-        default:
-            break;
+        m_upRequest.reset(new ClientInfoRequest());
+        iter = ParseSeries(begin, end, static_cast<ClientInfoRequest&>(GetObject()));
     }
-    if(iter == begin)
-        return OnFromString(begin, end);
-        
-    return OnFromString(iter, end);
+    else if(type == ERequestType::Message)
+    {
+        m_upRequest.reset(new MessageRequest());
+        iter = ParseSeries(begin, end, static_cast<MessageRequest&>(GetObject()));
+    }
+    else
+        iter = OnFromString(begin, end);
+
+    if(std::distance(begin, iter) <= 0)
+        return begin;
+
+    auto newIter = OnFromString(iter, end);
+    if(iter == end)
+        return end;
+    if(std::distance(iter, newIter) <= 0)
+        return begin;
+    return newIter;
 }
 
 std::string::const_iterator inline Parser<Request>::OnFromString(
-    std::string::const_iterator begin,
-    std::string::const_iterator)
+    std::string::const_iterator,
+    std::string::const_iterator end)
 { 
-    return begin;
+    return end;
 }
 //----------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------
 
 
-
-template class Parser<Request>;
 
 
 }}  /*END OF NAMESPACES*/

@@ -14,18 +14,22 @@ namespace NickSV {
 namespace Chat {
 
 
-class Request : public IRequest, public ISerializable
+class NICKSVCHAT_API Request : public IRequest, public ISerializable
 {
 public:
     Request() = default;
     ERequestType GetType() const override;
+
+    /**
+     * @returns nullptr because Unknown Request shouldn't be serialized
+     */
     const std::unique_ptr<ISerializer> GetSerializer() const override;
 };
 
 /**
  * @brief Struct to store sending info of Request
  */
-struct RequestInfo
+struct NICKSVCHAT_API RequestInfo
 {
     /**
      * @brief User ID to send Request to

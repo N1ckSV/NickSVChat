@@ -4,8 +4,9 @@
 #pragma once
 
 
-#include "NickSV/Chat/Requests/MessageRequest.h"
 #include "NickSV/Chat/Serializers/MessageRequestSerializer.h"
+#include "NickSV/Chat/Parsers/MessageRequestParser.h"
+#include "NickSV/Chat/Requests/MessageRequest.h"
 
 namespace NickSV {
 namespace Chat {
@@ -14,9 +15,9 @@ namespace Chat {
 //-----------------------------------------------------------------------------------
 // Impementation of MessageRequest
 //-----------------------------------------------------------------------------------
-MessageRequest::MessageRequest() : m_upMessage(std::make_unique<Message>()) {};
+MessageRequest::MessageRequest() : m_upMessage(new Message()) {};
 
-MessageRequest::MessageRequest(Message msg) : m_upMessage(std::make_unique<Message>(std::move(msg))) {};
+MessageRequest::MessageRequest(Message msg) : m_upMessage(new Message(std::move(msg))) {};
 
 Message& MessageRequest::GetMessage()
 {
@@ -32,8 +33,10 @@ ERequestType MessageRequest::GetType() const { return ERequestType::Message; }
 
 const  std::unique_ptr<ISerializer> MessageRequest::GetSerializer() const 
 { 
-    return std::make_unique<Serializer<MessageRequest>>(this); 
+    const auto ptr = new Serializer<MessageRequest>(this);
+    return std::unique_ptr<Serializer<MessageRequest>>(ptr);
 }
+
 //-----------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------

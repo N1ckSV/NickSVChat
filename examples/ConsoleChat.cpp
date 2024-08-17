@@ -1,17 +1,10 @@
 
-#include "NickSV/Chat/Types.h"
-#include "NickSV/Chat/Utils.h"
-#include "NickSV/Chat/Parsers/BStringParser.h"
 
-#include "NickSV/Chat/Requests/Request.h"
-#include "NickSV/Chat/Requests/MessageRequest.h"
-#include "NickSV/Chat/Requests/ClientInfoRequest.h"
-
-#include "NickSV/Chat/ChatClient.h"
-#include "NickSV/Chat/ChatServer.h"
-
-
-#include "NickSV/Tools/ValueLock.h"
+#ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
+#else // Supposed Linux here
+#endif
 
 
 #include <string>
@@ -23,11 +16,16 @@
 #include <cstdio>
 
 
-#ifdef _WIN32
-#include <fcntl.h>
-#include <io.h>
-#else // Supposed Linux here
-#endif
+#include "NickSV/Tools/ValueLock.h"
+
+#include "NickSV/Chat/Parsers/BStringParser.h"
+
+#include "NickSV/Chat/Requests/Request.h"
+#include "NickSV/Chat/Requests/MessageRequest.h"
+#include "NickSV/Chat/Requests/ClientInfoRequest.h"
+
+#include "NickSV/Chat/ChatClient.h"
+#include "NickSV/Chat/ChatServer.h"
 
 
 #undef GetMessage
@@ -54,7 +52,8 @@ static bool SetConsoleMode()
 	std::flush(std::wcout);
 	return ((_setmode(_fileno(stdin ), _O_U16TEXT) != -1) &&
 	   		(_setmode(_fileno(stdout), _O_U16TEXT) != -1));
-#else // Supposed Linux here
+#else
+	#error "Not implemented"
 #endif
 }
 
@@ -78,20 +77,32 @@ class ExampleServer : public ChatServer
         std::wcout 
 			<< std::endl 
 			<< rcReq.GetMessage().GetSenderID() 
-			<< TEXT(": ", CHAT_CHAR) 
+			<< ": " 
 			<< rcReq.GetMessage().GetText() 
 			<< std::endl;
 		if(rcReq.GetMessage().GetText() == TEXT("/exit", CHAT_CHAR))
 		{	
-			std::wcout <<  TEXT("Closing Server...", CHAT_CHAR) << std::endl;
+			std::wcout <<  "Closing Server..." << std::endl;
 			std::this_thread::sleep_for(std::chrono::seconds(3));
 			CloseSocket();
 		};
 	}
-	void OnAcceptClient(ConnectionInfo&, ClientInfo& rClientInfo, NickSV::Chat::EResult, TaskInfo) override
+	void OnAcceptClient(const ConnectionInfo&, const RequestInfo& reqInfo, ClientInfo& rClientInfo, NickSV::Chat::EResult res, TaskInfo tInfo) override
     {
-		std::wcout << "\nNew CLient connected with id: " << rClientInfo.GetUserID() << std::endl << std::endl;
+		if(res != NickSV::Chat::EResult::Success)
+		{
+			std::wcout << "\nNew Client not accepted " << std::endl << std::endl;
+			return;
+		}
+		std::wcout << "\nNew Client accepted with id: " << rClientInfo.GetUserID() << std::endl << std::endl;
     }
+	void OnQueueRequest(const Request&, RequestInfo, NickSV::Chat::EResult res) override
+	{
+		if(!ResultIsOneOf(res, NickSV::Chat::EResult::Success))
+		{
+        	throw ExampleChatServerException();
+		}
+	}
 
 	void OnHandleRequest(const Request& req, RequestInfo reqInfo, NickSV::Chat::EResult result)
     {
@@ -157,14 +168,6 @@ class ExampleClient : public ChatClient
 		 << " with ID " << rcRer.GetClientInfo().GetUserID()
 		 << " and result is " << res << std::endl << std::endl;
     }
-	
-	void OnConnectionStatusChanged(ConnectionInfo *pInfo, NickSV::Chat::EResult res) override
-	{
-		//std::wcout 
-		// << "\nStatus changed from " << pInfo->m_eOldState
-		// << " to " << pInfo->m_info.m_eState
-		// << " and result is " << res << std::endl << std::endl;
-	}
 
 	void OnQueueRequest(const Request&, RequestInfo, NickSV::Chat::EResult res) override
 	{
@@ -209,9 +212,6 @@ int main(int argc, const char *argv[])
 	}
 	bool bServer = false;
 	bool bClient = false;
-	ChatIPAddr addrServer; addrServer.Clear();
-    addrServer.ParseString("192.168.0.212"); //DEV'S pc local ip
-    addrServer.m_port = DEFAULT_PORT;
 
 	for (int i = 1 ; i < argc ; ++i)
 	{
@@ -229,12 +229,15 @@ int main(int argc, const char *argv[])
 			}
 		}
 	}
-	if (bClient == bServer || (bClient && addrServer.IsIPv6AllZeros()))
+	if (bClient == bServer)
         return 1;
 
 	if (bClient)
 	{
 		ExampleClient client;
+		ChatIPAddr addrServer; addrServer.Clear();
+    	addrServer.ParseString("192.168.0.212"); //DEV'S pc local ip
+    	addrServer.m_port = DEFAULT_PORT;
 		client.Run(addrServer);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         std::basic_string<CHAT_CHAR> cmd;
@@ -244,7 +247,7 @@ int main(int argc, const char *argv[])
 			std::getline(std::wcin, cmd);
 			std::wcout << "You: " << cmd << std::endl;
             MessageRequest mReq {Message(cmd)};
-			NickSV::Chat::EResult result;
+			NickSV::Chat::EResult result = NickSV::Chat::EResult::Success;
             auto taskInfo = client.QueueRequest(mReq);
 			try
 			{
@@ -269,6 +272,8 @@ int main(int argc, const char *argv[])
 	else
 	{
 		ExampleServer server;
+		ChatIPAddr addrServer; addrServer.Clear();
+    	addrServer.m_port = DEFAULT_PORT;
 		server.Run(addrServer);
 		server.Wait();
 		std::wcout << std::endl << TEXT("Server is shut down", CHAT_CHAR);

@@ -23,15 +23,15 @@ namespace Chat {
 // Serializer<std::basic_string<CharT>> implementation
 //----------------------------------------------------------------------------------------------------
 template<typename CharT>
-Serializer<std::basic_string<CharT>>::Serializer(const std::basic_string<CharT>* const cpcBasicString) : m_cpcBasicString(cpcBasicString)
+Serializer<std::basic_string<CharT>>::Serializer(const std::basic_string<CharT>* const pBasicString) : m_pBasicString(pBasicString)
 { 
-    CHAT_ASSERT(m_cpcBasicString, "m_cpcBasicString must not be nullptr");
+    CHAT_ASSERT(m_pBasicString, "m_pBasicString must not be nullptr");
 };
 
 template<typename CharT>
 inline const std::basic_string<CharT>* Serializer<std::basic_string<CharT>>::GetObject() const
 { 
-    return m_cpcBasicString;
+    return m_pBasicString;
 };
 
 template<typename CharT>
@@ -65,8 +65,8 @@ std::string::iterator Serializer<std::basic_string<CharT>>::ToString(std::string
     Transfer<size_t> stringSize;
     stringSize.Base = GetObject()->size();
     auto iter = std::copy(stringSize.CharArr, stringSize.CharArr + sizeof(size_t), begin);
-    iter = std::copy(reinterpret_cast<const char*>(GetObject()->cbegin().base()),
-                     reinterpret_cast<const char*>(GetObject()->cend().base()), iter);
+    iter = std::copy(reinterpret_cast<const char*>(GetObject()->data()),
+                     reinterpret_cast<const char*>(GetObject()->data() + GetObject()->size()), iter);
     CHAT_ASSERT(iter <= end, something_went_wrong_ERROR_MESSAGE);
     return iter;
 }
@@ -87,12 +87,6 @@ inline std::string::iterator Serializer<std::basic_string<CharT>>::ToStringBuffe
 //----------------------------------------------------------------------------------------------------
 
 
-
-
-template class Serializer<std::basic_string<char>>;
-template class Serializer<std::basic_string<wchar_t>>;
-template class Serializer<std::basic_string<char16_t>>;
-template class Serializer<std::basic_string<char32_t>>;
 
 }}  /*END OF NAMESPACES*/
 

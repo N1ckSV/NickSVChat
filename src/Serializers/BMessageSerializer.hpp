@@ -5,11 +5,9 @@
 
 
 
-#include "NickSV/Chat/Definitions.h"
-#include "NickSV/Chat/Utils.h"
-#include "NickSV/Chat/BasicMessage.h"
 #include "NickSV/Chat/Serializers/BStringSerializer.h"
 #include "NickSV/Chat/Serializers/BMessageSerializer.h"
+#include "NickSV/Chat/BasicMessage.h"
 
 
 namespace NickSV {
@@ -24,20 +22,24 @@ namespace Chat {
 // Serializer<BasicMessage<CharT>> implementation
 //----------------------------------------------------------------------------------------------------
 template<typename CharT>
-Serializer<BasicMessage<CharT>>::Serializer(const BasicMessage<CharT> * const  cpcBasicMessage) : m_cpcBasicMessage(cpcBasicMessage)
+Serializer<BasicMessage<CharT>>::Serializer(const BasicMessage<CharT> * const  pBasicMessage) : m_pBasicMessage(pBasicMessage)
 { 
-    CHAT_ASSERT(m_cpcBasicMessage, "m_cpcBasicMessage must not be nullptr");
+    CHAT_ASSERT(m_pBasicMessage, "m_pBasicMessage must not be nullptr");
 };
 
 template<typename CharT>
 inline const BasicMessage<CharT>* Serializer<BasicMessage<CharT>>::GetObject() const
 { 
-    return m_cpcBasicMessage;
+    return m_pBasicMessage;
 };
 
 template<typename CharT>
 inline size_t Serializer<BasicMessage<CharT>>::GetSize() const
 {
+    using UserIDType = typename BasicMessage<CharT>::UserIDType;
+    using TextType = typename BasicMessage<CharT>::TextType;
+    using CharType = typename BasicMessage<CharT>::CharType;
+
     Tools::type_integrity_assert<BasicMessage<CharT>, 
         COMPILER_AWARE_VALUE(8, 8, 8) +
         sizeof(UserIDType) + 
@@ -65,8 +67,10 @@ std::string Serializer<BasicMessage<CharT>>::ToString() const
 template<typename CharT>
 std::string::iterator Serializer<BasicMessage<CharT>>::ToString(std::string::iterator begin, std::string::iterator end) const
 {
-    CHAT_ASSERT(end >= GetSize() + begin, invalid_range_size_ERROR_MESSAGE);
+    using UserIDType = typename BasicMessage<CharT>::UserIDType;
+    using TextType = typename BasicMessage<CharT>::TextType;
 
+    CHAT_ASSERT(end >= GetSize() + begin, invalid_range_size_ERROR_MESSAGE);
     Tools::type_integrity_assert<BasicMessage<CharT>, 
         COMPILER_AWARE_VALUE(8, 8, 8) +
         sizeof(UserIDType) + 
@@ -96,11 +100,6 @@ inline std::string::iterator Serializer<BasicMessage<CharT>>::ToStringBuffer(std
 //----------------------------------------------------------------------------------------------------
 
 
-
-template class Serializer<BasicMessage<char>>;
-template class Serializer<BasicMessage<wchar_t>>;
-template class Serializer<BasicMessage<char16_t>>;
-template class Serializer<BasicMessage<char32_t>>;
 
 
 }}  /*END OF NAMESPACES*/

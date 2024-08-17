@@ -18,7 +18,7 @@ namespace Chat {
 
 
 template<>
-class Serializer<MessageRequest> : public ISerializer
+class NICKSVCHAT_API Serializer<MessageRequest> : public ISerializer
 {
     /*
     Class helper handles the serialization of BasicMessage struct to string 
@@ -46,7 +46,7 @@ private:
     /*
     Pointer to BasicMessage object where "this" serializes from or parses to.
     */
-    const MessageRequest* const m_cpcMessageRequest;
+    const MessageRequest* const m_pMessageRequest;
 };
 
 

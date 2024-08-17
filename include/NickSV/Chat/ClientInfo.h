@@ -16,7 +16,7 @@ namespace NickSV {
 namespace Chat {
 
 
-struct ClientInfo : public ISerializable
+struct NICKSVCHAT_API ClientInfo : public ISerializable
 {
     /*
     Simple data struct.

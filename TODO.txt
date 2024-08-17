@@ -9,8 +9,6 @@
 
 -FIX FIXME ISSUES 
 
--add msvc dll support (dlliexport/import stuff)
-
 -add doxygen comments
 
 -client_server_data_exchange_test() after windows reboot throws
@@ -24,8 +22,12 @@ next day                     3221226505
 this test did not fail for a long time!!!
 and again appeared           3221225477
 
--Client infinitly reconnects to server if it is turned off, so need to add timeout
-
--make more frequent state connection update
+-LIB has no safety if program exe file using it twice
 
 -change result != EResult::Success to ResultIsOneOf
+
+-GNS has UserData int64 that can be attached to user ID . See SetConnectionUserData
+ after some thoughts I came to the conclusion that 
+ GNS UserData is only useful if I want to get rid of m_mapConnections
+
+ -add all needed methods in IChatSocket

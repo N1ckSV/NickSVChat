@@ -6,7 +6,6 @@
 #include "NickSV/Tools/Utils.h"
 
 #include "NickSV/Chat/ChatSocket.h"
-#include "NickSV/Chat/ClientInfo.h"
 #include "NickSV/Chat/Serializers/ClientInfoRequestSerializer.h"
 #include "NickSV/Chat/Serializers/MessageRequestSerializer.h"
 #include "NickSV/Chat/Parsers/RequestParser.h"
@@ -95,26 +94,32 @@ void ChatSocket::FatalError(const std::string& errorMsg)
 
 EResult ChatSocket::SendStringToConnection(HSteamNetConnection conn, const std::string& rStr)
 {
-	auto gnsResult = m_pInterface->SendMessageToConnection(conn, rStr.data(), static_cast<uint32>(rStr.size()), 
+	SteamNetConnectionRealTimeStatus_t status;
+	auto gnsResult = m_pInterface->GetConnectionRealTimeStatus(conn, &status, 0, nullptr);
+	if((gnsResult == k_EResultNoConnection) || (status.m_eState != k_ESteamNetworkingConnectionState_Connected))
+		return EResult::InvalidConnection;
+
+	CHAT_ASSERT(gnsResult != k_EResultInvalidParam, "Params was not set to be invalid");
+
+	gnsResult = m_pInterface->SendMessageToConnection(conn, rStr.data(), static_cast<uint32>(rStr.size()), 
 		k_nSteamNetworkingSend_Reliable, nullptr);
 	switch (gnsResult)
 	{
-	case k_EResultInvalidParam: return EResult::InvalidParam;
-	case k_EResultNoConnection:
-	case k_EResultInvalidState: return EResult::InvalidConnection;
+	case k_EResultInvalidParam : return EResult::InvalidParam;
+	case k_EResultNoConnection :
+	case k_EResultInvalidState : return EResult::InvalidConnection;
 	case k_EResultLimitExceeded: return EResult::Overflow;
 	//case k_EResultIgnored: ...
 	default: return EResult::Success;
 	}
 }
 
-bool ChatSocket::IsLibReservedID(UserID_t id)
-{
-	return id < Constant::LibReservedUserIDs;
+
+
+std::unique_ptr<ClientInfo> ChatSocket::MakeClientInfo() 
+{ 
+	return std::unique_ptr<ClientInfo>(new ClientInfo()); 
 }
-
-
-std::unique_ptr<ClientInfo> ChatSocket::MakeClientInfo() { return std::make_unique<ClientInfo>(); }
 
 
 TaskInfo ChatSocket::QueueRequest(Request& rReq, RequestInfo rInfo)
@@ -215,7 +220,7 @@ void ChatSocket::RequestThreadFunction()
 			rInfo  =		   std::get<1>(tuple);
 			parser.FromString(strReq);
 			// HandleRequest returns EResult, but it is only needed for manual calls
-			HandleRequest(*parser.GetObject(), rInfo);
+			HandleRequest(parser.GetObject(), rInfo);
 		}
     }
 }

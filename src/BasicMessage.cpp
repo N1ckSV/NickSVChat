@@ -2,9 +2,10 @@
 #include <cstdint>
 
 
-#include "NickSV/Chat/BasicMessage.h"
-#include "NickSV/Chat/Serializers/BMessageSerializer.h"
 #include "NickSV/Chat/Utils.h"
+#include "NickSV/Chat/Serializers/BMessageSerializer.h"
+#include "NickSV/Chat/Parsers/BMessageParser.h"
+#include "NickSV/Chat/BasicMessage.h"
 
 
 namespace NickSV {
@@ -29,6 +30,8 @@ BasicMessage<CharT>::BasicMessage(BasicMessage<CharT>::UserIDType senderID, Basi
 template<typename CharT>
 bool inline BasicMessage<CharT>::operator==(const BasicMessage<CharT>& other) const
 { 
+    constexpr size_t size = sizeof(TextType) + sizeof(UserIDType) + sizeof(void*);
+    Tools::type_integrity_assert_virtual<BasicMessage<CharT>, COMPILER_AWARE_VALUE(size,size,size)>();
     return (m_sText == other.m_sText) &&
            (m_nSenderID == other.m_nSenderID);
 }
@@ -61,13 +64,15 @@ template<typename CharT>
 auto BasicMessage<CharT>::GetSerializer() const
 -> const std::unique_ptr<ISerializer>
 { 
-    return std::make_unique<Serializer<BasicMessage<CharT>>>(this); 
+    const auto ptr = new Serializer<BasicMessage<CharT>>(this);
+    return std::unique_ptr<Serializer<BasicMessage<CharT>>>(ptr);
 }
 
-template class BasicMessage<char>;
-template class BasicMessage<wchar_t>;
-template class BasicMessage<char16_t>;
-template class BasicMessage<char32_t>;
+
+template class NICKSVCHAT_API BasicMessage<char>;
+template class NICKSVCHAT_API BasicMessage<wchar_t>;
+template class NICKSVCHAT_API BasicMessage<char16_t>;
+template class NICKSVCHAT_API BasicMessage<char32_t>;
 
 
 }}  /*END OF NAMESPACES*/

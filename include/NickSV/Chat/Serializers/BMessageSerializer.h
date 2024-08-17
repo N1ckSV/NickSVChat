@@ -6,8 +6,6 @@
 #include <string>
 
 #include "NickSV/Chat/Interfaces/ISerializer.h"
-#include "NickSV/Chat/BasicMessage.h"
-#include "NickSV/Chat/Utils.h"
 
 
 namespace NickSV {
@@ -18,7 +16,7 @@ namespace Chat {
 
 
 template<typename CharT>
-class Serializer<BasicMessage<CharT>> : public ISerializer
+class NICKSVCHAT_API Serializer<BasicMessage<CharT>> : public ISerializer
 {
     /*
     Class helper handles the serialization of BasicMessage struct to string 
@@ -29,9 +27,6 @@ class Serializer<BasicMessage<CharT>> : public ISerializer
 
     */
 public:
-    using CharType = typename BasicMessage<CharT>::CharType;
-    using TextType = typename BasicMessage<CharT>::TextType;
-    using UserIDType = typename BasicMessage<CharT>::UserIDType;
 
     Serializer() = delete;
     explicit Serializer(const BasicMessage<CharT>* const);
@@ -49,7 +44,7 @@ private:
     /*
     Pointer to BasicMessage object where "this" serializes from or parses to.
     */
-    const BasicMessage<CharT>* const m_cpcBasicMessage;
+    const BasicMessage<CharT>* const m_pBasicMessage;
 };
 
 

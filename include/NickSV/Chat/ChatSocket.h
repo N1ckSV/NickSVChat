@@ -13,6 +13,10 @@
 #include <tuple>
 
 
+#include <steam/isteamnetworkingsockets.h>
+
+
+#include "NickSV/Chat/ClientInfo.h"
 #include "NickSV/Chat/Interfaces/IChatSocket.h"
 #include "NickSV/Chat/Requests/Request.h"
 #include "NickSV/Chat/Utils.h"
@@ -26,12 +30,7 @@ namespace Chat {
 
 
 
-template<typename T>
-using NotNull = Tools::NotNull<T>;
-
-
-
-class ChatSocket: public IChatSocket
+class NICKSVCHAT_API ChatSocket: public IChatSocket
 {
     /*
     Description:
@@ -74,7 +73,6 @@ public:
      * OnPreQueueRequest and OnQueueRequest also triggers here
      */
     EResult SendRequest(  Request& rReq, RequestInfo reqInfo = RequestInfo{ Constant::InvalidUserID }) override final;
-    EResult HandleRequest(Request& rReq, RequestInfo reqInfo) override final;
 
     /**
      * @brief Queue Request for sending to other socket.
@@ -96,7 +94,9 @@ public:
      * @attention
      * RequestInfo ignored in ChatClient socket
      */
-    TaskInfo QueueRequest( Request& rReq, RequestInfo reqInfo = RequestInfo{ Constant::InvalidUserID });
+    TaskInfo QueueRequest(Request& rReq, RequestInfo reqInfo = RequestInfo{ Constant::InvalidUserID, SF_SEND_TO_ONE }) override final;
+
+    EResult  HandleRequest(Request& rReq, RequestInfo reqInfo) override final;
 
     using SendRequestsQueue_t = SafeQueue<std::tuple<std::string, RequestInfo, std::promise<EResult>>>;
     using HandleRequestsQueue_t = SafeQueue<std::tuple<std::string, RequestInfo>>;
@@ -145,12 +145,6 @@ public:
 
     virtual std::unique_ptr<ClientInfo>  MakeClientInfo();
 
-    
-    /**
-     * @returns true if UserID_t is reserved by Lib and false otherwise
-     */
-    bool            IsLibReservedID(UserID_t);
-
 protected:
     virtual void    ConnectionThreadFunction();
     virtual void    RequestThreadFunction();
@@ -173,11 +167,6 @@ protected:
     //cppcheck-suppress unusedStructMember
     SendRequestsQueue_t      m_sendRequestsQueue;
     HandleRequestsQueue_t    m_handleRequestsQueue;
-    struct 
-    {
-        std::mutex           sendRequestMutex;
-        std::mutex           handleRequestMutex;
-    } m_Mutexes;
 };
 
 
