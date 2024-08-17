@@ -16,17 +16,17 @@ namespace Chat {
 
 
 template<typename CharT>
-class Parser<std::basic_string<CharT>> : public IParser
+class NICKSVCHAT_API Parser<std::basic_string<CharT>> final : public IParser
 {
 public:
     using CharType = CharT;
 
     Parser();
     
-    std::unique_ptr<std::basic_string<CharT>>& GetObject();
+    std::basic_string<CharT>& GetObject();
 
-    std::string::const_iterator FromString(const std::string&) override final;
-    std::string::const_iterator FromString(std::string::const_iterator, std::string::const_iterator) override final;
+    std::string::const_iterator FromString(const std::string&) override;
+    std::string::const_iterator FromString(std::string::const_iterator, std::string::const_iterator) override;
     std::string::const_iterator OnFromString(std::string::const_iterator, std::string::const_iterator) override;
 private:
      std::unique_ptr<std::basic_string<CharT>>  m_upBasicString;

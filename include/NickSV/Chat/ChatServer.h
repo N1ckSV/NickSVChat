@@ -21,14 +21,14 @@ namespace Chat {
 
 
 
-class ChatServer: public ChatSocket
+class NICKSVCHAT_API ChatServer: public ChatSocket
 {
 public:
     ChatServer();
     virtual ~ChatServer();
     EResult Run(const ChatIPAddr &serverAddr = ChatIPAddr()) override final;
 
-    struct HClient
+    struct NICKSVCHAT_API HClient
     {
         HSteamNetConnection Connection;
         std::unique_ptr<ClientInfo> upClientInfo;
@@ -95,7 +95,7 @@ public:
     using ClientLockGuard = Tools::ValueLockGuard<ClientLock_t>;
     using ClientLockAllGuard = Tools::ValueLockAllGuard<ClientLock_t>;
 
-    class ClientsIterator {
+    class NICKSVCHAT_API ClientsIterator {
     public:
         using iterator_category = std::forward_iterator_tag;
         using value_type = ClientInfo;
@@ -103,22 +103,22 @@ public:
         using pointer = ClientInfo*;
         using reference = ClientInfo&;
 
-        explicit ClientsIterator(ClientsMap_t::iterator it) : it_(it) {}
+        explicit ClientsIterator(ClientsMap_t::iterator it);
 
-        reference operator*() const { return *(it_->second.upClientInfo); }
-        pointer operator->() const { return it_->second.upClientInfo.get(); }
+        reference operator*() const;
+        pointer operator->() const;
 
-        ClientsIterator& operator++() { ++it_; return *this; }
-        ClientsIterator operator++(int) { ClientsIterator tmp = *this; ++(*this); return tmp; }
+        ClientsIterator& operator++();
+        ClientsIterator operator++(int);
 
-        friend bool operator==(const ClientsIterator& a, const ClientsIterator& b) { return a.it_ == b.it_; }
-        friend bool operator!=(const ClientsIterator& a, const ClientsIterator& b) { return !(a == b); }
+        friend bool NICKSVCHAT_API operator==(const ClientsIterator& a, const ClientsIterator& b);
+        friend bool NICKSVCHAT_API operator!=(const ClientsIterator& a, const ClientsIterator& b);
 
     private:
         ClientsMap_t::iterator  it_;
     };
 
-    class ConstClientsIterator {
+    class NICKSVCHAT_API ConstClientsIterator {
     public:
         using iterator_category = std::forward_iterator_tag;
         using value_type = ClientInfo;
@@ -126,16 +126,16 @@ public:
         using pointer = const ClientInfo*;
         using reference = const ClientInfo&;
 
-        explicit ConstClientsIterator(ClientsMap_t::const_iterator it) : it_(it) {}
+        explicit ConstClientsIterator(ClientsMap_t::const_iterator it);
 
-        reference operator*() const { return *(it_->second.upClientInfo); }
-        pointer operator->() const { return it_->second.upClientInfo.get(); }
+        reference operator*() const;
+        pointer operator->() const;
 
-        ConstClientsIterator& operator++() { ++it_; return *this; }
-        ConstClientsIterator operator++(int) { ConstClientsIterator tmp = *this; ++(*this); return tmp; }
+        ConstClientsIterator& operator++();
+        ConstClientsIterator operator++(int);
 
-        friend bool operator==(const ConstClientsIterator& a, const ConstClientsIterator& b) { return a.it_ == b.it_; }
-        friend bool operator!=(const ConstClientsIterator& a, const ConstClientsIterator& b) { return !(a == b); }
+        friend bool operator==(const ConstClientsIterator& a, const ConstClientsIterator& b);
+        friend bool operator!=(const ConstClientsIterator& a, const ConstClientsIterator& b);
 
     private:
         ClientsMap_t::const_iterator  it_;
@@ -155,7 +155,7 @@ public:
      * To iterate over all @ref ClientInfo "ClientInfos" 
      * use GetClients().begin() and .end()
      */
-    class Clients
+    class NICKSVCHAT_API Clients
     {
     public:
         Clients() = delete;
@@ -304,20 +304,29 @@ public:
     EState              ReserveUserID(UserID_t id);
 
     /**
+     * @param rReqInfo request info that will be set to send authorization request to accepted client,
+     * rReqInfo's UserID is a unique one generated before the call, 
+     * it will be set as UserID of accepted user if it will return Success
+     * 
      * @attention
      * This function is NOT @ref CLIENT_STATE_CONCURRENCY_PROTECTED outside,
      * because ClientInfo and UserID_t have not yet been created.
     */
-    virtual EResult     OnPreAcceptClient(ConnectionInfo& rInfo);
+    virtual EResult     OnPreAcceptClient(const ConnectionInfo& conInfo, RequestInfo& rReqInfo);
 
     /**
+     * @param rReqInfo request info that will be set to send authorization request to accepted client
+     * 
      * @param rClientInfo ClientInfo of a client we accepting,
      * if accepting is failed rClientInfo can be InvalidClientInfo
      * 
      * @attention
      * This function is @ref CLIENT_STATE_CONCURRENCY_PROTECTED inside
+     * 
+     * @warning Do not wait for TaskInfo's future result inside,
+     * because the send task is handled by the same thread after call of OnAcceptClient
     */
-    virtual void        OnAcceptClient(ConnectionInfo& rInfo, ClientInfo& rClientInfo, EResult acceptRes, TaskInfo taskInfo);
+    virtual void        OnAcceptClient(const ConnectionInfo& conInfo, const RequestInfo& rReqInfo, ClientInfo& rClientInfo, EResult acceptRes, TaskInfo taskInfo);
 
     
      
@@ -413,9 +422,18 @@ public:
      * @attention
      * This function is @ref CLIENT_STATE_CONCURRENCY_PROTECTED outside
      * 
+     * @warning Unlike OnAcceptClient you can wait for TaskInfo's future result inside,
+     * because the send task is handled by another thread
+     * 
      * @todo important info should be placed here
      */
     virtual void    OnHandleRequest(const ClientInfoRequest& req, RequestInfo reqInfo, ClientInfo& clientInfo, EResult handleRes, TaskInfo sendTaskInfo);
+
+    /**
+     * 
+     * @warning Unlike OnAcceptClient you can wait for TaskInfo's future result inside,
+     * because the send task is handled by another thread
+     */
     virtual void    OnHandleRequest(const MessageRequest&, RequestInfo,  EResult handleRes, TaskInfo);
 
 private:
@@ -461,14 +479,6 @@ private:
     ClientLock_t             m_ClientLock;
 };
 
-
-
-//struct ConnectionException : public std::exception {
-//		const char* what() const throw () override {
-//			return "Something went wrong with connection";
-//		}
-//	};
-//
 
 
 

@@ -15,7 +15,7 @@ namespace NickSV {
 namespace Chat {
 
 
-class ClientInfoRequest : public Request
+class NICKSVCHAT_API ClientInfoRequest : public Request
 {
     static_assert(is_serializable<ClientInfo>::value, is_serializable_ERROR_MESSAGE);
 public:

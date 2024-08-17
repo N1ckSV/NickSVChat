@@ -4,15 +4,15 @@
 #pragma once
 
 
-#include "NickSV/Chat/ChatSocket.h"
-
 #include <chrono>
+
+#include "NickSV/Chat/ChatSocket.h"
 
 
 namespace NickSV {
 namespace Chat {
 
-class ChatClient: public ChatSocket
+class NICKSVCHAT_API ChatClient: public ChatSocket
 {
     /*
     Description
@@ -102,13 +102,13 @@ public:
     virtual void    OnConnectAttemptFailed(ChatIPAddr &serverAddr, std::chrono::milliseconds reconnectTime, unsigned int countRetries, unsigned int maxAttempts);
 
 private:
-    EResult      Connect(ChatIPAddr &serverAddr, std::chrono::milliseconds timeout = std::chrono::milliseconds(10000), unsigned int maxAttempts = 10u);
+    EResult      Connect(ChatIPAddr &serverAddr, std::chrono::milliseconds timeout = std::chrono::milliseconds(20000), unsigned int maxAttempts = 10u);
     EResult      SendStringToServer(const std::string&);
     static void  SteamNetConnectionStatusChangedCallback(ConnectionInfo*);
-    void         ConnectionThreadFunction() override final;
-    void         PollIncomingRequests()     override final;
-	void         PollQueuedRequests()       override final;
-	void         PollConnectionChanges()    override final;
+    void         ConnectionThreadFunction()                         override final;
+    void         PollIncomingRequests()                             override final;
+	void         PollQueuedRequests()                               override final;
+	void         PollConnectionChanges()                            override final;
     void         OnSteamNetConnectionStatusChanged(ConnectionInfo*) override final;
     EResult      HandleRequest(ClientInfoRequest&, RequestInfo)     override final;
     EResult      HandleRequest(MessageRequest&   , RequestInfo)     override final;

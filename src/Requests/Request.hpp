@@ -5,8 +5,9 @@
 
 
 
-#include "NickSV/Chat/Requests/Request.h"
 #include "NickSV/Chat/Interfaces/ISerializer.h"
+#include "NickSV/Chat/Parsers/RequestParser.h"
+#include "NickSV/Chat/Requests/Request.h"
 
 namespace NickSV {
 namespace Chat {
@@ -21,6 +22,7 @@ const std::unique_ptr<ISerializer> Request::GetSerializer() const
 {
     return std::unique_ptr<ISerializer>(nullptr);
 }
+
 //-----------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------

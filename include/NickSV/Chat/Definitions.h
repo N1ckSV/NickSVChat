@@ -21,29 +21,26 @@
     #define CHAT_DEBUG(...)       (void(0))
 #endif
 
-//GameNetworkingSockets for opensource
-#ifndef STEAMNETWORKINGSOCKETS_OPENSOURCE
-#define STEAMNETWORKINGSOCKETS_OPENSOURCE
-#endif
 
 
 #if defined( NICKSVCHAT_STATIC_LINK )
-	#define NICKSVCHAT_INTERFACE extern "C"
-#elif defined( NICKSVCHAT_FOREXPORT )
-	#if defined( _WIN32 )
-		#define NICKSVCHAT_INTERFACE extern "C" __declspec( dllexport )
-	#else
-		#define NICKSVCHAT_INTERFACE extern "C" __attribute__((visibility("default")))
-	#endif
-#else
-	#ifdef _WIN32
-		#define NICKSVCHAT_INTERFACE extern "C" __declspec( dllimport )
-	#else
-		#define NICKSVCHAT_INTERFACE extern "C"
-	#endif
+	#define NICKSVCHAT_API
+#elif defined( NICKSVCHAT_FOREXPORT ) && defined( _WIN32) && defined( _MSC_VER )
+    // I dunno __declspec( dllexport/import )                           
+    // is for MSVC in general
+    // or for MSVC with Windows only 
+	#define NICKSVCHAT_API  __declspec( dllexport )
+#elif defined( NICKSVCHAT_FOREXPORT ) && !defined( _WIN32 )
+	#define NICKSVCHAT_API __attribute__((visibility("default")))
+#elif !defined( NICKSVCHAT_FOREXPORT ) && defined( _MSC_VER ) 
+	#define NICKSVCHAT_API __declspec( dllimport )
+#else 
+	#define NICKSVCHAT_API
 #endif
 
-//Default port
+#define NICKSVCHAT_INTERFACE extern "C" NICKSVCHAT_API
+
+//Default port FIXME DELETE IT
 #define DEFAULT_PORT 27020
 
 
@@ -88,8 +85,8 @@
 
 
 //Send flags
-#define SF_SEND_TO_ALL    0
-#define SF_SEND_TO_ONE    1
+#define SF_SEND_TO_ONE    0
+#define SF_SEND_TO_ALL    1
 #define SF_SEND_TO_ACTIVE 2
 
 

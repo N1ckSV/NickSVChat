@@ -21,14 +21,14 @@ namespace Chat {
 //----------------------------------------------------------------------------------------------------
 // Serializer<MessageRequest> implementation
 //----------------------------------------------------------------------------------------------------
-Serializer<MessageRequest>::Serializer(const MessageRequest * const cpcMessageRequest): m_cpcMessageRequest(cpcMessageRequest)
+Serializer<MessageRequest>::Serializer(const MessageRequest * const pMessageRequest): m_pMessageRequest(pMessageRequest)
 { 
-    CHAT_ASSERT(m_cpcMessageRequest, "m_cpcMessageRequest must not be nullptr");
+    CHAT_ASSERT(m_pMessageRequest, "m_pMessageRequest must not be nullptr");
 };
 
 inline const MessageRequest* Serializer<MessageRequest>::GetObject() const
 { 
-    return m_cpcMessageRequest;
+    return m_pMessageRequest;
 };
 
 inline size_t Serializer<MessageRequest>::GetSize() const
@@ -79,8 +79,6 @@ inline std::string::iterator Serializer<MessageRequest>::ToStringBuffer(std::str
 //----------------------------------------------------------------------------------------------------
 
 
-
-template class Serializer<MessageRequest>;
 
 
 

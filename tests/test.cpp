@@ -1,3 +1,9 @@
+
+
+#include <type_traits>
+#include <thread>
+
+
 #include "NickSV/Chat/Utils.h"
 
 #include "NickSV/Chat/ClientInfo.h"
@@ -29,9 +35,6 @@
 
 #include "NickSV/Tools/Testing.h"
 
-#include <type_traits>
-#include <thread>
-
 
 using namespace NickSV;
 using namespace NickSV::Chat;
@@ -57,9 +60,11 @@ static size_t client_info_serializers_and_parsers_test()
 {
     UserID_t id = 2;
     const auto ClientInfo1 = ClientInfo(id);
-    ClientInfo ClientInfo2;
     auto str = ClientInfo1.GetSerializer()->ToString();
-    ClientInfo2 = MakeFromString<ClientInfo>(str);
+    auto parser = Parser<ClientInfo>();
+    TEST_CHECK_STAGE(std::distance(str.cbegin(), parser.FromString(str)) > 0);
+
+    auto ClientInfo2 = parser.GetObject();
     TEST_CHECK_STAGE(ClientInfo2 == ClientInfo1);
 
     str.resize(str.size()-1);
@@ -108,9 +113,9 @@ static size_t requests_serializers_and_parsers_test()
     TEST_CHECK_STAGE(iter != str.begin());
     
 	#undef GetObject
-    TEST_CHECK_STAGE(parser.GetObject()->GetType() == clientInfoRequest.GetType());
+    TEST_CHECK_STAGE(parser.GetObject().GetType() == clientInfoRequest.GetType());
 
-    Request* pRequest = parser.GetObject().get();
+    Request* pRequest = &(parser.GetObject());
     ClientInfoRequest* pClientInfoRequest = static_cast<ClientInfoRequest*>(pRequest);
     TEST_CHECK_STAGE(pClientInfoRequest->GetClientInfo() == ClientInfo1);
 
@@ -127,15 +132,15 @@ static size_t requests_serializers_and_parsers_test()
     iter = parser.FromString(str);
     TEST_CHECK_STAGE(iter != str.begin());
 
-    TEST_CHECK_STAGE(parser.GetObject()->GetType() == ERequestType::Message);
+    TEST_CHECK_STAGE(parser.GetObject().GetType() == ERequestType::Message);
 
-    pRequest = parser.GetObject().get();
+    pRequest = &(parser.GetObject());
     MessageRequest* pMessageRequest = static_cast<MessageRequest*>(pRequest);
     TEST_CHECK_STAGE(pMessageRequest->GetMessage() == Message1);
 
     str.resize(str.size()-1);
     iter = parser.FromString(str);
-    MessageRequest* pReq = static_cast<MessageRequest*>(parser.GetObject().get());
+    MessageRequest* pReq = static_cast<MessageRequest*>(&(parser.GetObject()));
     (void)pReq;
     TEST_CHECK_STAGE(iter == str.begin());
 

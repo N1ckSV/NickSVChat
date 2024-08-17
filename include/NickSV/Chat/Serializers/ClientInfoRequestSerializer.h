@@ -15,7 +15,7 @@ namespace Chat {
 
 
 template<>
-class Serializer<ClientInfoRequest> : public ISerializer
+class NICKSVCHAT_API Serializer<ClientInfoRequest> : public ISerializer
 {
     /*
 
@@ -38,7 +38,7 @@ private:
     /*
     Pointer to ClientInfoRequest object where "this" serializes from or parses to.
     */
-    const ClientInfoRequest* const m_cpcClientInfoRequest;
+    const ClientInfoRequest* const m_pClientInfoRequest;
 };
 
 

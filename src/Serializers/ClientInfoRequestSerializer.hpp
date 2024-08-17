@@ -20,14 +20,14 @@ namespace Chat {
 //----------------------------------------------------------------------------------------------------
 // Serializer<ClientInfoRequest> implementation
 //----------------------------------------------------------------------------------------------------
-Serializer<ClientInfoRequest>::Serializer(const ClientInfoRequest* const cpcClientInfoRequest) : m_cpcClientInfoRequest(cpcClientInfoRequest)
+Serializer<ClientInfoRequest>::Serializer(const ClientInfoRequest* const pClientInfoRequest) : m_pClientInfoRequest(pClientInfoRequest)
 { 
-    CHAT_ASSERT(m_cpcClientInfoRequest, "Serializer constructor parameter must not be nullptr");
+    CHAT_ASSERT(m_pClientInfoRequest, "Serializer constructor parameter must not be nullptr");
 };
 
 inline const ClientInfoRequest* Serializer<ClientInfoRequest>::GetObject() const
 { 
-    return m_cpcClientInfoRequest;
+    return m_pClientInfoRequest;
 };
 
 inline size_t Serializer<ClientInfoRequest>::GetSize() const
@@ -78,7 +78,6 @@ inline std::string::iterator Serializer<ClientInfoRequest>::ToStringBuffer(std::
 //----------------------------------------------------------------------------------------------------
 
 
-template class Serializer<ClientInfoRequest>;
 
 
 

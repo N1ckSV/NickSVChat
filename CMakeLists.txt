@@ -64,7 +64,12 @@ if( (NOT ${CHARACTER_TYPE} STREQUAL "USE_WCHAR") AND
      set(CHARACTER_TYPE "USE_WCHAR" CACHE STRING "" FORCE)
      message(WARNING "Invalid CHARACTER_TYPE is used, default (USE_WCHAR) was set")
 endif()
-#-----------------------------------------------
+
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install/${CMAKE_HOST_SYSTEM_NAME}/${CMAKE_BUILD_TYPE}" CACHE PATH "Default install path" FORCE)
+endif()
+
+#-----------------------------------------------O
 #-----------------------------------------------
 #-----------------------------------------------
 
@@ -75,18 +80,17 @@ endif()
 #COMPILER SETTINGS
 #-----------------------------------------------
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   ")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc ")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}    ")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}     ")
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
-    -std=c++11 \
     -pedantic -Wall -Wextra -Wattributes -Wpedantic -Wconversion \
     -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization \
     -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations \
     -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual \
     -Wredundant-decls -Wshadow -Wsign-promo \
-    -Wstrict-null-sentinel -Wstrict-overflow=5 -Wswitch-default -Wundef -Werror -Wno-unused"
+    -Wstrict-null-sentinel -Wswitch-default -Wundef -Werror -Wno-unused"
     ) #-static -static-libgcc -static-libstdc++
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
@@ -119,7 +123,7 @@ message(STATUS "\n\n")
 #CONFIGURING LIBRARY
 #-----------------------------------------------
 configure_file(cmake/ChatConfig.h.in include/NickSV/Chat/ChatConfig.h)
-add_library(${PROJECT_NAME} 
+add_library(NickSVChat
     src/ChatSocket.cpp
     src/ChatClient.cpp
     src/ChatServer.cpp
@@ -130,6 +134,13 @@ add_library(${PROJECT_NAME}
     src/Requests.cpp
     src/Utils.cpp
     )
+
+target_compile_definitions(NickSVChat
+    PUBLIC
+        STEAMNETWORKINGSOCKETS_OPENSOURCE
+    PRIVATE
+        NICKSVCHAT_FOREXPORT
+)
 target_include_directories(NickSVChat PUBLIC
     "$<BUILD_INTERFACE:${NickSVChat_INCLUDE_DIR}>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
@@ -139,13 +150,35 @@ target_include_directories(NickSVChat SYSTEM PUBLIC
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(${PROJECT_NAME} 
-    GameNetworkingSockets::GameNetworkingSockets
+target_link_libraries(NickSVChat 
+    GameNetworkingSockets::shared
 )
 #set_target_properties(NickSVChat PROPERTIES LINK_FLAGS "-static -static-libgcc -static-libstdc++")
 #-----------------------------------------------
 #-----------------------------------------------
 #-----------------------------------------------
+
+
+
+
+
+
+
+#-----------------------------------------------
+#TESTS AND EXAMPLES
+#-----------------------------------------------
+add_subdirectory(examples)
+
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(include/NickSV/Tools/tests)
+    add_subdirectory(tests)
+endif()
+
+#-----------------------------------------------
+#-----------------------------------------------
+#-----------------------------------------------
+
 
 
 
@@ -186,15 +219,6 @@ install(
     DIRECTORY   ${NickSVChat_ALL_INCLUDE_DIRS}
     DESTINATION "${CMAKE_INSTALL_FULL_INCLUDEDIR}/"
 )
-if(BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(tests)
-    add_subdirectory(include/NickSV/Tools/tests)
-endif()
-
-if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
 #-----------------------------------------------
 #-----------------------------------------------
 #-----------------------------------------------

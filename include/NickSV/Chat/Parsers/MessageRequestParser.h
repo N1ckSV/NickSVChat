@@ -17,19 +17,17 @@ namespace Chat {
 
 
 template<>
-class Parser<MessageRequest> : public IParser
+class NICKSVCHAT_API Parser<MessageRequest> : public IParser
 {
 public:
     Parser();
     
-    std::unique_ptr<MessageRequest>& GetObject();
-
-    virtual std::unique_ptr<Parser<Message>> GetMessageParser();
+    MessageRequest& GetObject();
 
     std::string::const_iterator FromString(const std::string&) override final;
     std::string::const_iterator FromString(std::string::const_iterator, std::string::const_iterator) override final;
     std::string::const_iterator OnFromString(std::string::const_iterator, std::string::const_iterator) override;
-private:
+protected:
     std::unique_ptr<MessageRequest>  m_upMessageRequest;
 };
 

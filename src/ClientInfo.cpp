@@ -3,8 +3,10 @@
 #include <cstdint>
 
 
-#include "NickSV/Chat/Serializers/ClientInfoSerializer.h"
 #include "NickSV/Chat/Utils.h"
+#include "NickSV/Chat/Serializers/ClientInfoSerializer.h"
+#include "NickSV/Chat/Parsers/ClientInfoParser.h"
+#include "NickSV/Chat/ClientInfo.h"
 
 
 namespace NickSV {
@@ -52,7 +54,9 @@ bool ClientInfo::operator!=(const ClientInfo& other) const { return !operator==(
 auto ClientInfo::GetSerializer() const
 -> const std::unique_ptr<ISerializer>
 { 
-    return std::make_unique<Serializer<ClientInfo>>(this); 
+    const auto ptr = new Serializer<ClientInfo>(this);
+    return std::unique_ptr<Serializer<ClientInfo>>(ptr);
 }
+
 
 }}  /*END OF NAMESPACES*/

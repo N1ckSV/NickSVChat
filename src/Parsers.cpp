@@ -16,6 +16,29 @@
 namespace NickSV {
 namespace Chat {
 
+
+template class NICKSVCHAT_API Parser<std::basic_string<char>>;
+template class NICKSVCHAT_API Parser<std::basic_string<wchar_t>>;
+template class NICKSVCHAT_API Parser<std::basic_string<char16_t>>;
+template class NICKSVCHAT_API Parser<std::basic_string<char32_t>>;
+ 
+template class NICKSVCHAT_API Parser<BasicMessage<char>>;
+template class NICKSVCHAT_API Parser<BasicMessage<wchar_t>>;
+template class NICKSVCHAT_API Parser<BasicMessage<char16_t>>;
+template class NICKSVCHAT_API Parser<BasicMessage<char32_t>>;
+ 
+template class NICKSVCHAT_API Parser<ClientInfo>;
+  
+template class NICKSVCHAT_API Parser<Request>;
+  
+template class NICKSVCHAT_API Parser<ClientInfoRequest>;
+ 
+template class NICKSVCHAT_API Parser<MessageRequest>;
+
+
+
+
+
 template ClientInfo                  MakeFromString<ClientInfo>(const std::string&);
      
 template BasicMessage<char>          MakeFromString<BasicMessage<char>>(const std::string&);

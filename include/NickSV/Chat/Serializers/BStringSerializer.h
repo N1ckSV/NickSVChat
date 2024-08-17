@@ -15,7 +15,7 @@ namespace Chat {
 
 
 template<typename CharT>
-class Serializer<std::basic_string<CharT>> final : public ISerializer
+class NICKSVCHAT_API Serializer<std::basic_string<CharT>> final : public ISerializer
 {
     /*
     Class helper handles the serialization of std::basic_string struct to string 
@@ -44,7 +44,7 @@ private:
     /*
     Pointer to std::basic_string object where "this" serializes from or parses to.
     */
-    const std::basic_string<CharT>* const m_cpcBasicString;
+    const std::basic_string<CharT>* const m_pBasicString;
 };
 
 

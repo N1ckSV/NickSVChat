@@ -24,12 +24,12 @@ namespace Chat {
 // Parser<BasicMessage<CharT>> implementation
 //----------------------------------------------------------------------------------------------------
 template<typename CharT>
-Parser<BasicMessage<CharT>>::Parser() : m_upBasicMessage(std::make_unique<BasicMessage<CharT>>()) {};
+Parser<BasicMessage<CharT>>::Parser() : m_upBasicMessage(new BasicMessage<CharT>()) {};
 
 template<typename CharT>
-std::unique_ptr<BasicMessage<CharT>>& Parser<BasicMessage<CharT>>::GetObject()
+BasicMessage<CharT>& Parser<BasicMessage<CharT>>::GetObject()
 { 
-    return m_upBasicMessage;
+    return *m_upBasicMessage;
 };
 
 template<typename CharT>
@@ -46,40 +46,30 @@ std::string::const_iterator Parser<BasicMessage<CharT>>::FromString(std::string:
         COMPILER_AWARE_VALUE(8, 8, 8) +
         sizeof(UserIDType) + 
         sizeof(TextType)>();
+        
+    auto iter = ParseSeries(begin, end, GetObject().GetSenderID(), GetObject().GetText());
+    if(std::distance(begin, iter) <= 0)
+        return begin;
 
-    if(begin + atleastSize > end)
-        return begin; //BAD INPUT. Range size has to be atleastSize bytes long
-    
-    Transfer<UserIDType> id;
-    std::copy(begin, begin + sizeof(UserIDType), id.CharArr);
-    auto iter = begin + sizeof(UserIDType);
-    GetObject()->GetSenderID() = id.Base;
-
-    auto parser = Parser<TextType>();
-    auto newIter = parser.FromString(iter, end);
-    if(newIter <= iter)
-        return begin; //BAD INPUT. Parsed size doesnt match with input size
-
-    std::swap(GetObject()->GetText(), *(parser.GetObject()));
-    return OnFromString(newIter, end);
+    auto newIter = OnFromString(iter, end);
+    if(iter == end)
+        return end;
+    if(std::distance(iter, newIter) <= 0)
+        return begin;
+    return newIter;
 }
 
 template<typename CharT>
 std::string::const_iterator inline Parser<BasicMessage<CharT>>::OnFromString(
-    std::string::const_iterator begin,
-    std::string::const_iterator)
+    std::string::const_iterator,
+    std::string::const_iterator end)
 { 
-    return begin; 
+    return end; 
 }
 //----------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------
 
-
-template class Parser<BasicMessage<char>>;
-template class Parser<BasicMessage<wchar_t>>;
-template class Parser<BasicMessage<char16_t>>;
-template class Parser<BasicMessage<char32_t>>;
 
 
 }}  /*END OF NAMESPACES*/
