@@ -15,13 +15,10 @@
 
 #include <steam/isteamnetworkingsockets.h>
 
-
 #include "NickSV/Chat/ClientInfo.h"
 #include "NickSV/Chat/Interfaces/IChatSocket.h"
 #include "NickSV/Chat/Requests/Request.h"
-#include "NickSV/Chat/Utils.h"
 
-#include "NickSV/Tools/Memory.h"
 
 
 namespace NickSV {
@@ -143,8 +140,6 @@ public:
      */
     void            FatalError(const std::string& errorMsg = "Unknown Error");
 
-    virtual std::unique_ptr<ClientInfo>  MakeClientInfo();
-
 protected:
     virtual void    ConnectionThreadFunction();
     virtual void    RequestThreadFunction();
@@ -157,11 +152,11 @@ protected:
             EResult SendStringToConnection(HSteamNetConnection, const std::string&);
     
     //cppcheck-suppress unusedStructMember
+    volatile bool            m_bGoingExit;
+    //cppcheck-suppress unusedStructMember
     std::thread*             m_pConnectionThread;
     //cppcheck-suppress unusedStructMember
     std::thread*             m_pRequestThread;
-    //cppcheck-suppress unusedStructMember
-    volatile bool            m_bGoingExit;
     //cppcheck-suppress unusedStructMember
     ISteamNetworkingSockets* m_pInterface;
     //cppcheck-suppress unusedStructMember

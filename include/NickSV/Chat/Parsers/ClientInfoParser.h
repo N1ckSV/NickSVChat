@@ -23,7 +23,7 @@ public:
     using UserIDType = ClientInfo::UserIDType;
     using LibVersionType = ClientInfo::LibVersionType;
 
-    Parser();
+    Parser(std::unique_ptr<ClientInfo> upClientInfo = Tools::MakeUnique<ClientInfo>());
     
     ClientInfo& GetObject();
 

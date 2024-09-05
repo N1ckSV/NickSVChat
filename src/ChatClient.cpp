@@ -132,9 +132,9 @@ EResult ChatClient::Connect(ChatIPAddr &serverAddr, std::chrono::milliseconds ti
 	return result;
 }
 
-ChatClient::ChatClient() : ChatSocket()
+ChatClient::ChatClient()
+ 	: m_upClientInfo(Tools::MakeUnique<ClientInfo>())
 {
-	m_upClientInfo = MakeClientInfo();
 	s_pCallbackClientInstance = this;
 }
 

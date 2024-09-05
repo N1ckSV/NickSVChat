@@ -465,7 +465,7 @@ EResult ChatServer::AcceptClient(ConnectionInfo& rConInfo)
 	CHAT_ASSERT(&GetClientInfo(rConInfo.m_hConn) == &InvalidClientInfo, 
 	"Trying to accept client with HSteamNetConnection that already in m_mapConnections or m_mapClients");
 	m_ClientLock.LockAll();
-	auto& rClientInfo = *(m_mapClients[id].upClientInfo = MakeClientInfo());
+	auto& rClientInfo = *(m_mapClients[id].upClientInfo = Tools::MakeUnique<ClientInfo>());
 	m_mapConnections[rConInfo.m_hConn] = id;
 	m_ClientLock.UnlockAll(id);
 	UniqueUnlocker unlocker(&m_ClientLock, ClientLock_t::Unlocker(id));
@@ -473,8 +473,9 @@ EResult ChatServer::AcceptClient(ConnectionInfo& rConInfo)
 	rClientInfo.GetUserID() = id;
 	m_mapClients.at(id).Connection = rConInfo.m_hConn;
 
-	ClientInfoRequest req(rClientInfo);
-	auto taskInfo = QueueRequest(req, rInfo);
+	auto pRequest = Tools::MakeUnique<ClientInfoRequest>();
+	pRequest->GetClientInfo() = rClientInfo;
+	auto taskInfo = QueueRequest(*pRequest, rInfo);
 
 	OnAcceptClient(rConInfo, rInfo, *(m_mapClients.at(id).upClientInfo), result, std::move(taskInfo));
 	return result;

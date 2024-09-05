@@ -14,9 +14,9 @@ namespace Chat {
 //-----------------------------------------------------------------------------------
 // Impementation of ClientInfoRequest
 //-----------------------------------------------------------------------------------
-ClientInfoRequest::ClientInfoRequest() : m_upClientInfo(new ClientInfo()) {};
+ClientInfoRequest::ClientInfoRequest() : m_upClientInfo(Tools::MakeUnique<ClientInfo>()) {};
 
-ClientInfoRequest::ClientInfoRequest(ClientInfo clientInfo) : m_upClientInfo(new ClientInfo(std::move(clientInfo))) {};
+ClientInfoRequest::ClientInfoRequest(ClientInfo clientInfo) : m_upClientInfo(Tools::MakeUnique<ClientInfo>(std::move(clientInfo))) {};
 
 ClientInfo& ClientInfoRequest::GetClientInfo()
 {
@@ -30,10 +30,10 @@ const ClientInfo& ClientInfoRequest::GetClientInfo() const
 
 ERequestType ClientInfoRequest::GetType() const { return ERequestType::ClientInfo; }
 
-const  std::unique_ptr<ISerializer> ClientInfoRequest::GetSerializer() const 
+inline auto ClientInfoRequest::GetSerializer() const
+-> const std::unique_ptr<ISerializer>
 { 
-    const auto ptr = new Serializer<ClientInfoRequest>(this);
-    return std::unique_ptr<Serializer<ClientInfoRequest>>(ptr);
+	return Tools::MakeUnique<Serializer<ClientInfoRequest>>(*this);
 }
 
 //-----------------------------------------------------------------------------------

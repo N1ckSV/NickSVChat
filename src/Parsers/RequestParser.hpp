@@ -27,17 +27,13 @@ namespace Chat {
 // Parser<Request> implementation
 //----------------------------------------------------------------------------------------------------
 
-Parser<Request>::Parser() : m_upRequest(new Request()) {};
+Parser<Request>::Parser() : m_upRequest(nullptr) {};
 
 Request& Parser<Request>::GetObject()
-{ 
-    return *m_upRequest;
-};
+{ return *m_upRequest; };
 
 inline std::string::const_iterator Parser<Request>::FromString(const std::string& str)
-{
-    return FromString(str.cbegin(), str.cend());
-}
+{ return FromString(str.cbegin(), str.cend()); }
 
 std::string::const_iterator Parser<Request>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
@@ -51,13 +47,13 @@ std::string::const_iterator Parser<Request>::FromString(std::string::const_itera
 
     if(type == ERequestType::ClientInfo)
     {
-        m_upRequest.reset(new ClientInfoRequest());
-        iter = ParseSeries(begin, end, static_cast<ClientInfoRequest&>(GetObject()));
+        m_upRequest = Tools::MakeUnique<ClientInfoRequest>();
+        iter = ParseSeries(begin, end, static_cast<ClientInfoRequest&>(*m_upRequest));
     }
     else if(type == ERequestType::Message)
     {
-        m_upRequest.reset(new MessageRequest());
-        iter = ParseSeries(begin, end, static_cast<MessageRequest&>(GetObject()));
+        m_upRequest = Tools::MakeUnique<MessageRequest>();
+        iter = ParseSeries(begin, end, static_cast<MessageRequest&>(*m_upRequest));
     }
     else
         iter = OnFromString(begin, end);

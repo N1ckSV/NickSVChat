@@ -35,13 +35,14 @@ template<>
 class NICKSVCHAT_API Parser<Request> : public IParser
 {
 public:
-    Parser();
+    explicit Parser();
     
     Request& GetObject();
 
     std::string::const_iterator FromString(const std::string&) override final;
     std::string::const_iterator FromString(std::string::const_iterator, std::string::const_iterator) override final;
     std::string::const_iterator OnFromString(std::string::const_iterator, std::string::const_iterator) override;
+
 protected:
     std::unique_ptr<Request>  m_upRequest;
 };

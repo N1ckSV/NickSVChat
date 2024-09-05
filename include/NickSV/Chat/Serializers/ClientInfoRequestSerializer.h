@@ -23,9 +23,9 @@ class NICKSVCHAT_API Serializer<ClientInfoRequest> : public ISerializer
     */
 public:
     Serializer() = delete;
-    explicit Serializer(const ClientInfoRequest * const);
+    explicit Serializer(const ClientInfoRequest &);
 
-    inline const ClientInfoRequest* GetObject() const;
+    inline const ClientInfoRequest& GetObject() const;
 
     inline size_t GetSize() const override final;
     inline size_t OnGetSize(size_t baseSize = 0) const override;
@@ -38,7 +38,7 @@ private:
     /*
     Pointer to ClientInfoRequest object where "this" serializes from or parses to.
     */
-    const ClientInfoRequest* const m_pClientInfoRequest;
+    const ClientInfoRequest& m_rClientInfoRequest;
 };
 
 

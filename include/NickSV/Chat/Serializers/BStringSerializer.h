@@ -29,9 +29,9 @@ public:
     using CharType = CharT;
 
     Serializer() = delete;
-    explicit Serializer(const std::basic_string<CharT>* const);
+    explicit Serializer(const std::basic_string<CharT>&);
 
-    inline const std::basic_string<CharT>* GetObject() const;
+    inline const std::basic_string<CharT>& GetObject() const;
 
     size_t GetSize() const override;
     size_t OnGetSize(size_t baseSize = 0) const override;
@@ -44,7 +44,7 @@ private:
     /*
     Pointer to std::basic_string object where "this" serializes from or parses to.
     */
-    const std::basic_string<CharT>* const m_pBasicString;
+    const std::basic_string<CharT>& m_rBasicString;
 };
 
 

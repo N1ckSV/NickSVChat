@@ -24,19 +24,15 @@ namespace Chat {
 // Parser<ClientInfo> implementation
 //----------------------------------------------------------------------------------------------------
 
-Parser<ClientInfo>::Parser() : m_upClientInfo(new ClientInfo()) {};
-
+Parser<ClientInfo>::Parser(std::unique_ptr<ClientInfo> upClientInfo) 
+    : m_upClientInfo(std::move(upClientInfo)) {};
 
 ClientInfo& Parser<ClientInfo>::GetObject()
-{ 
-    return *m_upClientInfo;
-};
+{ return *m_upClientInfo; };
 
 
 inline std::string::const_iterator Parser<ClientInfo>::FromString(const std::string& str)
-{
-    return FromString(str.cbegin(), str.cend());
-}
+{ return FromString(str.cbegin(), str.cend()); }
 
 
 std::string::const_iterator Parser<ClientInfo>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
@@ -46,7 +42,12 @@ std::string::const_iterator Parser<ClientInfo>::FromString(std::string::const_it
     if(std::distance(begin, end) < static_cast<std::ptrdiff_t>(atleastSize))
         return begin; //BAD INPUT. Range size has to be atleastSize bytes long
 
-    auto iter = ParseSeries(begin, end, GetObject().GetLibVer(), GetObject().GetState(), GetObject().GetUserID());
+    auto iter = ParseSeries(
+        begin, end, 
+        GetObject().GetLibVer(), 
+        GetObject().GetState(), 
+        GetObject().GetUserID());
+
     if(std::distance(begin, iter) <= 0)
         return begin;
 

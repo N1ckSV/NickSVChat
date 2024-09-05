@@ -21,14 +21,11 @@ namespace Chat {
 //----------------------------------------------------------------------------------------------------
 // Serializer<MessageRequest> implementation
 //----------------------------------------------------------------------------------------------------
-Serializer<MessageRequest>::Serializer(const MessageRequest * const pMessageRequest): m_pMessageRequest(pMessageRequest)
-{ 
-    CHAT_ASSERT(m_pMessageRequest, "m_pMessageRequest must not be nullptr");
-};
+Serializer<MessageRequest>::Serializer(const MessageRequest & rMessageRequest): m_rMessageRequest(rMessageRequest) {};
 
-inline const MessageRequest* Serializer<MessageRequest>::GetObject() const
+inline const MessageRequest& Serializer<MessageRequest>::GetObject() const
 { 
-    return m_pMessageRequest;
+    return m_rMessageRequest;
 };
 
 inline size_t Serializer<MessageRequest>::GetSize() const
@@ -37,7 +34,7 @@ inline size_t Serializer<MessageRequest>::GetSize() const
     
     size_t size = 
       sizeof(ERequestType) +
-      GetObject()->GetMessage().GetSerializer()->GetSize();
+      GetObject().GetMessage().GetSerializer()->GetSize();
     return size + OnGetSize(size);
 }
 
@@ -53,15 +50,16 @@ std::string Serializer<MessageRequest>::ToString() const
 
 std::string::iterator Serializer<MessageRequest>::ToString(std::string::iterator begin, std::string::iterator end) const
 {
-    CHAT_ASSERT(end >= begin + GetSize(), invalid_range_size_ERROR_MESSAGE);
+    CHAT_ASSERT(std::distance(begin, end) >= static_cast<ptrdiff_t>(GetSize()),
+        invalid_range_size_ERROR_MESSAGE);
 
     Tools::type_integrity_assert<MessageRequest, COMPILER_AWARE_VALUE(16, 16, 16) + sizeof(std::unique_ptr<Message>)>();
 
     Transfer<ERequestType> type;
-    type.Base = GetObject()->GetType();
+    type.Base = GetObject().GetType();
     std::string::iterator iter = std::copy(type.CharArr, type.CharArr + sizeof(ERequestType), begin);
-    iter = GetObject()->GetMessage().GetSerializer()->ToString(iter, end);
-    CHAT_ASSERT(iter <= end, something_went_wrong_ERROR_MESSAGE);
+    iter = GetObject().GetMessage().GetSerializer()->ToString(iter, end);
+    CHAT_ASSERT(std::distance(iter, end) >= 0, something_went_wrong_ERROR_MESSAGE);
     return OnToString(iter, end);
 }
 

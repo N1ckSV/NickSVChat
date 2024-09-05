@@ -40,43 +40,43 @@ struct NICKSVCHAT_API ClientInfo : public ISerializable
     Returns false if at least one member var is not equal to other one
     and true otherwise
     */
-    [[nodiscard]] bool operator==(const ClientInfo& other) const;
+    virtual bool operator==(const ClientInfo& other) const;
 
     /*
     Simple not equal operator.
     Returns !operator==
     */
-    [[nodiscard]] bool operator!=(const ClientInfo& other) const;
+    bool operator!=(const ClientInfo& other) const;
 
     /*
     FIXME add comment
     */
-    [[nodiscard]] UserIDType& GetUserID();
+    UserIDType& GetUserID();
 
     /*
     FIXME add comment
     */
-    [[nodiscard]] UserIDType GetUserID() const;
+    UserIDType GetUserID() const;
     
     /*
     FIXME add comment
     */
-    [[nodiscard]] LibVersionType& GetLibVer();
+    LibVersionType& GetLibVer();
     
     /*
     FIXME add comment
     */
-    [[nodiscard]] LibVersionType GetLibVer() const;
+    LibVersionType GetLibVer() const;
 
     /*
     FIXME add comment
     */
-    [[nodiscard]] EState& GetState();
+    EState& GetState();
     
     /*
     FIXME add comment
     */
-    [[nodiscard]] EState GetState() const;
+    EState GetState() const;
 
     /*
     FIXME add comment

@@ -1,16 +1,15 @@
 {
-    "version": 5,
+    "version": 3,
     "configurePresets": [
         
-        ///////////////////////////////////////////////////////
-        ///HIDDEN PARENT PRESETS
-        ///////////////////////////////////////////////////////
         {
             "name": "base",
             "hidden": true,
             "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
-                "BUILD_EXAMPLES": "ON" //"CHARACTER_TYPE": "USE_CHAR16"
+                "BUILD_EXAMPLES": "ON",
+                "CMAKE_CXX_STANDARD": "11",
+                "CMAKE_CXX_STANDARD_REQUIRED": "ON"
             }
         },
 
@@ -18,8 +17,8 @@
             "name": "gcc",
             "hidden": true,
             "cacheVariables": {
-                "CMAKE_CXX_COMPILER": "g++.exe",
-                "CMAKE_C_COMPILER": "gcc.exe"
+                "CMAKE_CXX_COMPILER": "g++",
+                "CMAKE_C_COMPILER": "gcc"
             }
         },
 
@@ -88,10 +87,6 @@
         
         
 
-
-        ///////////////////////////////////////////////////////
-        ///Windows MINGW
-        ///////////////////////////////////////////////////////
         {
             "name": "windows-debug-mingw",
             "displayName": "Windows Debug MinGW",
@@ -115,9 +110,6 @@
         },
 
         
-        ///////////////////////////////////////////////////////
-        ///Windows MSVC
-        ///////////////////////////////////////////////////////
         {
             "name": "windows-debug-msvc",
             "displayName": "Windows Debug MSVC",
@@ -134,9 +126,6 @@
 
 
         
-        ///////////////////////////////////////////////////////
-        ///Linux GCC NINJA
-        ///////////////////////////////////////////////////////
         {
             "name": "linux-debug-ninja",
             "displayName": "Linux Debug Ninja",
@@ -155,9 +144,6 @@
 
 
         
-        ///////////////////////////////////////////////////////
-        ///Windows MINGW TEST
-        ///////////////////////////////////////////////////////
         {
             "name": "windows-debug-mingw-test",
             "displayName": "Test Windows Debug MinGW",
@@ -172,9 +158,6 @@
         },
 
         
-        ///////////////////////////////////////////////////////
-        ///Windows MSVC TEST
-        ///////////////////////////////////////////////////////
         {
             "name": "windows-debug-msvc-test",
             "displayName": "Test Windows Debug MSVC",
@@ -189,9 +172,6 @@
         },
 
         
-        ///////////////////////////////////////////////////////
-        ///Linux GCC NINJA TEST
-        ///////////////////////////////////////////////////////
         {
             "name": "linux-debug-ninja-test",
             "displayName": "Test Linux Debug Ninja",
@@ -199,10 +179,10 @@
             "inherits" : ["linux-debug-ninja", "test"]
         },
         {
-            "name": "linux-release-mingw-test",
+            "name": "linux-release-ninja-test",
             "displayName": "Test Linux Release Ninja",
             "description": "Test Linux Release build using Ninja gen",
-            "inherits" : ["linux-release-mingw-test", "test"]
+            "inherits" : ["linux-release-ninja", "test"]
         }
 
 
@@ -211,9 +191,6 @@
 
 
         
-        ///////////////////////////////////////////////////////
-        ///Windows MINGW
-        ///////////////////////////////////////////////////////
         {
             "name": "windows-debug-mingw",
             "displayName": "Enabled",
@@ -234,9 +211,6 @@
 
         
         
-        ///////////////////////////////////////////////////////
-        ///Windows MSVC
-        ///////////////////////////////////////////////////////
         {
             "name": "windows-debug-msvc",
             "displayName": "Enabled",
@@ -255,10 +229,6 @@
         },
 
         
-        
-        ///////////////////////////////////////////////////////
-        ///Linux GCC NINJA
-        ///////////////////////////////////////////////////////
         {
             "name": "linux-debug-ninja",
             "displayName": "Enabled",
@@ -276,15 +246,11 @@
             ]
         },
         
-        ///////////////////////////////////////////////////////
-        ///Windows MINGW TEST
-        ///////////////////////////////////////////////////////
         {
             "name": "windows-debug-mingw-test",
             "displayName": "Enabled",
             "configurePreset": "windows-debug-mingw-test",
             "targets":[
-              //install before test
               "install"
             ]
         },
@@ -293,21 +259,16 @@
             "displayName": "Enabled",
             "configurePreset": "windows-release-mingw-test",
             "targets":[
-              //install before test
               "install"
             ]
         },
 
         
-        ///////////////////////////////////////////////////////
-        ///Windows MSVC TEST
-        ///////////////////////////////////////////////////////
         {
             "name": "windows-debug-msvc-test",
             "displayName": "Enabled",
             "configurePreset": "windows-debug-msvc-test",
             "targets":[
-              //install before test
               "install"
             ]
         },
@@ -316,20 +277,15 @@
             "displayName": "Enabled",
             "configurePreset": "windows-release-msvc-test",
             "targets":[
-              //install before test
               "install"
             ]
         },
         
-        ///////////////////////////////////////////////////////
-        ///Linux GCC NINJA TEST
-        ///////////////////////////////////////////////////////
         {
             "name": "linux-debug-ninja-test",
             "displayName": "Enabled",
             "configurePreset": "linux-debug-ninja-test",
             "targets":[
-              //install before test
               "install"
             ]
         },
@@ -338,25 +294,18 @@
             "displayName": "Enabled",
             "configurePreset": "linux-release-ninja-test",
             "targets":[
-              //install before test
               "install"
             ]
         }
     ],
     "testPresets": [
 
-        
-        ///////////////////////////////////////////////////////
-        ///Windows MINGW
-        ///////////////////////////////////////////////////////
         {
-            //Disabled because doing nothing
             "name": "windows-debug-mingw",
             "displayName": "Disabled",
             "configurePreset": "windows-debug-mingw"
         },
         {
-            //Disabled because doing nothing
             "name": "windows-release-mingw",
             "displayName": "Disabled",
             "configurePreset": "windows-release-mingw"
@@ -376,17 +325,12 @@
 
 
         
-        ///////////////////////////////////////////////////////
-        ///Windows MSVC 
-        ///////////////////////////////////////////////////////
         {
-            //Disabled because doing nothing
             "name": "windows-debug-msvc",
             "displayName": "Disabled",
             "configurePreset": "windows-debug-msvc"
         },
         {
-            //Disabled because doing nothing
             "name": "windows-release-msvc",
             "displayName": "Disabled",
             "configurePreset": "windows-release-msvc"
@@ -408,17 +352,12 @@
 
         
         
-        ///////////////////////////////////////////////////////
-        ///Linux GCC NINJA
-        ///////////////////////////////////////////////////////
         {
-            //Disabled because doing nothing
             "name": "linux-debug-ninja",
             "displayName": "Disabled",
             "configurePreset": "linux-debug-ninja"
         },
         {
-            //Disabled because doing nothing
             "name": "linux-release-ninja",
             "displayName": "Disabled",
             "configurePreset": "linux-release-ninja"

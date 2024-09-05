@@ -14,6 +14,7 @@
 #include <steam/isteamnetworkingutils.h>
 
 #include "NickSV/Tools/TypeTraits.h"
+#include "NickSV/Tools/Memory.h"
 
 #include "NickSV/Chat/Types.h"
 
@@ -204,7 +205,7 @@ auto ParseSeries(std::string::const_iterator begin,
     if(std::distance(begin, iter) <= 0)
         return begin; //BAD INPUT. Parsed size doesnt match with input size
     
-    std::swap(arg, dynamic_cast<Arg&>(parser.GetObject()));
+    std::swap(arg, parser.GetObject());
     return iter;
 }
 

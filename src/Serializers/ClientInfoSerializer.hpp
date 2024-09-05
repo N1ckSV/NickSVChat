@@ -3,13 +3,10 @@
 #define _NICKSV_CHAT_CLIENTINFO_SERIALIZER_PASTE
 #pragma once
 
+#include "NickSV/Tools/TypeTraits.h"
 
-#include "NickSV/Chat/Definitions.h"
-#include "NickSV/Chat/Utils.h"
 #include "NickSV/Chat/Serializers/BStringSerializer.h"
 #include "NickSV/Chat/Serializers/ClientInfoSerializer.h"
-
-#include "NickSV/Tools/TypeTraits.h"
 
 
 namespace NickSV {
@@ -24,14 +21,11 @@ namespace Chat {
 // Serializer<ClientInfo> implementation
 //----------------------------------------------------------------------------------------------------
 
-Serializer<ClientInfo>::Serializer(const ClientInfo* const pClientInfo) : m_pClientInfo(pClientInfo)
-{ 
-    CHAT_ASSERT(m_pClientInfo, "Serializer constructor parameter must not be nullptr");
-};
+Serializer<ClientInfo>::Serializer(const ClientInfo & rClientInfo) : m_rClientInfo(rClientInfo) {};
 
-inline const ClientInfo* Serializer<ClientInfo>::GetObject() const
+inline const ClientInfo& Serializer<ClientInfo>::GetObject() const
 { 
-    return m_pClientInfo;
+    return m_rClientInfo;
 };
 
 inline size_t Serializer<ClientInfo>::GetSize() const
@@ -55,21 +49,18 @@ std::string Serializer<ClientInfo>::ToString() const
 
 std::string::iterator Serializer<ClientInfo>::ToString(std::string::iterator begin, std::string::iterator end) const
 {
-    CHAT_ASSERT(end >= begin + GetSize(), invalid_range_size_ERROR_MESSAGE);
-
-    constexpr size_t atleastSize = sizeof(LibVersionType) + sizeof(EState) + sizeof(UserIDType);
-    Tools::type_integrity_assert<ClientInfo, atleastSize + COMPILER_AWARE_VALUE(8, 8, 8)>();
+    CHAT_ASSERT(std::distance(begin, end) >= static_cast<ptrdiff_t>(GetSize()), invalid_range_size_ERROR_MESSAGE);
 
     Transfer<LibVersionType> ver;
-    ver.Base = GetObject()->GetLibVer();
+    ver.Base = GetObject().GetLibVer();
     auto iter = std::copy(ver.CharArr, ver.CharArr + sizeof(LibVersionType), begin);
     Transfer<EState> state;
-    state.Base = GetObject()->GetState();
+    state.Base = GetObject().GetState();
     iter = std::copy(state.CharArr, state.CharArr + sizeof(EState), iter);
     Transfer<UserIDType> id;
-    id.Base = GetObject()->GetUserID();
+    id.Base = GetObject().GetUserID();
     iter = std::copy(id.CharArr, id.CharArr + sizeof(UserIDType), iter);
-    CHAT_ASSERT(iter <= end, something_went_wrong_ERROR_MESSAGE);
+    CHAT_ASSERT(std::distance(iter, end) >= 0, something_went_wrong_ERROR_MESSAGE);
     return OnToString(iter, end);
 }
 

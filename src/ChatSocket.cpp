@@ -54,11 +54,9 @@ void ChatSocket::Wait()
 }
 
 ChatSocket::ChatSocket()
-{
-    m_bGoingExit = true;
-    m_pConnectionThread = nullptr;
-    m_pRequestThread = nullptr;
-}
+    : m_bGoingExit(true),
+      m_pConnectionThread(nullptr),
+      m_pRequestThread(nullptr) {};
 
 ChatSocket::~ChatSocket()
 {
@@ -114,12 +112,6 @@ EResult ChatSocket::SendStringToConnection(HSteamNetConnection conn, const std::
 	}
 }
 
-
-
-std::unique_ptr<ClientInfo> ChatSocket::MakeClientInfo() 
-{ 
-	return std::unique_ptr<ClientInfo>(new ClientInfo()); 
-}
 
 
 TaskInfo ChatSocket::QueueRequest(Request& rReq, RequestInfo rInfo)
@@ -205,7 +197,7 @@ void ChatSocket::RequestThreadFunction()
 {
 	RequestInfo rInfo;
 	std::string strReq; 
-	Parser<Request> parser;
+	auto parser = Tools::MakeUnique<Parser<Request>>();
 	HandleRequestsQueue_t::ValueType tuple;
     while(!m_bGoingExit)
     {
@@ -217,10 +209,10 @@ void ChatSocket::RequestThreadFunction()
 		{
 			tuple  = m_handleRequestsQueue.Pop();
 			strReq = std::move(std::get<0>(tuple));
-			rInfo  =		   std::get<1>(tuple);
-			parser.FromString(strReq);
+			rInfo  = std::move(std::get<1>(tuple));
+			parser->FromString(strReq);
 			// HandleRequest returns EResult, but it is only needed for manual calls
-			HandleRequest(parser.GetObject(), rInfo);
+			HandleRequest(parser->GetObject(), rInfo);
 		}
     }
 }
