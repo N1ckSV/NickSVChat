@@ -45,17 +45,18 @@ EState  ClientInfo::GetState() const { return m_eState; }
 
 bool ClientInfo::operator==(const ClientInfo& other) const
 { 
+    constexpr size_t size = sizeof(m_nLibVer) + sizeof(m_nUserID) + sizeof(m_eState) + sizeof(void*);
+    Tools::type_integrity_assert_virtual<ClientInfo, COMPILER_AWARE_VALUE(size,size,size)>();
     return m_nLibVer == other.m_nLibVer &&
            m_nUserID == other.m_nUserID &&
            m_eState  == other.m_eState;
 }
 bool ClientInfo::operator!=(const ClientInfo& other) const { return !operator==(other); }
 
-auto ClientInfo::GetSerializer() const
+inline auto ClientInfo::GetSerializer() const
 -> const std::unique_ptr<ISerializer>
 { 
-    const auto ptr = new Serializer<ClientInfo>(this);
-    return std::unique_ptr<Serializer<ClientInfo>>(ptr);
+    return Tools::MakeUnique<Serializer<ClientInfo>>(*this);
 }
 
 

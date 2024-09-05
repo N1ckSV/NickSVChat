@@ -23,15 +23,12 @@ namespace Chat {
 // Serializer<std::basic_string<CharT>> implementation
 //----------------------------------------------------------------------------------------------------
 template<typename CharT>
-Serializer<std::basic_string<CharT>>::Serializer(const std::basic_string<CharT>* const pBasicString) : m_pBasicString(pBasicString)
-{ 
-    CHAT_ASSERT(m_pBasicString, "m_pBasicString must not be nullptr");
-};
+Serializer<std::basic_string<CharT>>::Serializer(const std::basic_string<CharT>& rBasicString) : m_rBasicString(rBasicString) {};
 
 template<typename CharT>
-inline const std::basic_string<CharT>* Serializer<std::basic_string<CharT>>::GetObject() const
+inline const std::basic_string<CharT>& Serializer<std::basic_string<CharT>>::GetObject() const
 { 
-    return m_pBasicString;
+    return m_rBasicString;
 };
 
 template<typename CharT>
@@ -39,7 +36,7 @@ inline size_t Serializer<std::basic_string<CharT>>::GetSize() const
 {
     size_t size =
       sizeof(size_t) +
-      sizeof(CharType) * GetObject()->size();
+      sizeof(CharType) * GetObject().size();
     return size;
 }
 
@@ -61,13 +58,14 @@ std::string Serializer<std::basic_string<CharT>>::ToString() const
 template<typename CharT>
 std::string::iterator Serializer<std::basic_string<CharT>>::ToString(std::string::iterator begin, std::string::iterator end) const
 {
-    CHAT_ASSERT(end >= begin + GetSize(), invalid_range_size_ERROR_MESSAGE);
+    CHAT_ASSERT(std::distance(begin, end) >= static_cast<ptrdiff_t>(GetSize()),
+        invalid_range_size_ERROR_MESSAGE);
     Transfer<size_t> stringSize;
-    stringSize.Base = GetObject()->size();
+    stringSize.Base = GetObject().size();
     auto iter = std::copy(stringSize.CharArr, stringSize.CharArr + sizeof(size_t), begin);
-    iter = std::copy(reinterpret_cast<const char*>(GetObject()->data()),
-                     reinterpret_cast<const char*>(GetObject()->data() + GetObject()->size()), iter);
-    CHAT_ASSERT(iter <= end, something_went_wrong_ERROR_MESSAGE);
+    iter = std::copy(reinterpret_cast<const char*>(GetObject().data()),
+                     reinterpret_cast<const char*>(GetObject().data() + GetObject().size()), iter);
+    CHAT_ASSERT(std::distance(iter, end) >= 0, something_went_wrong_ERROR_MESSAGE);
     return iter;
 }
 

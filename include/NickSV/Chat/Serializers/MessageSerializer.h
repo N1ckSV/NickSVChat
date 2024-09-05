@@ -1,11 +1,12 @@
-#ifndef _NICKSV_CHAT_BMESSAGE_SERIALIZER_HEADER
-#define _NICKSV_CHAT_BMESSAGE_SERIALIZER_HEADER
+#ifndef _NICKSV_CHAT_MESSAGE_SERIALIZER_HEADER
+#define _NICKSV_CHAT_MESSAGE_SERIALIZER_HEADER
 #pragma once
 
 
 #include <string>
 
 #include "NickSV/Chat/Interfaces/ISerializer.h"
+#include "NickSV/Chat/Message.h"
 
 
 namespace NickSV {
@@ -14,24 +15,23 @@ namespace Chat {
 
 
 
-
-template<typename CharT>
-class NICKSVCHAT_API Serializer<BasicMessage<CharT>> : public ISerializer
+template<>
+class NICKSVCHAT_API Serializer<Message> : public ISerializer
 {
     /*
-    Class helper handles the serialization of BasicMessage struct to string 
+    Class helper handles the serialization of Message struct to string 
     and parsing (deserializing) it back.
 
     Inherit from this class to handle its functions on your custom 
-    BasicMessage's child class with your extra info
+    Message's child class with your extra info
 
     */
 public:
 
     Serializer() = delete;
-    explicit Serializer(const BasicMessage<CharT>* const);
+    explicit Serializer(const Message&);
 
-    inline const BasicMessage<CharT>* GetObject() const;
+    inline const Message& GetObject() const;
 
     size_t GetSize() const override final;
     size_t OnGetSize(size_t baseSize = 0) const override;
@@ -42,9 +42,9 @@ public:
     std::string::iterator ToStringBuffer(std::string&) const override final;
 private:
     /*
-    Pointer to BasicMessage object where "this" serializes from or parses to.
+    Pointer to Message object where "this" serializes from or parses to.
     */
-    const BasicMessage<CharT>* const m_pBasicMessage;
+    const Message& m_rMessage;
 };
 
 

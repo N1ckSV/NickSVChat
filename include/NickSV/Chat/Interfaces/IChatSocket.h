@@ -25,6 +25,7 @@ public:
     [[nodiscard]]  virtual  EResult SendRequest(  Request&, RequestInfo) = 0;
     [[nodiscard]]  virtual TaskInfo QueueRequest( Request&, RequestInfo) = 0;
                    virtual  EResult HandleRequest(Request&, RequestInfo) = 0;
+                   
                    virtual          ~IChatSocket() = default;
 };
 

@@ -4,23 +4,31 @@
 #include <thread>
 
 
+
+
+#define TEST_IGNORE_PRINT_ON_SUCCESS
+
+#include "NickSV/Tools/Testing.h"
+#include "NickSV/Tools/ValueLock.h"
+
+
 #include "NickSV/Chat/Utils.h"
 
 #include "NickSV/Chat/ClientInfo.h"
-#include "NickSV/Chat/BasicMessage.h"
+#include "NickSV/Chat/Message.h"
 
 #include "NickSV/Chat/Requests/Request.h"
 #include "NickSV/Chat/Requests/MessageRequest.h"
 #include "NickSV/Chat/Requests/ClientInfoRequest.h"
 
 #include "NickSV/Chat/Serializers/ClientInfoSerializer.h"
-#include "NickSV/Chat/Serializers/BMessageSerializer.h"
+#include "NickSV/Chat/Serializers/MessageSerializer.h"
 #include "NickSV/Chat/Serializers/BStringSerializer.h"
 #include "NickSV/Chat/Serializers/ClientInfoRequestSerializer.h"
 #include "NickSV/Chat/Serializers/MessageRequestSerializer.h"
 
 #include "NickSV/Chat/Parsers/ClientInfoParser.h"
-#include "NickSV/Chat/Parsers/BMessageParser.h"
+#include "NickSV/Chat/Parsers/MessageParser.h"
 #include "NickSV/Chat/Parsers/BStringParser.h"
 #include "NickSV/Chat/Parsers/RequestParser.h"
 #include "NickSV/Chat/Parsers/ClientInfoRequestParser.h"
@@ -28,13 +36,6 @@
 
 #include "NickSV/Chat/ChatClient.h"
 #include "NickSV/Chat/ChatServer.h"
-
-#include "NickSV/Tools/ValueLock.h"
-
-#define TEST_IGNORE_PRINT_ON_SUCCESS
-
-#include "NickSV/Tools/Testing.h"
-
 
 using namespace NickSV;
 using namespace NickSV::Chat;
@@ -75,28 +76,27 @@ static size_t client_info_serializers_and_parsers_test()
 }
 
 
-template<typename CharT>
-size_t basic_serializers_and_parsers_test()
+static size_t serializers_and_parsers_test()
 {
-    std::basic_string<CharT> text = TEXT("Hello there, I am a test text!", CharT);
-    std::string str = Serializer<std::basic_string<CharT>>(&text).ToString();
-    std::basic_string<CharT> text2 = MakeFromString<std::basic_string<CharT>>(str);
+    std::basic_string<CHAT_CHAR> text = TEXT("Hello there, I am a test text!", CHAT_CHAR);
+    std::string str = Serializer<std::basic_string<CHAT_CHAR>>(text).ToString();
+    std::basic_string<CHAT_CHAR> text2 = MakeFromString<std::basic_string<CHAT_CHAR>>(str);
     TEST_CHECK_STAGE(text == text2);
 
     str.resize(str.size()-1);
-    text2 = MakeFromString<std::basic_string<CharT>>(str);
-    TEST_CHECK_STAGE(text2 == std::basic_string<CharT>());
+    text2 = MakeFromString<std::basic_string<CHAT_CHAR>>(str);
+    TEST_CHECK_STAGE(text2 == std::basic_string<CHAT_CHAR>());
 
-    text = TEXT("Hello there, I am a test message!", CharT);
-    const BasicMessage<CharT> BasicMessage1(text);
-    BasicMessage<CharT> BasicMessage2;
+    text = TEXT("Hello there, I am a test message!", CHAT_CHAR);
+    const Message BasicMessage1(text);
+    Message BasicMessage2;
     str = BasicMessage1.GetSerializer()->ToString();
-    BasicMessage2 = MakeFromString<BasicMessage<CharT>>(str);
+    BasicMessage2 = MakeFromString<Message>(str);
     TEST_CHECK_STAGE(BasicMessage2 == BasicMessage1);
 
     str = str.substr(0, str.size()-1);
-    BasicMessage2 = MakeFromString<BasicMessage<CharT>>(str);
-    TEST_CHECK_STAGE(BasicMessage2 == BasicMessage<CharT>());
+    BasicMessage2 = MakeFromString<Message>(str);
+    TEST_CHECK_STAGE(BasicMessage2 == Message());
 
     return TEST_SUCCESS;
 }
@@ -107,6 +107,9 @@ static size_t requests_serializers_and_parsers_test()
     const ClientInfo ClientInfo1(id);
           ClientInfo ClientInfo2;
     const ClientInfoRequest clientInfoRequest(ClientInfo1);
+    ///////////////
+    //START HERE
+    ///////////////
     std::string str = clientInfoRequest.GetSerializer()->ToString();
     auto parser = Parser<Request>();
     auto iter = parser.FromString(str);
@@ -210,11 +213,10 @@ class TestChatServer : public ChatServer
 
 static size_t client_server_data_exchange_test()
 {
-    
     TestChatServer server;
     ChatClient client;
     MessageRequest req;
-    req.GetMessage() = Message(_T("Hello guys, ima test message"));
+    req.GetMessage() = Message(TEXT("Hello guys, ima test message", CHAT_CHAR));
     TEST_CHECK_STAGE(server.Run() != NickSV::Chat::EResult::Error);
 
     bool result = true;
@@ -227,8 +229,17 @@ static size_t client_server_data_exchange_test()
     TEST_CHECK_STAGE(result);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    if(client.GetClientInfo().GetState() != EState::Active)
+    {
+        server.CloseSocket();
+        client.CloseSocket();
+        server.Wait();
+        client.Wait();
+        result = false;
+    }
+    TEST_CHECK_STAGE(result);
 
-    if( client.QueueRequest(req).GetFutureResult() != NickSV::Chat::EResult::Success)
+    if(client.QueueRequest(req).GetFutureResult() != NickSV::Chat::EResult::Success)
     {
         server.CloseSocket();
         client.CloseSocket();
@@ -258,10 +269,7 @@ int main(int, const char **)
     TEST_VERIFY(client_info_test());
     TEST_VERIFY(client_info_serializers_and_parsers_test());
 
-    TEST_VERIFY(basic_serializers_and_parsers_test<char>());
-    TEST_VERIFY(basic_serializers_and_parsers_test<wchar_t>());
-    TEST_VERIFY(basic_serializers_and_parsers_test<char16_t>());
-    TEST_VERIFY(basic_serializers_and_parsers_test<char32_t>());
+    TEST_VERIFY(serializers_and_parsers_test());
 
     TEST_VERIFY(requests_serializers_and_parsers_test());
 

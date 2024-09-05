@@ -25,17 +25,22 @@
 
 #if defined( NICKSVCHAT_STATIC_LINK )
 	#define NICKSVCHAT_API
+	#define NICKSVCHAT_API_EXPORT
 #elif defined( NICKSVCHAT_FOREXPORT ) && defined( _WIN32) && defined( _MSC_VER )
     // I dunno __declspec( dllexport/import )                           
     // is for MSVC in general
     // or for MSVC with Windows only 
 	#define NICKSVCHAT_API  __declspec( dllexport )
+	#define NICKSVCHAT_API_EXPORT __declspec( dllexport )
 #elif defined( NICKSVCHAT_FOREXPORT ) && !defined( _WIN32 )
 	#define NICKSVCHAT_API __attribute__((visibility("default")))
+	#define NICKSVCHAT_API_EXPORT
 #elif !defined( NICKSVCHAT_FOREXPORT ) && defined( _MSC_VER ) 
 	#define NICKSVCHAT_API __declspec( dllimport )
+	#define NICKSVCHAT_API_EXPORT __declspec( dllexport )
 #else 
 	#define NICKSVCHAT_API
+	#define NICKSVCHAT_API_EXPORT
 #endif
 
 #define NICKSVCHAT_INTERFACE extern "C" NICKSVCHAT_API

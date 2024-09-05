@@ -1,5 +1,5 @@
-#ifndef _NICKSV_CHAT_CLIENTINFO_REQUEST_PARSER_HEADER
-#define _NICKSV_CHAT_CLIENTINFO_REQUEST_PARSER_HEADER
+#ifndef _NICKSV_CHAT_MESSAGE_PARSER_HEADER
+#define _NICKSV_CHAT_MESSAGE_PARSER_HEADER
 #pragma once
 
 
@@ -8,30 +8,30 @@
 
 #include "NickSV/Chat/Interfaces/IParser.h"
 #include "NickSV/Chat/Utils.h"
-#include "NickSV/Chat/ClientInfo.h"
+#include "NickSV/Chat/Message.h"
 
 
 namespace NickSV {
 namespace Chat {
 
 
-
-
 template<>
-class NICKSVCHAT_API Parser<ClientInfoRequest> : public IParser
+class NICKSVCHAT_API Parser<Message> : public IParser
 {
 public:
-    Parser();
+    using CharType = typename Message::CharType;
+    using TextType = typename Message::TextType;
+    using UserIDType = typename Message::UserIDType;
 
-    ClientInfoRequest& GetObject();
+    Parser(std::unique_ptr<Message> upMessage = Tools::MakeUnique<Message>());
+    
+    Message& GetObject();
 
     std::string::const_iterator FromString(const std::string&) override final;
     std::string::const_iterator FromString(std::string::const_iterator, std::string::const_iterator) override final;
     std::string::const_iterator OnFromString(std::string::const_iterator, std::string::const_iterator) override;
-
-    friend Parser<Request>;
 protected:
-    std::unique_ptr<ClientInfoRequest>  m_upClientInfoRequest;
+     std::unique_ptr<Message>  m_upMessage;
 };
 
 
@@ -40,4 +40,4 @@ protected:
 
 
 
-#endif // _NICKSV_CHAT_CLIENTINFO_REQUEST_PARSER_HEADER
+#endif // _NICKSV_CHAT_MESSAGE_PARSER_HEADER

@@ -30,4 +30,14 @@ and again appeared           3221225477
  after some thoughts I came to the conclusion that 
  GNS UserData is only useful if I want to get rid of m_mapConnections
 
- -add all needed methods in IChatSocket
+-add all needed methods in IChatSocket
+
+-think about virtual object factory, that making polymorhic objects
+{
+    factory should be:
+        -only once initialized
+        -one per Socket
+        -const ref gettable
+        -global gettable
+        -private
+}

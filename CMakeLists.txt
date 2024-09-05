@@ -6,27 +6,32 @@ project(NickSVChat LANGUAGES C CXX VERSION 0.1.0)
 include(GNUInstallDirs)
 include(CheckSymbolExists)
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 set(GameNetworkingSockets_DIR "" CACHE STRING "Path where to find GameNetworkingSockets")
 #added API author's path to GNS
-set(GameNetworkingSockets_DIR_HINTS ${GameNetworkingSockets_DIR} "E:/SDK/GameNetworkingSockets/install")
-#Protobuf is required for GameNetworkingSockets
+if(WIN32)
+    set(GameNetworkingSockets_DIR_HINTS ${GameNetworkingSockets_DIR} "E:/SDK/GameNetworkingSockets/install/Windows")
+else()
+    set(GameNetworkingSockets_DIR_HINTS ${GameNetworkingSockets_DIR} "/mnt/e/SDK/GameNetworkingSockets/install/Linux")
+endif()
+#Protobuf is required
 find_package(Protobuf REQUIRED)
 #GameNetworkingSockets is main network api for this project
 find_package(GameNetworkingSockets REQUIRED
     HINTS ${GameNetworkingSockets_DIR_HINTS} 
 )
 set(NickSVChat_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/")
-set(NickSVChat_EXTERNAL_INCLUDE_DIRS
-    "${CMAKE_CURRENT_SOURCE_DIR}/external/GameNetworkingSockets/include/"
-    )
+
+#get_target_property(GameNetworkingSockets_INCLUDE_DIR GameNetworkingSockets::GameNetworkingSockets INTERFACE_INCLUDE_DIRECTORIES)
+#message(STATUS "GameNetworkingSockets_INCLUDE_DIR: ${GameNetworkingSockets_INCLUDE_DIR}")
+
+#set(NickSVChat_EXTERNAL_INCLUDE_DIRS
+#    ${GameNetworkingSockets_INCLUDE_DIR}
+#    ${Protobuf_INCLUDE_DIR}/
+#    )
 
 set(NickSVChat_ALL_INCLUDE_DIRS "${NickSVChat_INCLUDE_DIR};${NickSVChat_EXTERNAL_INCLUDE_DIRS}")
 message(STATUS "NickSVChat_ALL_INCLUDE_DIRS: ${NickSVChat_ALL_INCLUDE_DIRS}")
-#get_target_property(GameNetworkingSockets_INCLUDEDIR GameNetworkingSockets::GameNetworkingSockets INTERFACE_INCLUDE_DIRECTORIES)
-#message(STATUS "GameNetworkingSockets_INCLUDEDIR: ${GameNetworkingSockets_INCLUDEDIR}")
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 if(WIN32)
     set(MINIMUM_DEPENDENCIES_COUNT_TO_SKIP_INSTALL 3 CACHE STRING "If there are fewer dll/so files in the
@@ -123,12 +128,13 @@ message(STATUS "\n\n")
 #CONFIGURING LIBRARY
 #-----------------------------------------------
 configure_file(cmake/ChatConfig.h.in include/NickSV/Chat/ChatConfig.h)
+
 add_library(NickSVChat
     src/ChatSocket.cpp
     src/ChatClient.cpp
     src/ChatServer.cpp
     src/ClientInfo.cpp
-    src/BasicMessage.cpp
+    src/Message.cpp
     src/Serializers.cpp
     src/Parsers.cpp
     src/Requests.cpp

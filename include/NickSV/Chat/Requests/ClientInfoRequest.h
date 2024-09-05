@@ -25,8 +25,10 @@ public:
     ClientInfo& GetClientInfo();
     const ClientInfo& GetClientInfo() const;
 
-    ERequestType GetType() const override;
+    ERequestType GetType() const override final;
     const std::unique_ptr<ISerializer> GetSerializer() const override;
+
+    friend Parser<ClientInfoRequest>;
 private:
     std::unique_ptr<ClientInfo> m_upClientInfo;
 };

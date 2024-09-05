@@ -15,26 +15,26 @@ namespace Chat {
 //-----------------------------------------------------------------------------------
 // Impementation of MessageRequest
 //-----------------------------------------------------------------------------------
-MessageRequest::MessageRequest() : m_upMessage(new Message()) {};
+MessageRequest::MessageRequest() 
+    : m_upMessage(Tools::MakeUnique<Message>()) {};
 
-MessageRequest::MessageRequest(Message msg) : m_upMessage(new Message(std::move(msg))) {};
+MessageRequest::MessageRequest(Message msg) 
+    : m_upMessage(Tools::MakeUnique<Message>(std::move(msg))) {};
 
 Message& MessageRequest::GetMessage()
-{
-    return *m_upMessage;
-}
+{ return *m_upMessage; }
 
-const Message& MessageRequest::GetMessage() const
-{
-    return *m_upMessage;
-}
+auto MessageRequest::GetMessage() const
+-> const Message&
+{ return *m_upMessage; }
 
-ERequestType MessageRequest::GetType() const { return ERequestType::Message; }
+ERequestType MessageRequest::GetType() const
+{ return ERequestType::Message; }
 
-const  std::unique_ptr<ISerializer> MessageRequest::GetSerializer() const 
+auto MessageRequest::GetSerializer() const
+-> const std::unique_ptr<ISerializer>
 { 
-    const auto ptr = new Serializer<MessageRequest>(this);
-    return std::unique_ptr<Serializer<MessageRequest>>(ptr);
+	return Tools::MakeUnique<Serializer<MessageRequest>>(*this);
 }
 
 //-----------------------------------------------------------------------------------

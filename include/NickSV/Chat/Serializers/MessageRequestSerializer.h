@@ -31,9 +31,9 @@ class NICKSVCHAT_API Serializer<MessageRequest> : public ISerializer
    static_assert(is_serializable<Message>::value, is_serializable_ERROR_MESSAGE);
 public:
     Serializer() = delete;
-    explicit Serializer(const MessageRequest* const);
+    explicit Serializer(const MessageRequest&);
 
-    inline const MessageRequest* GetObject() const;
+    inline const MessageRequest& GetObject() const;
 
     inline size_t GetSize() const override final;
     inline size_t OnGetSize(size_t baseSize = 0) const override;
@@ -46,7 +46,7 @@ private:
     /*
     Pointer to BasicMessage object where "this" serializes from or parses to.
     */
-    const MessageRequest* const m_pMessageRequest;
+    const MessageRequest& m_rMessageRequest;
 };
 
 

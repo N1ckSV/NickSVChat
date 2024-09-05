@@ -25,18 +25,15 @@ namespace Chat {
 //----------------------------------------------------------------------------------------------------
 // Parser<ClientInfoRequest> implementation
 //----------------------------------------------------------------------------------------------------
-Parser<ClientInfoRequest>::Parser() : m_upClientInfoRequest(new ClientInfoRequest()) {};
+Parser<ClientInfoRequest>::Parser() 
+    : m_upClientInfoRequest(Tools::MakeUnique<ClientInfoRequest>()) {};
 
 ClientInfoRequest& Parser<ClientInfoRequest>::GetObject()
-{ 
-    return *m_upClientInfoRequest;
-};
+{ return *m_upClientInfoRequest; };
 
 
 inline std::string::const_iterator Parser<ClientInfoRequest>::FromString(const std::string& str)
-{
-    return FromString(str.cbegin(), str.cend());
-}
+{ return FromString(str.cbegin(), str.cend()); }
 
 std::string::const_iterator Parser<ClientInfoRequest>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
@@ -49,8 +46,9 @@ std::string::const_iterator Parser<ClientInfoRequest>::FromString(std::string::c
     if(std::distance(begin, iter) <= 0 ||
        type != ERequestType::ClientInfo)
             return begin;
-
+    
     auto newIter = ParseSeries(iter, end, GetObject().GetClientInfo());
+
     if(std::distance(iter, newIter) <= 0)
         return begin;
 

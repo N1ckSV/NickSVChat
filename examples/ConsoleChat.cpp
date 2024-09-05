@@ -53,7 +53,8 @@ static bool SetConsoleMode()
 	return ((_setmode(_fileno(stdin ), _O_U16TEXT) != -1) &&
 	   		(_setmode(_fileno(stdout), _O_U16TEXT) != -1));
 #else
-	#error "Not implemented"
+	//#error "Not implemented"
+	return true;
 #endif
 }
 

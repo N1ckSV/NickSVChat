@@ -1,14 +1,12 @@
 
-#ifndef _NICKSV_CHAT_BMESSAGE_PARSER_PASTE
-#define _NICKSV_CHAT_BMESSAGE_PARSER_PASTE
+#ifndef _NICKSV_CHAT_MESSAGE_PARSER_PASTE
+#define _NICKSV_CHAT_MESSAGE_PARSER_PASTE
 #pragma once
 
 
 
-#include "NickSV/Chat/Definitions.h"
-#include "NickSV/Chat/Utils.h"
 #include "NickSV/Chat/Parsers/BStringParser.h"
-#include "NickSV/Chat/Parsers/BMessageParser.h"
+#include "NickSV/Chat/Parsers/MessageParser.h"
 
 
 
@@ -21,33 +19,30 @@ namespace Chat {
 
 
 //----------------------------------------------------------------------------------------------------
-// Parser<BasicMessage<CharT>> implementation
+// Parser<Message> implementation
 //----------------------------------------------------------------------------------------------------
-template<typename CharT>
-Parser<BasicMessage<CharT>>::Parser() : m_upBasicMessage(new BasicMessage<CharT>()) {};
+Parser<Message>::Parser(std::unique_ptr<Message> upMessage) 
+    : m_upMessage(std::move(upMessage)) {};
 
-template<typename CharT>
-BasicMessage<CharT>& Parser<BasicMessage<CharT>>::GetObject()
-{ 
-    return *m_upBasicMessage;
-};
+Message& Parser<Message>::GetObject()
+{ return *m_upMessage; };
 
-template<typename CharT>
-inline std::string::const_iterator Parser<BasicMessage<CharT>>::FromString(const std::string& str)
-{
-    return FromString(str.cbegin(), str.cend());
-}
+inline std::string::const_iterator Parser<Message>::FromString(const std::string& str)
+{ return FromString(str.cbegin(), str.cend()); }
 
-template<typename CharT>
-std::string::const_iterator Parser<BasicMessage<CharT>>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
+std::string::const_iterator Parser<Message>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
     constexpr size_t atleastSize = sizeof(UserIDType) + sizeof(size_t);
-    Tools::type_integrity_assert<BasicMessage<CharT>, 
+    Tools::type_integrity_assert<Message, 
         COMPILER_AWARE_VALUE(8, 8, 8) +
         sizeof(UserIDType) + 
         sizeof(TextType)>();
         
-    auto iter = ParseSeries(begin, end, GetObject().GetSenderID(), GetObject().GetText());
+    auto iter = ParseSeries(
+        begin, end, 
+        GetObject().GetSenderID(), 
+        GetObject().GetText());
+
     if(std::distance(begin, iter) <= 0)
         return begin;
 
@@ -59,8 +54,7 @@ std::string::const_iterator Parser<BasicMessage<CharT>>::FromString(std::string:
     return newIter;
 }
 
-template<typename CharT>
-std::string::const_iterator inline Parser<BasicMessage<CharT>>::OnFromString(
+std::string::const_iterator inline Parser<Message>::OnFromString(
     std::string::const_iterator,
     std::string::const_iterator end)
 { 
@@ -76,4 +70,4 @@ std::string::const_iterator inline Parser<BasicMessage<CharT>>::OnFromString(
 
 
 
-#endif // _NICKSV_CHAT_BMESSAGE_PARSER_PASTE
+#endif // _NICKSV_CHAT_MESSAGE_PARSER_PASTE

@@ -174,8 +174,8 @@ enum class EResult : uint32_t
 enum class ERequestType : uint32_t
 {
     Unknown = 0,
-    Message,
     ClientInfo,
+    Message,
 
     Size         // Last value of ERequestType
 };
@@ -240,12 +240,7 @@ using ClientInfoSerializer = Serializer<ClientInfo>;
 using ClientInfoParser = Parser<ClientInfo>;
 
 
-/*
-"Basic" prefix here means the same thing as "basic_" in std::basic_string<...>
-*/
-template<typename CharT = CHAT_CHAR>
-class BasicMessage;
-using Message = BasicMessage<CHAT_CHAR>;
+class Message;
 
 
 class RequestInfo;

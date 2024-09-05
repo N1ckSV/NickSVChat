@@ -34,9 +34,9 @@ public:
     using LibVersionType = typename ClientInfo::LibVersionType;
 
     Serializer() = delete;
-    explicit Serializer(ClientInfo const * const);
+    explicit Serializer(ClientInfo const &);
 
-    inline const ClientInfo * GetObject() const;
+    const ClientInfo & GetObject() const;
 
     /*
     Returns the size in bytes of ClientInfo serialization into std::string.
@@ -44,14 +44,14 @@ public:
     See OnGetSize(...) to interact:
     Derived::GetSize() == Base::GetSize() + Derived::OnGetSize()
     */
-    inline size_t GetSize() const override final;
+    size_t GetSize() const override final;
 
     /*
     Override it in your derived class. Supposed to return an extra
     info size for serializing.
     Derived::GetSize() == Base::GetSize() + Derived::OnGetSize()
     */
-    inline size_t OnGetSize(size_t baseSize = 0) const override;
+    size_t OnGetSize(size_t baseSize = 0) const override;
     
     /*
     Serializes ClientInfo to std::string which can be converted back deterministically.
@@ -69,18 +69,18 @@ public:
     Use pvNewPartStart to add an extra info.
     This function is called inside ToString() and ToStringBuffer(...)
     */
-    inline std::string::iterator OnToString(std::string::iterator, std::string::iterator) const override;
+    std::string::iterator OnToString(std::string::iterator, std::string::iterator) const override;
 
     /*
     Same as ToString() but with externally predefined std::string buffer.
     See OnToString(...) to interact
     */
-    inline std::string::iterator ToStringBuffer(std::string&) const override final;
+    std::string::iterator ToStringBuffer(std::string&) const override final;
 private:
     /*
     Pointer to ClientInfo object where "this" serializes from or parses to.
     */
-    const ClientInfo* const m_pClientInfo;
+    const ClientInfo& m_rClientInfo;
 };
 
 

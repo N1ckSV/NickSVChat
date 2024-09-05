@@ -5,7 +5,7 @@
 
 #include <memory>
 
-#include "NickSV/Chat/BasicMessage.h"
+#include "NickSV/Chat/Message.h"
 #include "NickSV/Chat/Requests/Request.h"
 #include "NickSV/Chat/Interfaces/ISerializable.h"
 
@@ -25,8 +25,10 @@ public:
     Message& GetMessage();
     const Message& GetMessage() const;
 
-    ERequestType GetType() const override;
+    ERequestType GetType() const override final;
     const std::unique_ptr<ISerializer> GetSerializer() const override;
+
+    friend Parser<MessageRequest>;
 private:
     std::unique_ptr<Message> m_upMessage;
 };

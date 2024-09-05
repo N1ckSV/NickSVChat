@@ -24,19 +24,16 @@ namespace Chat {
 // Parser<std::basic_string<CharT>> implementation
 //---------------------------------------------------------------------------------------------------
 template<typename CharT>
-Parser<std::basic_string<CharT>>::Parser(): m_upBasicString(new std::basic_string<CharT>()) {};
+Parser<std::basic_string<CharT>>::Parser()
+    : m_upBasicString(Tools::MakeUnique<std::basic_string<CharT>>()) {};
 
 template<typename CharT>
 std::basic_string<CharT>& Parser<std::basic_string<CharT>>::GetObject()
-{ 
-    return *m_upBasicString;
-};
+{ return *m_upBasicString; };
 
 template<typename CharT>
 inline std::string::const_iterator Parser<std::basic_string<CharT>>::FromString(const std::string& str) 
-{
-    return FromString(str.cbegin(), str.cend());
-}
+{ return FromString(str.cbegin(), str.cend()); }
 
 template<typename CharT>
 std::string::const_iterator Parser<std::basic_string<CharT>>::FromString(std::string::const_iterator begin, std::string::const_iterator end) 

@@ -12,7 +12,7 @@
 
 #include "NickSV/Chat/Requests/MessageRequest.h"
 
-#include "NickSV/Chat/BasicMessage.h"
+#include "NickSV/Chat/Message.h"
 
 namespace NickSV {
 namespace Chat {
@@ -23,17 +23,14 @@ namespace Chat {
 //----------------------------------------------------------------------------------------------------
 // Parser<MessageRequest> implementation
 //----------------------------------------------------------------------------------------------------
-Parser<MessageRequest>::Parser() : m_upMessageRequest(new MessageRequest()) {};
+Parser<MessageRequest>::Parser() 
+    : m_upMessageRequest(Tools::MakeUnique<MessageRequest>()) {};
 
 MessageRequest& Parser<MessageRequest>::GetObject()
-{ 
-    return *m_upMessageRequest;
-};
+{ return *m_upMessageRequest; };
 
 inline std::string::const_iterator Parser<MessageRequest>::FromString(const std::string& str)
-{
-    return FromString(str.cbegin(), str.cend());
-}
+{ return FromString(str.cbegin(), str.cend()); }
 
 std::string::const_iterator Parser<MessageRequest>::FromString(std::string::const_iterator begin, std::string::const_iterator end)
 {
@@ -48,6 +45,7 @@ std::string::const_iterator Parser<MessageRequest>::FromString(std::string::cons
             return begin;
 
     auto newIter = ParseSeries(iter, end, GetObject().GetMessage());
+
     if(std::distance(iter, newIter) <= 0)
         return begin;
 
