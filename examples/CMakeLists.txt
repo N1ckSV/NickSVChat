@@ -12,10 +12,6 @@ if( BUILD_EXAMPLES )
     #    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/examples"
     #)
 
-    if(NOT TARGET NickSVChat)
-        message(FATAL_ERROR "NickSVChat was not found as a target")
-    endif()
-
     target_link_libraries(NickSVChatExample
         NickSVChat
     )

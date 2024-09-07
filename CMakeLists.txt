@@ -3,9 +3,6 @@ cmake_minimum_required(VERSION 3.16)
 
 project(NickSVChat LANGUAGES C CXX VERSION 0.1.0)
 
-include(GNUInstallDirs)
-include(CheckSymbolExists)
-
 set(GameNetworkingSockets_DIR "" CACHE STRING "Path where to find GameNetworkingSockets")
 #added API author's path to GNS
 if(WIN32)
@@ -13,24 +10,16 @@ if(WIN32)
 else()
     set(GameNetworkingSockets_DIR_HINTS ${GameNetworkingSockets_DIR} "/mnt/e/SDK/GameNetworkingSockets/install/Linux")
 endif()
-#Protobuf is required
-find_package(Protobuf REQUIRED)
-#GameNetworkingSockets is main network api for this project
-find_package(GameNetworkingSockets REQUIRED
-    HINTS ${GameNetworkingSockets_DIR_HINTS} 
-)
-set(NickSVChat_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/")
+
+set(NickSVChat_INCLUDE_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 
 #get_target_property(GameNetworkingSockets_INCLUDE_DIR GameNetworkingSockets::GameNetworkingSockets INTERFACE_INCLUDE_DIRECTORIES)
 #message(STATUS "GameNetworkingSockets_INCLUDE_DIR: ${GameNetworkingSockets_INCLUDE_DIR}")
 
-#set(NickSVChat_EXTERNAL_INCLUDE_DIRS
-#    ${GameNetworkingSockets_INCLUDE_DIR}
-#    ${Protobuf_INCLUDE_DIR}/
-#    )
-
-set(NickSVChat_ALL_INCLUDE_DIRS "${NickSVChat_INCLUDE_DIR};${NickSVChat_EXTERNAL_INCLUDE_DIRS}")
-message(STATUS "NickSVChat_ALL_INCLUDE_DIRS: ${NickSVChat_ALL_INCLUDE_DIRS}")
+set(NickSVChat_EXTERNAL_INCLUDE_DIRS
+    ${GameNetworkingSockets_INCLUDE_DIR}
+    ${Protobuf_INCLUDE_DIR}
+    )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 if(WIN32)
@@ -71,8 +60,10 @@ if( (NOT ${CHARACTER_TYPE} STREQUAL "USE_WCHAR") AND
 endif()
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install/${CMAKE_HOST_SYSTEM_NAME}/${CMAKE_BUILD_TYPE}" CACHE PATH "Default install path" FORCE)
+    set(CMAKE_INSTALL_PREFIX 
+    "${CMAKE_SOURCE_DIR}/install/${CMAKE_HOST_SYSTEM_NAME}/${CMAKE_BUILD_TYPE}" CACHE PATH "Default install path" FORCE)
 endif()
+message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
 
 #-----------------------------------------------O
 #-----------------------------------------------
@@ -81,18 +72,20 @@ endif()
 
 
 
+
+
 #-----------------------------------------------
 #COMPILER SETTINGS
 #-----------------------------------------------
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc ")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs-c- /wd4146 /wd4530 /wd4244 /wd4251 /wd4267")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}    ")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}     ")
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
     -pedantic -Wall -Wextra -Wattributes -Wpedantic -Wconversion \
     -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization \
-    -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations \
+    -Wformat=2 -Winit-self -Wlogical-op \
     -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual \
     -Wredundant-decls -Wshadow -Wsign-promo \
     -Wstrict-null-sentinel -Wswitch-default -Wundef -Werror -Wno-unused"
@@ -106,7 +99,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D${CHARACTER_TYPE}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}  ")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 
-message(STATUS "\n\n")
+message(STATUS)
 message(STATUS "C++ Standart: ${CMAKE_CXX_STANDARD}")
 message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "C++ Make program: ${CMAKE_MAKE_PROGRAM}")
@@ -115,7 +108,7 @@ message(STATUS "C++ Make generator: ${CMAKE_GENERATOR}")
 message(STATUS "C++ Make generator instance: ${CMAKE_GENERATOR_INSTANCE}")
 message(STATUS "C++ Make generator platform: ${CMAKE_GENERATOR_PLATFORM}")
 message(STATUS "C++ Make generator toolset: ${CMAKE_GENERATOR_TOOLSET}")
-message(STATUS "\n\n")
+message(STATUS)
 #-----------------------------------------------
 #-----------------------------------------------
 #-----------------------------------------------
@@ -124,45 +117,20 @@ message(STATUS "\n\n")
 
 
 
-#-----------------------------------------------
-#CONFIGURING LIBRARY
-#-----------------------------------------------
-configure_file(cmake/ChatConfig.h.in include/NickSV/Chat/ChatConfig.h)
 
-add_library(NickSVChat
-    src/ChatSocket.cpp
-    src/ChatClient.cpp
-    src/ChatServer.cpp
-    src/ClientInfo.cpp
-    src/Message.cpp
-    src/Serializers.cpp
-    src/Parsers.cpp
-    src/Requests.cpp
-    src/Utils.cpp
-    )
 
-target_compile_definitions(NickSVChat
-    PUBLIC
-        STEAMNETWORKINGSOCKETS_OPENSOURCE
-    PRIVATE
-        NICKSVCHAT_FOREXPORT
-)
-target_include_directories(NickSVChat PUBLIC
-    "$<BUILD_INTERFACE:${NickSVChat_INCLUDE_DIR}>"
-    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-)
-target_include_directories(NickSVChat SYSTEM PUBLIC
-    "$<BUILD_INTERFACE:${NickSVChat_EXTERNAL_INCLUDE_DIRS}>"
-    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-)
+#-----------------------------------------------
+#Adding source directory
+#-----------------------------------------------
+add_subdirectory(src)
+#-----------------------------------------------
+#-----------------------------------------------
+#-----------------------------------------------
 
-target_link_libraries(NickSVChat 
-    GameNetworkingSockets::shared
-)
-#set_target_properties(NickSVChat PROPERTIES LINK_FLAGS "-static -static-libgcc -static-libstdc++")
-#-----------------------------------------------
-#-----------------------------------------------
-#-----------------------------------------------
+
+
+
+
 
 
 
@@ -189,42 +157,3 @@ endif()
 
 
 
-
-
-#-----------------------------------------------
-#INSTALLING
-#-----------------------------------------------
-install(
-	TARGETS NickSVChat
-	EXPORT NickSVChat
-	LIBRARY DESTINATION  "${CMAKE_INSTALL_LIBDIR}"
-	RUNTIME DESTINATION  "${CMAKE_INSTALL_BINDIR}"
-    ARCHIVE DESTINATION  "${CMAKE_INSTALL_LIBDIR}"
-)
-install(
-    EXPORT NickSVChat
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NickSVChat"
-)
-if(INSTALL_RUNTIME_DEPENDENCIES)
-    include(InstallTargetDepsRecursive)
-    install_target_deps_recursive(
-        NickSVChat
-        GameNetworkingSockets::GameNetworkingSockets
-    )
-endif()
-include(CMakePackageConfigHelpers)
-configure_package_config_file(cmake/NickSVChatConfig.cmake.in
-	${CMAKE_CURRENT_BINARY_DIR}/NickSVChatConfig.cmake
-	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/NickSVChat
-	)
-install(FILES 
-	"${CMAKE_CURRENT_BINARY_DIR}/NickSVChatConfig.cmake"
-	DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/NickSVChat"
-	)
-install(
-    DIRECTORY   ${NickSVChat_ALL_INCLUDE_DIRS}
-    DESTINATION "${CMAKE_INSTALL_FULL_INCLUDEDIR}/"
-)
-#-----------------------------------------------
-#-----------------------------------------------
-#-----------------------------------------------
