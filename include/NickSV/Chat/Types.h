@@ -171,14 +171,16 @@ enum class EResult : uint32_t
     Size         // Last value of EResult
 };
 
+
 enum class ERequestType : uint32_t
 {
     Unknown = 0,
     ClientInfo,
-    Message,
+    Message, 
 
-    Size         // Last value of ERequestType
+    Size         // Last value of EResult
 };
+
 
 enum class EState : uint32_t
 {
