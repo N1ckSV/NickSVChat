@@ -6,9 +6,6 @@
 #include "NickSV/Tools/Utils.h"
 
 #include "NickSV/Chat/ChatSocket.h"
-#include "NickSV/Chat/Serializers/ClientInfoRequestSerializer.h"
-#include "NickSV/Chat/Serializers/MessageRequestSerializer.h"
-#include "NickSV/Chat/Parsers/RequestParser.h"
 
 namespace NickSV {
 namespace Chat {
@@ -121,10 +118,10 @@ TaskInfo ChatSocket::QueueRequest(Request& rReq, RequestInfo rInfo)
 		OnQueueRequest(rReq, rInfo, result); 
 		return TaskInfo{ result, Tools::MakeReadyFuture(EResult::NoAction)}; }
 
-	CHAT_EXPECT(rReq.GetType() != ERequestType::Unknown, 
+	CHAT_EXPECT(rReq.Type() != ERequestType::Unknown, 
 		"Function supposed to work with known request");
 
-	if(rReq.GetType() == ERequestType::Unknown) {
+	if(rReq.Type() == ERequestType::Unknown) {
 		OnQueueRequest(rReq, rInfo, EResult::InvalidParam); 
 		return TaskInfo{ EResult::InvalidParam, Tools::MakeReadyFuture(EResult::NoAction)}; }
 
@@ -134,11 +131,9 @@ TaskInfo ChatSocket::QueueRequest(Request& rReq, RequestInfo rInfo)
 		OnQueueRequest(rReq, rInfo, EResult::Overflow); 
 		return TaskInfo{ EResult::Overflow, Tools::MakeReadyFuture(EResult::NoAction)}; }
 
-	auto serializer = rReq.GetSerializer();
-	CHAT_ASSERT(serializer, something_went_wrong_ERROR_MESSAGE);
-	std::string strRequest = serializer->ToString();
-	CHAT_ASSERT(strRequest.size() >= sizeof(ERequestType), 
-		"Serializer of Request must always return a string containing at least ERequestType");
+	std::string strRequest;
+	auto serializeResult = rReq.SerializeToString(&strRequest);
+	CHAT_ASSERT(serializeResult, "Failed to serialize Request");
 	std::promise<EResult> sendResultPromise;
 	std::future<EResult>  sendResultFuture = sendResultPromise.get_future();
 	if(!m_sendRequestsQueue.Push( { std::move(strRequest), rInfo, std::move(sendResultPromise) } )) {
@@ -161,21 +156,16 @@ EResult ChatSocket::HandleRequest(Request& rReq, RequestInfo rInfo)
 		OnHandleRequest(rReq, rInfo, result); 
 		return result;}
 
-	CHAT_EXPECT(rReq.GetType() != ERequestType::Unknown, "This function supposed to work with known request");
-	if(rReq.GetType() == ERequestType::Unknown){
+	CHAT_EXPECT(rReq.Type() != ERequestType::Unknown, "This function supposed to work with known request");
+	if(rReq.Type() == ERequestType::Unknown){
 		OnHandleRequest(rReq, rInfo, EResult::InvalidParam);
 		return EResult::InvalidParam;}
 
-	switch(rReq.GetType())
-	{
-	case ERequestType::ClientInfo:
+	if(rReq.Type() == ERequestType::ClientInfo)
 		result = HandleRequest(static_cast<ClientInfoRequest&>(rReq), rInfo);
-		break;
-	case ERequestType::Message:
+	else if (rReq.Type() == ERequestType::Message)
 		result = HandleRequest(static_cast<MessageRequest&>(rReq), rInfo);
-		break;
-	default: break;
-	}	
+	
 	OnHandleRequest(rReq, rInfo, result);
 	return result;
 }
@@ -195,9 +185,9 @@ void ChatSocket::ConnectionThreadFunction()
 
 void ChatSocket::RequestThreadFunction()
 {
+	Request request;
 	RequestInfo rInfo;
-	std::string strReq; 
-	auto parser = Tools::MakeUnique<Parser<Request>>();
+	std::string strReq;
 	HandleRequestsQueue_t::ValueType tuple;
     while(!m_bGoingExit)
     {
@@ -210,9 +200,9 @@ void ChatSocket::RequestThreadFunction()
 			tuple  = m_handleRequestsQueue.Pop();
 			strReq = std::move(std::get<0>(tuple));
 			rInfo  = std::move(std::get<1>(tuple));
-			parser->FromString(strReq);
-			// HandleRequest returns EResult, but it is only needed for manual calls
-			HandleRequest(parser->GetObject(), rInfo);
+			auto result = request.ParseFromString(strReq);
+			CHAT_ASSERT(result, "Failed to parse request");
+			HandleRequest(request, rInfo);
 		}
     }
 }

@@ -19,6 +19,8 @@
 #include "NickSV/Chat/Types.h"
 
 
+
+
 namespace NickSV {
 namespace Chat {
 
@@ -39,37 +41,6 @@ constexpr Version_t ConvertVersionToPatch(Version_t fullVersion) { return (fullV
 constexpr Version_t ConvertVersionToTweak(Version_t fullVersion) { return (fullVersion << 24) >> 24; }
 
 
-/*
-Serializable type-traits.
-See also is_serializable_ERROR_MESSAGE.
-*/
-template<typename ToSerialize>
-struct is_serializable : std::is_base_of<ISerializable, ToSerialize> {};
-
-
-/*
-Parsable type-traits.
-See also is_parsable_ERROR_MESSAGE.
-*/
-template<typename ToParse>
-struct is_parsable : std::is_default_constructible<ToParse> {};
-
-
-/*
-Same as Parser<ToParse>::FromString(...) but creates 
-ToParse object.
-If str is bad (Unparsable), return value is ToParse()
-*/
-template<typename ToParse>
-ToParse MakeFromString(const std::string& str)
-{
-    static_assert(is_parsable<ToParse>::value, is_parsable_ERROR_MESSAGE);
-    auto parser = Parser<ToParse>();
-    if(std::distance(str.cbegin(), parser.FromString(str)) <= 0)
-        return ToParse();
-
-    return parser.GetObject();
-}
 
 struct NICKSVCHAT_API ChatIPAddr : public SteamNetworkingIPAddr
 {
@@ -79,6 +50,33 @@ struct NICKSVCHAT_API ChatIPAddr : public SteamNetworkingIPAddr
 
 
 
+/**
+ * @brief Struct to store sending info of Request
+ */
+struct NICKSVCHAT_API RequestInfo
+{
+    /**
+     * @brief User ID to send Request to
+     * or ignore depending on sendFlags
+     * (SF_SEND_TO_ONE and SF_SEND_TO_ALL)
+     */
+    UserID_t userID;
+
+    //All send flags starts with SF_
+    uint64_t sendFlags;
+
+    //Intended for LIB user purposes
+    union ExtraInfo
+    {
+        uint64_t AsUINT;
+        void*    AsPOINTER;
+        char     AsARRAY[sizeof(uint64_t)];
+    } extraInfo;
+    
+    RequestInfo();
+    explicit RequestInfo(UserID_t id);
+    RequestInfo(UserID_t id, uint64_t flags);
+};
 
 
 
@@ -96,7 +94,7 @@ std::basic_ostream<CharT>& operator<<(std::basic_ostream<CharT>& os, EState stat
         CASE_PRINT_ENUM(EState::Invalid);
         CASE_PRINT_ENUM(EState::Reserved);
         CASE_PRINT_ENUM(EState::Unauthorized);
-    default: os << "EState::Unimplemented"; break;
+    default: os << "EState::UnimplementedOrCustom"; break;
     }
     return os;
 }
@@ -120,7 +118,7 @@ std::basic_ostream<CharT>& operator<<(std::basic_ostream<CharT>& os, EResult res
         CASE_PRINT_ENUM(EResult::Overflow);
         CASE_PRINT_ENUM(EResult::Success);
         CASE_PRINT_ENUM(EResult::Size);
-    default: os << "EResult::Unimplemented"; break;
+    default: os << "EResult::UnimplementedOrCustom"; break;
     }
     return os;
 }
@@ -134,7 +132,7 @@ std::basic_ostream<CharT>& operator<<(std::basic_ostream<CharT>& os, ERequestTyp
         CASE_PRINT_ENUM(ERequestType::ClientInfo);
         CASE_PRINT_ENUM(ERequestType::Message);
         CASE_PRINT_ENUM(ERequestType::Unknown);
-    default: os << "ERequestType::Unimplemented"; break;
+    default: os << "Request::UnimplementedOrCustom"; break;
     }
     return os;
 }
@@ -189,108 +187,42 @@ constexpr inline bool IsLibReservedID(UserID_t id)
 
 
 
-
-
-template<class Arg>
-auto ParseSeries(std::string::const_iterator begin, 
-              std::string::const_iterator end, 
-              Arg& arg)
--> std::enable_if_t<Tools::is_type_complete<Parser<Arg>>::value, std::string::const_iterator>
+/**
+ * Protobuf only accepts valid UTF-8 string
+ */
+bool IsValidUTF8String(const std::string& str)
 {
-    static_assert(std::is_copy_assignable<Arg>::value || std::is_move_assignable<Arg>::value,
-         "Cannot ParseSeries given type Arg, it is unassignable");
+    size_t i = 0;
+    while (i < str.size()) 
+	{
+        unsigned char c = str[i];
+        size_t num_bytes = 0;
 
-    auto parser = Parser<Arg>();
-    auto iter = parser.FromString(begin, end);
-    if(std::distance(begin, iter) <= 0)
-        return begin; //BAD INPUT. Parsed size doesnt match with input size
-    
-    std::swap(arg, parser.GetObject());
-    return iter;
+        if (c <= 0x7F)
+            num_bytes = 1;
+        else if ((c & 0xE0) == 0xC0)
+            num_bytes = 2;
+        else if ((c & 0xF0) == 0xE0)
+            num_bytes = 3;
+        else if ((c & 0xF8) == 0xF0)
+            num_bytes = 4;
+        else
+            return false;
+			
+        if (i + num_bytes > str.size())
+            return false;
+
+        for (size_t j = 1; j < num_bytes; ++j) 
+		{
+            if ((str[i + j] & 0xC0) != 0x80)
+                return false;
+        }
+        i += num_bytes;
+    }
+
+    return true;
 }
 
-template<class Arg, class... Args>
-auto ParseSeries(std::string::const_iterator begin, 
-              std::string::const_iterator end, 
-              Arg& arg, 
-              Args&... args)
--> std::enable_if_t<Tools::is_type_complete<Parser<Arg>>::value, std::string::const_iterator>
-{
-    static_assert(std::is_copy_assignable<Arg>::value || std::is_move_assignable<Arg>::value,
-         "Cannot ParseSeries given type Arg, it is unassignable");
-
-    auto parser = Parser<Arg>();
-    auto iter = parser.FromString(begin, end);
-    if(std::distance(begin, iter) <= 0)
-        return begin; //BAD INPUT. Parsed size doesnt match with input size
-    
-    std::swap(arg, parser.GetObject());
-    auto newIter = ParseSeries(iter, end, args...);
-    if(std::distance(iter, newIter) <= 0)
-        return begin;
-    return newIter;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-template<class Arg>
-auto ParseSeries(std::string::const_iterator begin, 
-              std::string::const_iterator end, 
-              Arg& arg)
--> std::enable_if_t<
-    !Tools::is_type_complete<Parser<Arg>>::value && 
-    (std::is_fundamental<Arg>::value || std::is_enum<Arg>::value), 
-    std::string::const_iterator>
-{
-    static_assert(std::is_copy_assignable<Arg>::value || std::is_move_assignable<Arg>::value,
-         "Cannot ParseSeries given type Arg, it is unassignable");
-
-    if(std::distance(begin, end) < static_cast<std::ptrdiff_t>(sizeof(Arg)))
-        return begin; //BAD INPUT. Range size has to be atleast size of Arg bytes long
-    
-    Transfer<Arg> ArgUnion;
-    std::copy(begin, begin + sizeof(Arg), ArgUnion.CharArr);
-    arg = ArgUnion.Base;
-    return begin + sizeof(Arg);
-}
-
-
-template<class Arg, class... Args>
-auto ParseSeries(std::string::const_iterator begin, 
-              std::string::const_iterator end, 
-              Arg& arg, 
-              Args&... args)
--> std::enable_if_t<
-    !Tools::is_type_complete<Parser<Arg>>::value && 
-    (std::is_fundamental<Arg>::value || std::is_enum<Arg>::value), 
-    std::string::const_iterator>
-{
-    static_assert(std::is_copy_assignable<Arg>::value || std::is_move_assignable<Arg>::value,
-         "Cannot ParseSeries given type Arg, it is unassignable");
-
-    if(std::distance(begin, end) <= static_cast<std::ptrdiff_t>(sizeof(Arg)))
-        return begin; //BAD INPUT. Range size has to be atleast size of Arg bytes long
-    
-    Transfer<Arg> ArgUnion;
-    std::copy(begin, begin + sizeof(Arg), ArgUnion.CharArr);
-    arg = ArgUnion.Base;
-    auto iter = begin + sizeof(Arg);
-    auto newIter = ParseSeries(iter, end, args...);
-    if(std::distance(iter, newIter) <= 0)
-        return begin;
-    return newIter;
-}
 
 
 

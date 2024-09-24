@@ -19,18 +19,19 @@ configure_file(
 )
 
 
-set(NickSVChat_PROTO_EXPORT "")
-if( CMAKE_SYSTEM_NAME MATCHES Windows AND
-    CMAKE_CXX_COMPILER_ID MATCHES "MSVC" AND
-    BUILD_SHARED_LIBS)
-	    set(NickSVChat_PROTO_EXPORT "__declspec( dllexport )")
-endif()
+#set(NickSVChat_PROTO_EXPORT "")
+#if( CMAKE_SYSTEM_NAME MATCHES Windows AND
+#    CMAKE_CXX_COMPILER_ID MATCHES "MSVC" AND
+#    BUILD_SHARED_LIBS)
+#	    set(NickSVChat_PROTO_EXPORT "__declspec( dllexport )")
+#endif()
 
 protobuf_generate_cpp(
     NickSVChat_PROTO_SRCS
     NickSVChat_PROTO_HDRS
-    EXPORT_MACRO NICKSVCHAT_PROTO_API
+    #EXPORT_MACRO NICKSVCHAT_PROTO_API
     Proto/ClientInfo.proto
+    Proto/Message.proto
     Proto/Request.proto
 )
 
@@ -49,14 +50,11 @@ add_library(NickSVChat SHARED
     ChatSocket.cpp
     ChatClient.cpp
     ChatServer.cpp
+    Request.cpp
     ClientInfo.cpp
     Message.cpp
-    Serializers.cpp
-    Parsers.cpp
-    Requests.cpp
     Utils.cpp
     ${NickSVChat_PROTO_SRCS}
-    ${NickSVChat_PROTO_HDRS}
     )
     
 
@@ -70,14 +68,13 @@ target_compile_definitions(NickSVChat
         STEAMNETWORKINGSOCKETS_OPENSOURCE
     PRIVATE
         NICKSVCHAT_FOREXPORT
-        NICKSVCHAT_PROTO_API=${NickSVChat_PROTO_EXPORT}
+        #NICKSVCHAT_PROTO_API=${NickSVChat_PROTO_EXPORT}
 )
 
 
 target_include_directories(NickSVChat
 PUBLIC
     "$<BUILD_INTERFACE:${NickSVChat_INCLUDE_DIR}>"
-PUBLIC
     "$<BUILD_INTERFACE:${NickSVChat_PROTO_OUT_DIRS}>"
 INTERFACE
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
@@ -143,10 +140,10 @@ install(
     DIRECTORY   ${NickSVChat_INCLUDE_DIR}
     DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR}/
 )
-install(
-    FILES ${NickSVChat_PROTO_HDRS}
-    DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR}/NickSV/Chat/
-)
+#install(
+#    FILES ${NickSVChat_PROTO_HDRS}
+#    DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR}/NickSV/Chat/
+#)
     
 #-----------------------------------------------
 #-----------------------------------------------

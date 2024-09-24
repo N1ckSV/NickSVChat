@@ -8,8 +8,9 @@ package NickSV.Chat;
 
 
 
-message ProtoRequest
+message ProtoMessage
 {
-    optional uint32 type = 1 [default = 0];
-    optional google.protobuf.Any data = 2;
+    optional uint32 sender_id = 1;
+    optional string text = 2;
+    optional google.protobuf.Any additional_data = 3;
 }

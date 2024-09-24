@@ -1,63 +1,52 @@
 
-#include <string>
-#include <cstdint>
 
-
-#include "NickSV/Chat/Utils.h"
-#include "NickSV/Chat/Serializers/ClientInfoSerializer.h"
-#include "NickSV/Chat/Parsers/ClientInfoParser.h"
 #include "NickSV/Chat/ClientInfo.h"
+#include "NickSV/Chat/Utils.h"
 
 
 namespace NickSV {
 namespace Chat {
 
 
-/*
-CLIENT INFO.
-App's additional information should be inheritated from this struct
-*/
+ClientInfo::ClientInfo()
+{ protoClientInfo.set_lib_version(ConvertVersions(NICKSVCHAT_VERSION_MAJOR, NICKSVCHAT_VERSION_MINOR, NICKSVCHAT_VERSION_PATCH, 0)); }
 
-ClientInfo::ClientInfo(const UserIDType& id) : m_nUserID(id) {};
-ClientInfo::ClientInfo(const UserIDType& id, const EState& state) :
-m_eState(state),
-m_nUserID(id)
-{};
-
-auto ClientInfo::GetUserID()
--> ClientInfo::UserIDType& 
-{ return m_nUserID; }
-
-auto ClientInfo::GetUserID() const
--> ClientInfo::UserIDType
-{ return m_nUserID; }
-
-auto ClientInfo::GetLibVer()
--> ClientInfo::LibVersionType&
-{ return m_nLibVer; }
-
-auto ClientInfo::GetLibVer() const
--> ClientInfo::LibVersionType 
-{ return m_nLibVer; }
-
-EState& ClientInfo::GetState()       { return m_eState; }
-EState  ClientInfo::GetState() const { return m_eState; }
-
-bool ClientInfo::operator==(const ClientInfo& other) const
-{ 
-    constexpr size_t size = sizeof(m_nLibVer) + sizeof(m_nUserID) + sizeof(m_eState) + sizeof(void*);
-    Tools::type_integrity_assert_virtual<ClientInfo, COMPILER_AWARE_VALUE(size,size,size)>();
-    return m_nLibVer == other.m_nLibVer &&
-           m_nUserID == other.m_nUserID &&
-           m_eState  == other.m_eState;
+const ClientInfo& ClientInfo::DefaultInstance()
+{
+    static const ClientInfo _lib_default_client_info_instance;
+    return _lib_default_client_info_instance;
 }
-bool ClientInfo::operator!=(const ClientInfo& other) const { return !operator==(other); }
 
-inline auto ClientInfo::GetSerializer() const
--> const std::unique_ptr<ISerializer>
-{ 
-    return Tools::MakeUnique<Serializer<ClientInfo>>(*this);
-}
+EState ClientInfo::State() const
+{ return static_cast<EState>(protoClientInfo.state()); }
+
+void ClientInfo::SetState(EState state)
+{ protoClientInfo.set_state(static_cast<uint32_t>(state)); }
+
+UserID_t ClientInfo::UserID() const
+{ return protoClientInfo.user_id(); }
+
+void ClientInfo::SetUserID(UserID_t id)
+{ protoClientInfo.set_user_id(id); }
+
+Version_t ClientInfo::LibVersion() const
+{ return protoClientInfo.lib_version(); }
+
+
+bool ClientInfo::HasAdditionalData() const
+{ return protoClientInfo.has_additional_data(); }
+
+bool ClientInfo::UnpackAdditionalDataTo(google::protobuf::Message* pPBMessage)  const
+{ return protoClientInfo.additional_data().UnpackTo(pPBMessage); }
+
+void ClientInfo::PackAdditionalDataFrom(const google::protobuf::Message& PBMessage)
+{ protoClientInfo.mutable_additional_data()->PackFrom(PBMessage); }
+
+const ClientInfo::Proto& ClientInfo::GetProto() const
+{ return protoClientInfo; }
+
+ClientInfo::Proto& ClientInfo::GetProto()
+{ return protoClientInfo; }
 
 
 }}  /*END OF NAMESPACES*/

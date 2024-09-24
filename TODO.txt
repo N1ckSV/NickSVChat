@@ -3,41 +3,16 @@
 
 -CPack
 
--add linux support (https://metamod-p.sourceforge.net/cross-compiling.on.windows.for.linux.html)
-
 -explore more GNS stuff (identity, authinfication, SteamNetConnectionInfo_t)
 
 -FIX FIXME ISSUES 
 
 -add doxygen comments
 
--client_server_data_exchange_test() after windows reboot throws
-and program exits with code  3221225477
-12.07.24       error code is 3221225785
-12.07.24 later error code is 3221226505
-12.07.24 later error code is 3221225477 (after some fixes)
-12.07.24 later error code is 3221225477
-next day                     3221225785
-next day                     3221226505
-this test did not fail for a long time!!!
-and again appeared           3221225477
-
 -LIB has no safety if program exe file using it twice
 
 -change result != EResult::Success to ResultIsOneOf
 
--GNS has UserData int64 that can be attached to user ID . See SetConnectionUserData
- after some thoughts I came to the conclusion that 
- GNS UserData is only useful if I want to get rid of m_mapConnections
-
 -add all needed methods in IChatSocket
 
--think about virtual object factory, that making polymorhic objects
-{
-    factory should be:
-        -only once initialized
-        -one per Socket
-        -const ref gettable
-        -global gettable
-        -private
-}
+-protobuf allocating everything inside its dll, so need to try arena thingy

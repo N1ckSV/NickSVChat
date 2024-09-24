@@ -198,7 +198,7 @@ enum class EState : uint32_t
 
 
 using Version_t = uint32_t;
-using UserID_t = uint64_t;
+using UserID_t = uint32_t;
 
 struct Constant
 {
@@ -224,41 +224,14 @@ class ChatServer;
 struct ChatIPAddr;
 
 class ClientInfo;
-
-class ISerializer;
-class IParser;
-class ISerializable;
-
-template<typename Serializable>
-class SimplySerializable;
-
-template<typename Serializable>
-class Serializer;
-
-template<typename Parsable>
-class Parser;
-
-using ClientInfoSerializer = Serializer<ClientInfo>;
-using ClientInfoParser = Parser<ClientInfo>;
-
-
 class Message;
-
 
 class RequestInfo;
 
-
-class IRequest;
 class Request;
 class MessageRequest;
 class ClientInfoRequest;
 
-
-using RequestSerializer = Serializer<Request>;
-using RequestParser = Parser<Request>;
-
-using MessageRequestSerializer = Serializer<MessageRequest>;
-using MessageRequestParser = Parser<MessageRequest>;
 
 template<typename Type>
 union Transfer { 

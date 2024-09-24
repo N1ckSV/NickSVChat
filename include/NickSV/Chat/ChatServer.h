@@ -9,9 +9,11 @@
 #include <unordered_map>
 #include <forward_list>
 
-#include "NickSV/Chat/ChatSocket.h"
-
 #include "NickSV/Tools/ValueLock.h"
+
+#include "NickSV/Chat/ChatSocket.h"
+#include "NickSV/Chat/ClientInfo.h"
+
 
 
 
@@ -31,7 +33,7 @@ public:
     struct NICKSVCHAT_API HClient
     {
         HSteamNetConnection Connection;
-        std::unique_ptr<ClientInfo> upClientInfo;
+        ClientInfo clientInfo;
     };
     /**
      * @brief std::map UserID -> pair of connection and ClientInfo
@@ -440,7 +442,7 @@ private:
     EResult         AcceptClient(ConnectionInfo&);
     
 
-    ClientInfo&     GetClientInfo(HSteamNetConnection);
+    ClientInfo&     GetClientInfoByConnection(HSteamNetConnection);
     /**
      * @brief Removes client with given HSteamNetConnection, also
      * closing connection
@@ -453,7 +455,7 @@ private:
      * @retval - NoAction         - if Client and connection are not found
      * @retval - InvalidParam     - if given HSteamNetConnection is k_HSteamNetConnection_Invalid
     */
-    EResult         RemoveClient(HSteamNetConnection);
+    EResult         RemoveClientByConnection(HSteamNetConnection);
 
     /**
      * @todo see method body
@@ -464,9 +466,9 @@ private:
 	void            PollIncomingRequests()     override final;
 	void            PollQueuedRequests()       override final;
 	void            PollConnectionChanges()    override final;
-    void            OnSteamNetConnectionStatusChanged(ConnectionInfo*)       override final;
-    EResult         HandleRequest(ClientInfoRequest&, RequestInfo) override final;
-    EResult         HandleRequest(MessageRequest&, RequestInfo)       override final;
+    void            OnSteamNetConnectionStatusChanged(ConnectionInfo*) override final;
+    EResult         HandleRequest(ClientInfoRequest&, RequestInfo)     override final;
+    EResult         HandleRequest(MessageRequest&, RequestInfo)        override final;
     HSteamListenSocket       m_hListenSock;
 	HSteamNetPollGroup       m_hPollGroup;
     //cppcheck-suppress unusedStructMember

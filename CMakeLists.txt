@@ -27,7 +27,7 @@ if(WIN32)
                                                                     install bin directory than this variable, 
                                                                     dependencies installation will be skipped.")
 else()
-    set(MINIMUM_DEPENDENCIES_COUNT_TO_SKIP_INSTALL 1 CACHE STRING "Read description above ^^^")
+    set(MINIMUM_DEPENDENCIES_COUNT_TO_SKIP_INSTALL 2 CACHE STRING "Read description above ^^^")
 endif()
 
 
@@ -45,19 +45,6 @@ set(MINIMUM_DEPENDENCIES_COUNT_TO_SKIP_INSTALL ${MINIMUM_DEPENDENCIES_COUNT_TO_S
                                                                     "If there are fewer dll/so files in the
                                                                     install bin directory than this variable, 
                                                                     dependencies installation will be skipped.")
-set(CHARACTER_TYPE "USE_WCHAR" CACHE STRING "C++ character type to use for messages, nicknames, etc.
-                                             Variants: 
-                                             USE_WCHAR  for wchar_t (default)
-                                             USE_CHAR   fot char
-                                             USE_CHAR16 for char16_t
-                                             USE_CHAR32 for char32_t")
-if( (NOT ${CHARACTER_TYPE} STREQUAL "USE_WCHAR") AND 
-    (NOT ${CHARACTER_TYPE} STREQUAL "USE_CHAR") AND 
-    (NOT ${CHARACTER_TYPE} STREQUAL "USE_CHAR16") AND 
-    (NOT ${CHARACTER_TYPE} STREQUAL "USE_CHAR32") )
-     set(CHARACTER_TYPE "USE_WCHAR" CACHE STRING "" FORCE)
-     message(WARNING "Invalid CHARACTER_TYPE is used, default (USE_WCHAR) was set")
-endif()
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX 
@@ -78,7 +65,7 @@ message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
 #COMPILER SETTINGS
 #-----------------------------------------------
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs-c- /wd4146 /wd4530 /wd4244 /wd4251 /wd4267")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs-c- /utf-8 /wd4146 /wd4530 /wd4244 /wd4251 /wd4267")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}    ")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}     ")
 else()
@@ -95,7 +82,8 @@ else()
 
 endif()
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D${CHARACTER_TYPE}")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D${CHARACTER_TYPE}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}  ")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 
