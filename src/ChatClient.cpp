@@ -5,10 +5,10 @@
 
 #include "NickSV/Chat/ChatClient.h"
 #include "NickSV/Chat/ChatSocket.h"
-#include "NickSV/Chat/Requests/Request.h"
-#include "NickSV/Chat/ClientInfo.h"
-#include "NickSV/Chat/Serializers/ClientInfoRequestSerializer.h"
-#include "NickSV/Chat/Serializers/MessageRequestSerializer.h"
+
+#include "Request.pb.h"
+#include "ClientInfo.pb.h"
+#include "Message.pb.h"
 
 #include "NickSV/Tools/Utils.h"
 
@@ -133,8 +133,8 @@ EResult ChatClient::Connect(ChatIPAddr &serverAddr, std::chrono::milliseconds ti
 }
 
 ChatClient::ChatClient()
- 	: m_upClientInfo(Tools::MakeUnique<ClientInfo>())
 {
+	m_clientInfo.SetState(EState::Unauthorized);
 	s_pCallbackClientInstance = this;
 }
 
@@ -225,61 +225,68 @@ void ChatClient::ConnectionThreadFunction()
 
 ClientInfo& ChatClient::GetClientInfo()
 {
-	return *m_upClientInfo;
+	return m_clientInfo;
 }
 
-#define CLIENT_INFO_ALLOWED_STATES(state) (((state) == EState::Active) || ((state) == EState::Unauthorized))
 #define NO_ACTION_TASK_INFO TaskInfo{ EResult::NoAction, Tools::MakeReadyFuture(EResult::NoAction)}
 
 EResult ChatClient::HandleRequest(ClientInfoRequest& rClientInfoRequest, RequestInfo rInfo)
 {
+	CHAT_ASSERT(rClientInfoRequest.Type() == ERequestType::ClientInfo, "ClientInfoRequest has wrong (not ERequestType::ClientInfo) type");
+	CHAT_ASSERT(rClientInfoRequest.HasClientInfo(), "ClientInfo Request has no ClientInfo");
+
 	EResult result = OnPreHandleRequest(rClientInfoRequest, rInfo);
 	if(result != EResult::Success){
-		OnHandleRequest(rClientInfoRequest, rInfo, result, NO_ACTION_TASK_INFO );
+		 OnHandleRequest(rClientInfoRequest, rInfo, result, NO_ACTION_TASK_INFO );
 		return result;}
 	
-	auto& info = rClientInfoRequest.GetClientInfo();
-	CHAT_EXPECT(!IsLibReservedID(info.GetUserID()), "Invalid user id given");
-	// FIXME TODO: CLIENT_INFO_ALLOWED_STATES is only for initial states, so we need to change it to virtual function
-	// or allow macro redefinition 
-	CHAT_EXPECT(CLIENT_INFO_ALLOWED_STATES(GetClientInfo().GetState()), "Invalid client info state given");
-	if(IsLibReservedID(info.GetUserID()) || !CLIENT_INFO_ALLOWED_STATES(info.GetState())){
-		OnHandleRequest(rClientInfoRequest, rInfo, EResult::InvalidRequest,  NO_ACTION_TASK_INFO);
+	ClientInfo clientInfo;
+	bool unpackResult = rClientInfoRequest.UnpackClientInfoTo(&clientInfo);
+	CHAT_ASSERT(unpackResult, "Got ClientInfoRequest");
+	CHAT_EXPECT(!IsLibReservedID(clientInfo.UserID()), "Invalid user id given");
+	if(IsLibReservedID(clientInfo.UserID())){
+		 OnHandleRequest(rClientInfoRequest, rInfo, EResult::InvalidRequest,  NO_ACTION_TASK_INFO);
 		return EResult::InvalidRequest;}
 
-	bool serverMadeUsActive = (info.GetState() == EState::Active);
-	bool weNotYetActive = (GetClientInfo().GetState() != EState::Active);
+	bool serverMadeUsActive = (clientInfo.State() == EState::Active);
+	bool weNotYetActive = (GetClientInfo().State() != EState::Active);
 
 	if(weNotYetActive && serverMadeUsActive)
-		GetClientInfo().GetState() = EState::Active;
+		GetClientInfo().SetState(EState::Active);
 
-	CHAT_EXPECT(!(serverMadeUsActive && weNotYetActive && (GetClientInfo() != info)), //FIXME TODO. Not really sure we should'n expect that
-		"Got ClientInfoRequest with Active state, but ClientInfos is different on our and server side");
+	CHAT_EXPECT(!(serverMadeUsActive && weNotYetActive && 
+		(GetClientInfo().UserID() != clientInfo.UserID() ||
+		 GetClientInfo().State() != clientInfo.State() ||
+		 GetClientInfo().LibVersion() != clientInfo.LibVersion())), //FIXME TODO. Not really sure we should'n expect that
+			"Got ClientInfoRequest with Active state, but ClientInfos is different on our and server side");
 
 	if(!serverMadeUsActive)
 	{
-		GetClientInfo().GetState() = info.GetState();
-		GetClientInfo().GetUserID() = info.GetUserID();
-		info = GetClientInfo();
+		GetClientInfo().SetState(clientInfo.State());
+		GetClientInfo().SetUserID(clientInfo.UserID());
+		rClientInfoRequest.PackClientInfoFrom(GetClientInfo());
 		auto taskInfo = QueueRequest(rClientInfoRequest);
-		OnHandleRequest(rClientInfoRequest, rInfo, result, std::move(taskInfo));
+		 OnHandleRequest(rClientInfoRequest, rInfo, result, std::move(taskInfo));
 		return result;
 	}
 
-	OnHandleRequest(rClientInfoRequest, rInfo, result, NO_ACTION_TASK_INFO);
+	 OnHandleRequest(rClientInfoRequest, rInfo, result, NO_ACTION_TASK_INFO);
 	return result;
 }
 
 EResult ChatClient::HandleRequest(MessageRequest& rMessageRequest, RequestInfo rInfo)
 {
+	CHAT_ASSERT(rMessageRequest.Type() == ERequestType::Message, "MessageRequest has wrong (not ERequestType::Message) type");
+	CHAT_ASSERT(rMessageRequest.HasMessage(), "Message Request has no Message");
+	
 	EResult result = OnPreHandleRequest(rMessageRequest, rInfo);
 	if(result != EResult::Success){
-		OnHandleRequest(rMessageRequest, rInfo, result);
+		 OnHandleRequest(rMessageRequest, rInfo, result);
 		return result;}
  
 	//TODO FIXME Dunno what to add here for now
 
-	OnHandleRequest(rMessageRequest, rInfo, result);
+	 OnHandleRequest(rMessageRequest, rInfo, result);
 	return result;
 }
 

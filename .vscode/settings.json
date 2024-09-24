@@ -95,7 +95,8 @@
         "unordered_set": "cpp",
         "hash_map": "cpp",
         "hash_set": "cpp",
-        "set": "cpp"
+        "set": "cpp",
+        "codecvt": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled",
     "c-cpp-flylint.enable": true,

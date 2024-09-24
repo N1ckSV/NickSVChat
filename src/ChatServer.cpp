@@ -5,13 +5,13 @@
 #include <steam/steamnetworkingsockets.h>
 
 #include "NickSV/Tools/Memory.h"
+
 #include "NickSV/Chat/ChatServer.h"
 #include "NickSV/Chat/ChatSocket.h"
 #include "NickSV/Chat/Utils.h"
-#include "NickSV/Chat/Requests/Request.h"
+#include "NickSV/Chat/Request.h"
 #include "NickSV/Chat/ClientInfo.h"
-#include "NickSV/Chat/Serializers/ClientInfoRequestSerializer.h"
-#include "NickSV/Chat/Serializers/MessageRequestSerializer.h"
+#include "NickSV/Chat/Message.h"
 
 namespace NickSV {
 namespace Chat {
@@ -105,60 +105,82 @@ void ChatServer::ConnectionThreadFunction()
 
 #define NO_ACTION_TASK_INFO TaskInfo{ EResult::NoAction, Tools::MakeReadyFuture(EResult::NoAction)}
 
-EResult ChatServer::HandleRequest(ClientInfoRequest& rClientInfoRequest, RequestInfo rInfo)
+EResult ChatServer::HandleRequest(ClientInfoRequest& rReq, RequestInfo rInfo)
 {
-	auto& reqClientInfo = rClientInfoRequest.GetClientInfo();
-	bool wasSameIDs = (reqClientInfo.GetUserID() == rInfo.userID);
-	EResult result = OnPreHandleRequest(rClientInfoRequest, rInfo);
+	CHAT_ASSERT(rReq.Type() == ERequestType::ClientInfo, "ClientInfoRequest has wrong (not ERequestType::ClientInfo) type");
+	CHAT_ASSERT(rReq.HasClientInfo(), "ClientInfo Request has no ClientInfo");
+
+	ClientInfo clientInfo;
+	bool unpackResult = rReq.UnpackClientInfoTo(&clientInfo);
+	CHAT_ASSERT(unpackResult, "Got ClientInfoRequest, but failed to unpack ClientInfo");
+	
+	bool wasSameIDs = (clientInfo.UserID() == rInfo.userID);
+	EResult result = OnPreHandleRequest(rReq, rInfo);
 	//-> EResult::Success 		 - nothing changed, at least default data in ClientInfo and RequestInfo hasnt been changed 
 	//   (RequestInfo::extraInfo is allowed to be changed)
 	//-> EResult::InvalidRequest - bad request, we need to resend authentication
 	//-> Anything else  		 - we should do nothing
 	if(!ResultIsOneOf(result, EResult::Success, EResult::InvalidRequest)){
-		OnHandleRequest(rClientInfoRequest, rInfo, const_cast<ClientInfo&>(InvalidClientInfo), result, NO_ACTION_TASK_INFO);
+		 OnHandleRequest(rReq, rInfo, const_cast<ClientInfo&>(ClientInfo::DefaultInstance()), result, NO_ACTION_TASK_INFO);
 		return result;}
 
-	bool nowIsNotSameIDs = (reqClientInfo.GetUserID() != rInfo.userID);
+	bool nowIsNotSameIDs = (clientInfo.UserID()  != rInfo.userID);
 
-	if(IsLibReservedID(reqClientInfo.GetUserID()) || IsLibReservedID(rInfo.userID) || (wasSameIDs && nowIsNotSameIDs) ){
-		OnHandleRequest(rClientInfoRequest, rInfo, const_cast<ClientInfo&>(InvalidClientInfo), EResult::Error, NO_ACTION_TASK_INFO);
+	if(IsLibReservedID(clientInfo.UserID()) || IsLibReservedID(rInfo.userID) || (wasSameIDs && nowIsNotSameIDs) ){
+		 OnHandleRequest(rReq, rInfo, const_cast<ClientInfo&>(ClientInfo::DefaultInstance()), EResult::Error, NO_ACTION_TASK_INFO);
 		return EResult::Error;}
 	
 	if(nowIsNotSameIDs)
 	{
-		reqClientInfo.GetUserID() = rInfo.userID;
+		clientInfo.SetUserID(rInfo.userID);
 		result = EResult::InvalidRequest;
 	}
 
-	reqClientInfo.GetState() = (result == EResult::Success) ? EState::Active : EState::Unauthorized;
+	clientInfo.SetState(result == EResult::Success ? EState::Active : EState::Unauthorized);
 
 	ClientLockGuard lock_g(m_ClientLock, rInfo.userID);
-	auto& clientInfo = GetClientInfo(rInfo.userID);
-	if(&clientInfo == &InvalidClientInfo){
-		OnHandleRequest(rClientInfoRequest, rInfo, clientInfo, EResult::InvalidConnection, NO_ACTION_TASK_INFO);
+	auto& refClientInfo = GetClientInfo(rInfo.userID);
+	if(&refClientInfo == &ClientInfo::DefaultInstance()){
+		 OnHandleRequest(rReq, rInfo, refClientInfo, EResult::InvalidConnection, NO_ACTION_TASK_INFO);
 		return EResult::InvalidConnection;}
 
 	if(result == EResult::Success)
-		clientInfo = reqClientInfo;
+		refClientInfo = std::move(clientInfo);
 
+	rReq.PackClientInfoFrom(refClientInfo);
 	rInfo.sendFlags = SF_SEND_TO_ONE; 
-	TaskInfo taskInfo = QueueRequest(rClientInfoRequest, rInfo);
-	OnHandleRequest(rClientInfoRequest, rInfo, clientInfo, result, std::move(taskInfo));
+	TaskInfo taskInfo = QueueRequest(rReq, rInfo);
+	 OnHandleRequest(rReq, rInfo, refClientInfo, result, std::move(taskInfo));
 	return result;
 }
 
 
-EResult ChatServer::HandleRequest(MessageRequest& rMessageRequest, RequestInfo rInfo)
+EResult ChatServer::HandleRequest(MessageRequest& rReq, RequestInfo rInfo)
 {
-	rMessageRequest.GetMessage().GetSenderID() = rInfo.userID;
-	EResult result = OnPreHandleRequest(rMessageRequest, rInfo);
+	CHAT_ASSERT(rReq.Type() == ERequestType::Message, "MessageRequest has wrong (not ERequestType::Message) type");
+	CHAT_ASSERT(rReq.HasMessage(), "Message Request has no Message");
+
+	auto& clientInfo = GetClientInfo(rInfo.userID);
+	if(&clientInfo == &ClientInfo::DefaultInstance())
+		 OnHandleRequest(rReq, rInfo, EResult::InvalidConnection, NO_ACTION_TASK_INFO);
+
+	if(clientInfo.State() == EState::Unauthorized)
+		 OnHandleRequest(rReq, rInfo, EResult::InvalidRequest, NO_ACTION_TASK_INFO);
+
+	Message message;
+	bool unpackResult = rReq.UnpackMessageTo(&message);
+	CHAT_ASSERT(unpackResult, "Got MessageRequest, but failed to unpack Message");
+	message.SetSenderID(rInfo.userID);
+
+	rReq.PackMessageFrom(message);
+	EResult result = OnPreHandleRequest(rReq, rInfo);
 	if(result != EResult::Success){
-		OnHandleRequest(rMessageRequest, rInfo, result, NO_ACTION_TASK_INFO);
+		 OnHandleRequest(rReq, rInfo, result, NO_ACTION_TASK_INFO);
 		return result;}
 
 	rInfo.sendFlags = SF_SEND_TO_ALL | SF_SEND_TO_ACTIVE;
-	TaskInfo taskInfo = QueueRequest(rMessageRequest, rInfo);
-	OnHandleRequest(rMessageRequest, rInfo, result, std::move(taskInfo));
+	TaskInfo taskInfo = QueueRequest(rReq, rInfo);
+	OnHandleRequest(rReq, rInfo, result, std::move(taskInfo));
 	return result;
 }
 
@@ -184,14 +206,15 @@ void ChatServer::PollIncomingRequests()
 			FatalError("ISteamNetworkingSockets::ReceiveMessagesOnPollGroup returned error code");
 			break;}
 		
-		auto& rClient = GetClientInfo(pIncomingMsg->m_conn);
-		CHAT_ASSERT(rClient.GetUserID(), 
-			"Received request, but ChatServer has invalid info about connection");
-		CHAT_ASSERT(&rClient != &InvalidClientInfo, 
+		auto& rClient = GetClientInfoByConnection(pIncomingMsg->m_conn);
+		
+		CHAT_ASSERT(&rClient != &ClientInfo::DefaultInstance(), 
 			"Received request, but ChatServer has no info about connection");
-		m_ClientLock.Lock(rClient.GetUserID());
+		CHAT_ASSERT(rClient.UserID(), 
+			"Received request, but ChatServer has invalid info about connection");
+		m_ClientLock.Lock(rClient.UserID());
 		ZeroUnlocker.reset();
-		UniqueUnlocker unlocker(&m_ClientLock, ClientLock_t::Unlocker(rClient.GetUserID()));
+		UniqueUnlocker unlocker(&m_ClientLock, ClientLock_t::Unlocker(rClient.UserID()));
 
 		size_t mesSize = static_cast<size_t>(pIncomingMsg->m_cbSize);
 		strReq.assign(static_cast<const char*>(pIncomingMsg->m_pData), mesSize);
@@ -205,21 +228,12 @@ void ChatServer::PollIncomingRequests()
 		if(mesSize < sizeof(ERequestType)){ 
 			OnBadIncomingRequest(std::move(strReq), rClient, EResult::InvalidRequest);
 			continue;}
-
-		if (rClient.GetState() == EState::Unauthorized)
-		{
-			Transfer<ERequestType> type;
-			std::copy(strReq.begin(), strReq.begin() + sizeof(ERequestType), type.CharArr);
-			if(type.Base != ERequestType::ClientInfo){
-				OnBadIncomingRequest(std::move(strReq), rClient, EResult::InvalidConnection);
-				continue;}
-		}
-
+			
 		if(m_handleRequestsQueue.Size() >= Constant::MaxSendRequestsQueueSize){
 			OnBadIncomingRequest(std::move(strReq), rClient, EResult::Overflow);
 			continue;}
 
-		m_handleRequestsQueue.Push( { std::move(strReq), RequestInfo{ rClient.GetUserID(), SF_SEND_TO_ONE } } );
+		m_handleRequestsQueue.Push( { std::move(strReq), RequestInfo{ rClient.UserID(), SF_SEND_TO_ONE } } );
 	}
 }
 
@@ -260,7 +274,7 @@ void ChatServer::PollQueuedRequests()
 				continue; // maybe should put OnErrorSendingRequest here
 			}
 			CHAT_ASSERT(reqCon != k_HSteamNetConnection_Invalid, "ID used to send the request is in Reserved state (ID is not yet associated with a client)");
-			if (isToActiveOnly && iter->second.upClientInfo->GetState() != EState::Active)
+			if (isToActiveOnly && iter->second.clientInfo.State() != EState::Active)
 			{
 				result = EResult::InvalidParam;
 				setPromiseRAII.reset();
@@ -286,12 +300,12 @@ void ChatServer::PollQueuedRequests()
 		{
 			ClientLockGuard lock_g(m_ClientLock, item.first);
 			auto& client = item.second;
-			if (client.Connection == reqCon || (isToActiveOnly && client.upClientInfo->GetState() != EState::Active))
+			if (client.Connection == reqCon || (isToActiveOnly && client.clientInfo.State() != EState::Active))
 				continue;
 			result = SendStringToConnection(client.Connection, strRequest);
 			CHAT_ASSERT(result != EResult::InvalidParam, "The request is too big or connection is invalid");
 			if(result != EResult::Success)
-				list.push_front({client.upClientInfo->GetUserID(), result});
+				list.push_front({client.clientInfo.UserID(), result});
 		}
 		unlocker.reset();
 		if(!list.empty())
@@ -315,21 +329,21 @@ ClientInfo& ChatServer::GetClientInfo(UserID_t id)
 {
 	auto iter = m_mapClients.find(id);
 	if(iter == m_mapClients.end())
-		return const_cast<ClientInfo&>(InvalidClientInfo);
-	return *(iter->second.upClientInfo);
+		return const_cast<ClientInfo&>(ClientInfo::DefaultInstance());
+	return iter->second.clientInfo;
 }
 
-ClientInfo& ChatServer::GetClientInfo(HSteamNetConnection conn)
+ClientInfo& ChatServer::GetClientInfoByConnection(HSteamNetConnection conn)
 {
 	if(conn == k_HSteamNetConnection_Invalid)
-		return const_cast<ClientInfo&>(InvalidClientInfo);
+		return const_cast<ClientInfo&>(ClientInfo::DefaultInstance());
 	auto iter = m_mapConnections.find(conn);
 	if(iter == m_mapConnections.end())
-		return const_cast<ClientInfo&>(InvalidClientInfo);
+		return const_cast<ClientInfo&>(ClientInfo::DefaultInstance());
 	auto iter2 = m_mapClients.find(iter->second);
 	if(iter2 == m_mapClients.end())
-		return const_cast<ClientInfo&>(InvalidClientInfo);
-	return *(iter2->second.upClientInfo);
+		return const_cast<ClientInfo&>(ClientInfo::DefaultInstance());
+	return iter2->second.clientInfo;
 }
 
 EState ChatServer::GetUserIDState(UserID_t id)
@@ -386,7 +400,7 @@ EResult ChatServer::RemoveClient(UserID_t id)
 	return EResult::Success;
 }
 
-EResult ChatServer::RemoveClient(HSteamNetConnection conn)
+EResult ChatServer::RemoveClientByConnection(HSteamNetConnection conn)
 {
 	if (conn == k_HSteamNetConnection_Invalid)
 		return EResult::InvalidParam;
@@ -459,25 +473,26 @@ EResult ChatServer::AcceptClient(ConnectionInfo& rConInfo)
     EResult result = OnPreAcceptClient(rConInfo, rInfo);
 	if(result != EResult::Success) {
 		//FIXME TODO rInfo's userID now can be cleared and unreserved to be in GenerateUniqueUserID() method again (m_lastFreeID)
-		OnAcceptClient(rConInfo, rInfo, const_cast<ClientInfo&>(InvalidClientInfo), result, NO_ACTION_TASK_INFO);
+		OnAcceptClient(rConInfo, rInfo, const_cast<ClientInfo&>(ClientInfo::DefaultInstance()), result, NO_ACTION_TASK_INFO);
 		return result; } 
 	
-	CHAT_ASSERT(&GetClientInfo(rConInfo.m_hConn) == &InvalidClientInfo, 
-	"Trying to accept client with HSteamNetConnection that already in m_mapConnections or m_mapClients");
+	CHAT_ASSERT(&GetClientInfoByConnection(rConInfo.m_hConn) == &ClientInfo::DefaultInstance(), 
+		"Trying to accept client with HSteamNetConnection that already in m_mapConnections or m_mapClients");
 	m_ClientLock.LockAll();
-	auto& rClientInfo = *(m_mapClients[id].upClientInfo = Tools::MakeUnique<ClientInfo>());
+	m_mapClients[id];
+	auto& rClientInfo = m_mapClients[id].clientInfo;
 	m_mapConnections[rConInfo.m_hConn] = id;
 	m_ClientLock.UnlockAll(id);
 	UniqueUnlocker unlocker(&m_ClientLock, ClientLock_t::Unlocker(id));
-	rClientInfo.GetState() = EState::Unauthorized;
-	rClientInfo.GetUserID() = id;
+	rClientInfo.SetState(EState::Unauthorized);
+	rClientInfo.SetUserID(id);
 	m_mapClients.at(id).Connection = rConInfo.m_hConn;
 
-	auto pRequest = Tools::MakeUnique<ClientInfoRequest>();
-	pRequest->GetClientInfo() = rClientInfo;
-	auto taskInfo = QueueRequest(*pRequest, rInfo);
+	ClientInfoRequest request;
+	request.PackClientInfoFrom(rClientInfo);
+	auto taskInfo = QueueRequest(request, rInfo);
 
-	OnAcceptClient(rConInfo, rInfo, *(m_mapClients.at(id).upClientInfo), result, std::move(taskInfo));
+	OnAcceptClient(rConInfo, rInfo, rClientInfo, result, std::move(taskInfo));
 	return result;
 }
 
@@ -497,7 +512,7 @@ EResult ChatServer::ChangeClientID(UserID_t currentID, UserID_t newID)
 	auto& client = m_mapClients.at(newID);
 	std::swap(m_mapClients.at(currentID), client);
 	m_mapClients.erase(currentID);
-	client.upClientInfo->GetUserID() = newID;
+	client.clientInfo.SetUserID(newID);
 	if(oldState == EState::Busy)
 		m_mapConnections.at(client.Connection) = newID;
 		
@@ -517,7 +532,7 @@ void ChatServer::OnSteamNetConnectionStatusChanged(ConnectionInfo *pInfo)
 	{
 		if (pInfo->m_eOldState == k_ESteamNetworkingConnectionState_Connected)
 		{
-			result = RemoveClient(pInfo->m_hConn); //CHAT_EXPECT DOES NOT INVOKE IN RELEASE
+			result = RemoveClientByConnection(pInfo->m_hConn); //CHAT_EXPECT DOES NOT INVOKE IN RELEASE
 			CHAT_EXPECT(result == EResult::Success, "Client was connected but wasn't found to remove");
 		}
 		else
@@ -554,9 +569,9 @@ void ChatServer::OnSteamNetConnectionStatusChanged(ConnectionInfo *pInfo)
 
 ChatServer::ClientsIterator::ClientsIterator(ClientsMap_t::iterator it) : it_(it) {}
 
-ChatServer::ClientsIterator::reference ChatServer::ClientsIterator::operator*() const { return *(it_->second.upClientInfo); }
+ChatServer::ClientsIterator::reference ChatServer::ClientsIterator::operator*() const { return it_->second.clientInfo; }
 
-ChatServer::ClientsIterator::pointer ChatServer::ClientsIterator::operator->() const { return it_->second.upClientInfo.get(); }
+ChatServer::ClientsIterator::pointer ChatServer::ClientsIterator::operator->() const { return &(it_->second.clientInfo); }
 
 ChatServer::ClientsIterator& ChatServer::ClientsIterator::operator++() { ++it_; return *this; }
 
@@ -570,9 +585,9 @@ bool operator!=(const ChatServer::ClientsIterator& a, const ChatServer::ClientsI
 
 ChatServer::ConstClientsIterator::ConstClientsIterator(ClientsMap_t::const_iterator it) : it_(it) {}
 
-ChatServer::ConstClientsIterator::reference ChatServer::ConstClientsIterator::operator*() const { return *(it_->second.upClientInfo); }
+ChatServer::ConstClientsIterator::reference ChatServer::ConstClientsIterator::operator*() const { return it_->second.clientInfo; }
 
-ChatServer::ConstClientsIterator::pointer ChatServer::ConstClientsIterator::operator->() const { return it_->second.upClientInfo.get(); }
+ChatServer::ConstClientsIterator::pointer ChatServer::ConstClientsIterator::operator->() const { return &(it_->second.clientInfo); }
 
 ChatServer::ConstClientsIterator& ChatServer::ConstClientsIterator::operator++() { ++it_; return *this; }
 
@@ -588,14 +603,14 @@ ChatServer::Clients ChatServer::GetClients() { return Clients(&m_mapClients); };
 
 ChatServer::Clients::Clients(ClientsMap_t* const _pClientsMap) : pClientsMap(_pClientsMap) {};
     
-ClientInfo& ChatServer::Clients::Get(UserID_t id) { return *(pClientsMap->at(id).upClientInfo); }
-const ClientInfo& ChatServer::Clients::Get(UserID_t id) const { return *(pClientsMap->at(id).upClientInfo); }
+ClientInfo& ChatServer::Clients::Get(UserID_t id) { return pClientsMap->at(id).clientInfo; }
+const ClientInfo& ChatServer::Clients::Get(UserID_t id) const { return pClientsMap->at(id).clientInfo; }
 
-ClientInfo& ChatServer::Clients::At(UserID_t id) { return *(pClientsMap->at(id).upClientInfo); }
-const ClientInfo& ChatServer::Clients::At(UserID_t id) const { return *(pClientsMap->at(id).upClientInfo); }
+ClientInfo& ChatServer::Clients::At(UserID_t id) { return pClientsMap->at(id).clientInfo; }
+const ClientInfo& ChatServer::Clients::At(UserID_t id) const { return pClientsMap->at(id).clientInfo; }
 
-ClientInfo& ChatServer::Clients::operator[](UserID_t id) { return *(pClientsMap->at(id).upClientInfo); }
-const ClientInfo& ChatServer::Clients::operator[](UserID_t id) const { return *(pClientsMap->at(id).upClientInfo); }
+ClientInfo& ChatServer::Clients::operator[](UserID_t id) { return pClientsMap->at(id).clientInfo; }
+const ClientInfo& ChatServer::Clients::operator[](UserID_t id) const { return pClientsMap->at(id).clientInfo; }
 
 ChatServer::ClientsIterator ChatServer::Clients::begin() { return ClientsIterator(pClientsMap->begin()); }
 ChatServer::ClientsIterator ChatServer::Clients::end()   { return ClientsIterator(pClientsMap->end()  ); }

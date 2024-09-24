@@ -24,6 +24,18 @@ std::string ChatIPAddr::ToString()
 }
 
 
+//-----------------------------------------------------------------------------------
+// Impementation of RequestInfo
+//-----------------------------------------------------------------------------------
+RequestInfo::RequestInfo() : userID(0), sendFlags(0), extraInfo{0} {};
+RequestInfo::RequestInfo(UserID_t _id) : userID(_id), sendFlags(0), extraInfo{0} {};
+RequestInfo::RequestInfo(UserID_t _id, uint64_t flags) : userID(_id), sendFlags(flags), extraInfo{0} {};
+//-----------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------
+
+
+
 
 TaskInfo::TaskInfo(EResult initialRes, std::future<EResult>&& sendResult)
     : m_eInitialResult(initialRes), m_futureResult(std::move(sendResult)) {}

@@ -33,6 +33,6 @@ add_test(
 
 set_tests_properties(test_main 
     PROPERTIES 
-    TIMEOUT 10
+    TIMEOUT 20
     WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}"
 )

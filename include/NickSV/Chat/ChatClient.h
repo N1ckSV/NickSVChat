@@ -7,6 +7,7 @@
 #include <chrono>
 
 #include "NickSV/Chat/ChatSocket.h"
+#include "NickSV/Chat/ClientInfo.h"
 
 
 namespace NickSV {
@@ -114,7 +115,7 @@ private:
     EResult      HandleRequest(MessageRequest&   , RequestInfo)     override final;
     ChatIPAddr                  m_serverIPAddress;
     HSteamNetConnection         m_hConnection;
-    std::unique_ptr<ClientInfo> m_upClientInfo;
+    ClientInfo                  m_clientInfo;
     static ChatClient*          s_pCallbackClientInstance;
 };
 

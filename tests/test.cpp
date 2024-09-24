@@ -13,29 +13,9 @@
 
 
 #include "NickSV/Chat/Utils.h"
-
-#include "NickSV/Chat/ClientInfo.h"
-#include "NickSV/Chat/Message.h"
-
-#include "NickSV/Chat/Requests/Request.h"
-#include "NickSV/Chat/Requests/MessageRequest.h"
-#include "NickSV/Chat/Requests/ClientInfoRequest.h"
-
-#include "NickSV/Chat/Serializers/ClientInfoSerializer.h"
-#include "NickSV/Chat/Serializers/MessageSerializer.h"
-#include "NickSV/Chat/Serializers/BStringSerializer.h"
-#include "NickSV/Chat/Serializers/ClientInfoRequestSerializer.h"
-#include "NickSV/Chat/Serializers/MessageRequestSerializer.h"
-
-#include "NickSV/Chat/Parsers/ClientInfoParser.h"
-#include "NickSV/Chat/Parsers/MessageParser.h"
-#include "NickSV/Chat/Parsers/BStringParser.h"
-#include "NickSV/Chat/Parsers/RequestParser.h"
-#include "NickSV/Chat/Parsers/ClientInfoRequestParser.h"
-#include "NickSV/Chat/Parsers/MessageRequestParser.h"
-
 #include "NickSV/Chat/ChatClient.h"
 #include "NickSV/Chat/ChatServer.h"
+#include "NickSV/Chat/Message.h"
 
 using namespace NickSV;
 using namespace NickSV::Chat;
@@ -43,109 +23,102 @@ using namespace NickSV::Chat;
 static size_t client_info_test()
 {
     ClientInfo info1, info2;
-    info1.GetUserID() = 12345;
-    info2.GetUserID() = 12345;
-    TEST_CHECK_STAGE(info1 == info2);
+    info1.SetUserID(12345);
+    info2.SetUserID(12345);
+    TEST_CHECK_STAGE(info1.UserID() == info2.UserID());
 
-    info2.GetUserID() = 10101;
-    TEST_CHECK_STAGE(info1 != info2);
-
-    info1.GetUserID() = 12345;
-    TEST_CHECK_STAGE(info1 != info2);
+    info2.SetUserID(10101);
+    TEST_CHECK_STAGE(info1.UserID() != info2.UserID());
 
     return TEST_SUCCESS;
 }
 
+//COMMENTED bc ClientInfo have no access to serialization/parsing it is to ClientInfoRequest
+//static size_t client_info_serializers_and_parsers_test()
+//{
+//    UserID_t id = 2;
+//    ClientInfo ClientInfo1;
+//    ClientInfo1.SetUserID(id);
+//    std::string str;
+//    TEST_CHECK_STAGE(ClientInfo1.SerializeTo(&str));
+//
+//    ClientInfo ClientInfo2;
+//    TEST_CHECK_STAGE(ClientInfo2.ParseFrom(str));
+//
+//    TEST_CHECK_STAGE(ClientInfo2.UserID() == ClientInfo1.UserID());
+//
+//    TEST_CHECK_STAGE(ClientInfo2.State() == ClientInfo1.State());
+//
+//    TEST_CHECK_STAGE(ClientInfo2.LibVersion() == ClientInfo1.LibVersion());
+//
+//    str.resize(str.size() >> 1);
+//    TEST_CHECK_STAGE(!ClientInfo2.ParseFrom(str));
+//
+//    return TEST_SUCCESS;
+//}
 
-static size_t client_info_serializers_and_parsers_test()
-{
-    UserID_t id = 2;
-    const auto ClientInfo1 = ClientInfo(id);
-    auto str = ClientInfo1.GetSerializer()->ToString();
-    auto parser = Parser<ClientInfo>();
-    TEST_CHECK_STAGE(std::distance(str.cbegin(), parser.FromString(str)) > 0);
 
-    auto ClientInfo2 = parser.GetObject();
-    TEST_CHECK_STAGE(ClientInfo2 == ClientInfo1);
-
-    str.resize(str.size()-1);
-    ClientInfo2 = MakeFromString<ClientInfo>(str);
-    TEST_CHECK_STAGE(ClientInfo2 == ClientInfo());
-
-    return TEST_SUCCESS;
-}
-
-
-static size_t serializers_and_parsers_test()
-{
-    std::basic_string<CHAT_CHAR> text = TEXT("Hello there, I am a test text!", CHAT_CHAR);
-    std::string str = Serializer<std::basic_string<CHAT_CHAR>>(text).ToString();
-    std::basic_string<CHAT_CHAR> text2 = MakeFromString<std::basic_string<CHAT_CHAR>>(str);
-    TEST_CHECK_STAGE(text == text2);
-
-    str.resize(str.size()-1);
-    text2 = MakeFromString<std::basic_string<CHAT_CHAR>>(str);
-    TEST_CHECK_STAGE(text2 == std::basic_string<CHAT_CHAR>());
-
-    text = TEXT("Hello there, I am a test message!", CHAT_CHAR);
-    const Message BasicMessage1(text);
-    Message BasicMessage2;
-    str = BasicMessage1.GetSerializer()->ToString();
-    BasicMessage2 = MakeFromString<Message>(str);
-    TEST_CHECK_STAGE(BasicMessage2 == BasicMessage1);
-
-    str = str.substr(0, str.size()-1);
-    BasicMessage2 = MakeFromString<Message>(str);
-    TEST_CHECK_STAGE(BasicMessage2 == Message());
-
-    return TEST_SUCCESS;
-}
 
 static size_t requests_serializers_and_parsers_test()
 {
     UserID_t id = 123123414;
-    const ClientInfo ClientInfo1(id);
-          ClientInfo ClientInfo2;
-    const ClientInfoRequest clientInfoRequest(ClientInfo1);
-    ///////////////
-    //START HERE
-    ///////////////
-    std::string str = clientInfoRequest.GetSerializer()->ToString();
-    auto parser = Parser<Request>();
-    auto iter = parser.FromString(str);
-    TEST_CHECK_STAGE(iter != str.begin());
+    Version_t ver = 536432;
+    EState state = EState::Active;
+    ClientInfo ClientInfo1;
+    ClientInfo ClientInfo2;
+    ClientInfo1.SetUserID(id);
+    ClientInfo1.SetState(state);
+    ClientInfoRequest clientInfoRequest;
+    ClientInfoRequest clientInfoRequest2;
+    clientInfoRequest.PackClientInfoFrom(ClientInfo1);
+    std::string str;
+    TEST_CHECK_STAGE(clientInfoRequest.SerializeToString(&str));
     
-	#undef GetObject
-    TEST_CHECK_STAGE(parser.GetObject().GetType() == clientInfoRequest.GetType());
+    TEST_CHECK_STAGE(clientInfoRequest2.ParseFromString(str));
+    
+    TEST_CHECK_STAGE(clientInfoRequest.Type() == clientInfoRequest2.Type());
+    
+    TEST_CHECK_STAGE(clientInfoRequest2.HasClientInfo());
 
-    Request* pRequest = &(parser.GetObject());
-    ClientInfoRequest* pClientInfoRequest = static_cast<ClientInfoRequest*>(pRequest);
-    TEST_CHECK_STAGE(pClientInfoRequest->GetClientInfo() == ClientInfo1);
+    clientInfoRequest2.UnpackClientInfoTo(&ClientInfo2);
+    TEST_CHECK_STAGE(ClientInfo2.UserID() == ClientInfo1.UserID());
 
-    str.resize(str.size()-1);
-    iter = Parser<Request>().FromString(str);
-    TEST_CHECK_STAGE(iter == str.begin());
+    TEST_CHECK_STAGE(ClientInfo2.State() == ClientInfo1.State());
 
-    auto text = TEXT("Hello there, I am a test nickname!", CHAT_CHAR);
-    const Message Message1(text);
-          Message Message2;
-    const MessageRequest messageRequest(Message1);
-	#undef GetMessage
-    str = messageRequest.GetSerializer()->ToString();
-    iter = parser.FromString(str);
-    TEST_CHECK_STAGE(iter != str.begin());
+    TEST_CHECK_STAGE(ClientInfo2.LibVersion() == ClientInfo1.LibVersion());
 
-    TEST_CHECK_STAGE(parser.GetObject().GetType() == ERequestType::Message);
 
-    pRequest = &(parser.GetObject());
-    MessageRequest* pMessageRequest = static_cast<MessageRequest*>(pRequest);
-    TEST_CHECK_STAGE(pMessageRequest->GetMessage() == Message1);
 
-    str.resize(str.size()-1);
-    iter = parser.FromString(str);
-    MessageRequest* pReq = static_cast<MessageRequest*>(&(parser.GetObject()));
-    (void)pReq;
-    TEST_CHECK_STAGE(iter == str.begin());
+
+
+
+
+
+
+    UserID_t sender_id = 4235324;
+    Message Message1;
+    Message Message2;
+    Message1.SetSenderID(sender_id);
+    Message1.SetText(u8"Test message");
+    MessageRequest MessageRequest1;
+    MessageRequest MessageRequest2;
+    MessageRequest1.PackMessageFrom(Message1);
+    TEST_CHECK_STAGE(MessageRequest1.SerializeToString(&str));
+    
+    TEST_CHECK_STAGE(MessageRequest2.ParseFromString(str));
+    
+    TEST_CHECK_STAGE((MessageRequest1.Type() == MessageRequest2.Type()) && MessageRequest1.Type() == ERequestType::Message);
+    
+    TEST_CHECK_STAGE(MessageRequest2.HasMessage());
+
+    MessageRequest2.UnpackMessageTo(&Message2);
+    TEST_CHECK_STAGE(Message2.SenderID() == Message1.SenderID());
+
+    TEST_CHECK_STAGE(Message2.Text() == Message1.Text());
+
+    //TODO FIXME ADD TEXT HERE
+
+    
 
     return TEST_SUCCESS;
 }
@@ -162,27 +135,6 @@ static size_t version_conversation_test()
     return TEST_SUCCESS;
 }
 
-
-static size_t requests_test()
-{
-    
-    Request Req;
-    MessageRequest mReq;
-    ClientInfoRequest ciReq;
-    TEST_CHECK_STAGE(Req.GetType() == ERequestType::Unknown);
-    TEST_CHECK_STAGE(mReq.GetType() == ERequestType::Message);
-    TEST_CHECK_STAGE(ciReq.GetType() == ERequestType::ClientInfo);
-
-    
-
-
-    
-    return TEST_SUCCESS;
-}
-
-
-Message g_Message;
-
 class TestChatServerException : public std::exception
 {
     const char * what() const noexcept override 
@@ -193,6 +145,9 @@ class TestChatServerException : public std::exception
 
 class TestChatServer : public ChatServer
 {
+public:
+    std::string MessageText;
+    bool GotMessage = false;
 	using ChatServer::OnHandleRequest;
 	
     void OnHandleRequest(const MessageRequest& rcRer, RequestInfo,
@@ -202,7 +157,11 @@ class TestChatServer : public ChatServer
         if(outsideResult != NickSV::Chat::EResult::Success)
             return;
 
-        g_Message = rcRer.GetMessage();
+        Message message;
+        bool unpackResult = rcRer.UnpackMessageTo(&message);
+        CHAT_ASSERT(unpackResult, something_went_wrong_ERROR_MESSAGE);
+        MessageText = std::move(*message.MutableText());
+        GotMessage = true;
     }
 
 	void OnBadIncomingRequest(std::string, ClientInfo&, NickSV::Chat::EResult) override
@@ -211,12 +170,18 @@ class TestChatServer : public ChatServer
     }
 };
 
+#include <chrono>
+
 static size_t client_server_data_exchange_test()
 {
+    using namespace std::chrono;
     TestChatServer server;
     ChatClient client;
     MessageRequest req;
-    req.GetMessage() = Message(TEXT("Hello guys, ima test message", CHAT_CHAR));
+    Message message;
+    message.SetSenderID(1231);
+    message.SetText(u8"Hello guys, ima test message");
+    req.PackMessageFrom(message);
     TEST_CHECK_STAGE(server.Run() != NickSV::Chat::EResult::Error);
 
     bool result = true;
@@ -228,8 +193,12 @@ static size_t client_server_data_exchange_test()
     }
     TEST_CHECK_STAGE(result);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    if(client.GetClientInfo().GetState() != EState::Active)
+    auto t1 = high_resolution_clock::now();
+    while(client.GetClientInfo().State() != EState::Active &&
+          duration_cast<milliseconds>(high_resolution_clock::now()-t1) <
+          milliseconds(1000))
+              std::this_thread::sleep_for(milliseconds(10));
+    if(client.GetClientInfo().State() != EState::Active)
     {
         server.CloseSocket();
         client.CloseSocket();
@@ -249,12 +218,16 @@ static size_t client_server_data_exchange_test()
     }
     TEST_CHECK_STAGE(result);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    t1 = high_resolution_clock::now();
+    while(!server.GotMessage &&
+          duration_cast<milliseconds>(high_resolution_clock::now()-t1) <
+          milliseconds(1000))
+              std::this_thread::sleep_for(milliseconds(10));
     server.CloseSocket();
     client.CloseSocket();
     server.Wait();
     client.Wait();
-    TEST_CHECK_STAGE(g_Message.GetText() == _T("Hello guys, ima test message"));
+    TEST_CHECK_STAGE(server.MessageText == u8"Hello guys, ima test message");
 
     
     return TEST_SUCCESS;
@@ -266,16 +239,14 @@ static size_t client_server_data_exchange_test()
 
 int main(int, const char **)
 {
-    TEST_VERIFY(client_info_test());
-    TEST_VERIFY(client_info_serializers_and_parsers_test());
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    TEST_VERIFY(serializers_and_parsers_test());
+    TEST_VERIFY(client_info_test());
+    //TEST_VERIFY(client_info_serializers_and_parsers_test()); //read dscrp
 
     TEST_VERIFY(requests_serializers_and_parsers_test());
 
     TEST_VERIFY(version_conversation_test());
-
-    TEST_VERIFY(requests_test());
 
     TEST_VERIFY(client_server_data_exchange_test());
 

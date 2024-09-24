@@ -1,61 +1,57 @@
-#include <string>
-#include <cstdint>
 
-
-#include "NickSV/Chat/Utils.h"
-#include "NickSV/Chat/Serializers/MessageSerializer.h"
-#include "NickSV/Chat/Parsers/MessageParser.h"
 #include "NickSV/Chat/Message.h"
-
+#include "NickSV/Chat/Utils.h"
 
 namespace NickSV {
 namespace Chat {
 
 
-/*
-MESSAGE.
-Struct that user is sending to server
-*/
 
-Message::Message(Message::UserIDType senderID) : m_nSenderID(senderID) {};
+UserID_t Message::SenderID() const
+{ return protoMessage.sender_id(); }
 
-Message::Message(Message::TextType rsText) : m_sText(std::move(rsText)) {};
+void Message::SetSenderID(UserID_t id)
+{ protoMessage.set_sender_id(id); }
 
-Message::Message(Message::UserIDType senderID, Message::TextType rsText) 
-    :  m_nSenderID(senderID), m_sText(std::move(rsText)) {};
+const std::string& Message::Text() const
+{ return protoMessage.text(); }
 
-bool inline Message::operator==(const Message& other) const
+std::string* Message::MutableText()
+{ return protoMessage.mutable_text(); }
+
+bool Message::SetText(const std::string& str)
 { 
-    constexpr size_t size = sizeof(m_sText) + sizeof(m_nSenderID) + sizeof(void*);
-    Tools::type_integrity_assert_virtual<Message, COMPILER_AWARE_VALUE(size,size,size)>();
-    return (m_sText == other.m_sText) &&
-           (m_nSenderID == other.m_nSenderID);
+    if(IsValidUTF8String(str))
+        protoMessage.set_text(str); 
+        return true;
+
+    return false;
 }
 
-bool Message::operator!=(const Message& other) const
-{ return !operator==(other); }
+bool Message::SetText(std::string&& str)
+{ 
+    if(IsValidUTF8String(str))
+        protoMessage.set_text(str); 
+        return true;
 
-auto Message::GetText() const
--> const typename Message::TextType&
-{ return m_sText; }
-
-auto Message::GetText() 
--> typename Message::TextType&
-{ return m_sText; }
-
-auto Message::GetSenderID()
--> typename Message::UserIDType&
-{ return m_nSenderID; }
-
-auto Message::GetSenderID() const
--> typename Message::UserIDType
-{ return m_nSenderID; }
-
-auto Message::GetSerializer() const
--> const std::unique_ptr<ISerializer>
-{
-    return Tools::MakeUnique<Serializer<Message>>(*this);
+    return false;
 }
 
 
+bool Message::HasAdditionalData() const
+{ return protoMessage.has_additional_data(); }
+
+bool Message::UnpackAdditionalDataTo(google::protobuf::Message* pPBMessage)  const
+{ return protoMessage.additional_data().UnpackTo(pPBMessage); }
+
+void Message::PackAdditionalDataFrom(const google::protobuf::Message& PBMessage)
+{ protoMessage.mutable_additional_data()->PackFrom(PBMessage); }
+
+const Message::Proto& Message::GetProto() const
+{ return protoMessage; }
+
+Message::Proto& Message::GetProto()
+{ return protoMessage; }
+
+    
 }}  /*END OF NAMESPACES*/

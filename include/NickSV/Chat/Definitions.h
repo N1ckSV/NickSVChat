@@ -74,25 +74,25 @@
 
 // STRING STUFF
 //REDEFINE YOUR CHARACTER-LIKE TYPE HERE
-#if defined (USE_CHAR)
-    using CHAT_CHAR = char;
-    #define _T(a) a
-    #define sout std::cout
-#elif defined (USE_CHAR16)
-    using CHAT_CHAR = char16_t;
-    #define _T(a) u##a
-    #define sout
-#elif defined (USE_CHAR32)
-    using CHAT_CHAR = char32_t;
-    #define _T(a) U##a
-    #define sout
-#elif defined (USE_WCHAR)
-    using CHAT_CHAR = wchar_t;
-    #define _T(a) L##a
-    #define sout std::wcout
-#else
-    #error Something went wrong. No character type is used
-#endif
+//#if defined (USE_CHAR)
+//    using CHAT_CHAR = char;
+//    #define _T(a) a
+//    #define sout std::cout
+//#elif defined (USE_CHAR16)
+//    using CHAT_CHAR = char16_t;
+//    #define _T(a) u##a
+//    #define sout
+//#elif defined (USE_CHAR32)
+//    using CHAT_CHAR = char32_t;
+//    #define _T(a) U##a
+//    #define sout
+//#elif defined (USE_WCHAR)
+//    using CHAT_CHAR = wchar_t;
+//    #define _T(a) L##a
+//    #define sout std::wcout
+//#else
+//    #error Something went wrong. No character type is used
+//#endif
 
 
 #define TEXT(text, type) NickSV_TEXT(text, type)

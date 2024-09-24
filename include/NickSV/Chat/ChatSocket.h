@@ -15,9 +15,9 @@
 
 #include <steam/isteamnetworkingsockets.h>
 
-#include "NickSV/Chat/ClientInfo.h"
 #include "NickSV/Chat/Interfaces/IChatSocket.h"
-#include "NickSV/Chat/Requests/Request.h"
+#include "NickSV/Chat/Utils.h"
+#include "NickSV/Chat/Request.h"
 
 
 

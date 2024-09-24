@@ -8,10 +8,10 @@ package NickSV.Chat;
 
 
 
-message ClientInfoProto
+message ProtoClientInfo
 {
     optional uint32 user_id = 1;
     optional uint32 lib_version = 2;
-    optional uint32 state = 3;
-    optional google.protobuf.Any lib_user_info = 4;
+    optional uint32 state = 3 [default = 0];
+    optional google.protobuf.Any additional_data = 4;
 }
