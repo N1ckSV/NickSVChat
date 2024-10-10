@@ -32,7 +32,6 @@ void ClientInfo::SetUserID(UserID_t id)
 Version_t ClientInfo::LibVersion() const
 { return protoClientInfo.lib_version(); }
 
-
 bool ClientInfo::HasAdditionalData() const
 { return protoClientInfo.has_additional_data(); }
 

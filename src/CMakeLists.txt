@@ -10,6 +10,15 @@ find_package(GameNetworkingSockets REQUIRED
     HINTS ${GameNetworkingSockets_DIR_HINTS} 
 )
 
+get_target_property(GameNetworkingSockets_INCLUDE_DIR GameNetworkingSockets::static INTERFACE_INCLUDE_DIRECTORIES)
+
+set(NickSVChat_EXTERNAL_INCLUDE_DIRS
+    ${GameNetworkingSockets_INCLUDE_DIR}
+    ${Protobuf_INCLUDE_DIR}
+    )
+message(STATUS "NickSVChat_EXTERNAL_INCLUDE_DIRS: ${NickSVChat_EXTERNAL_INCLUDE_DIRS}")
+
+
 #-----------------------------------------------
 #CONFIGURING LIBRARY
 #-----------------------------------------------
@@ -19,17 +28,9 @@ configure_file(
 )
 
 
-#set(NickSVChat_PROTO_EXPORT "")
-#if( CMAKE_SYSTEM_NAME MATCHES Windows AND
-#    CMAKE_CXX_COMPILER_ID MATCHES "MSVC" AND
-#    BUILD_SHARED_LIBS)
-#	    set(NickSVChat_PROTO_EXPORT "__declspec( dllexport )")
-#endif()
-
 protobuf_generate_cpp(
     NickSVChat_PROTO_SRCS
     NickSVChat_PROTO_HDRS
-    #EXPORT_MACRO NICKSVCHAT_PROTO_API
     Proto/ClientInfo.proto
     Proto/Message.proto
     Proto/Request.proto
@@ -46,7 +47,8 @@ message(STATUS "NickSVChat_PROTO_HDRS: ${NickSVChat_PROTO_HDRS}")
 message(STATUS "NickSVChat_PROTO_SRCS: ${NickSVChat_PROTO_SRCS}")
 message(STATUS "NickSVChat_PROTO_OUT_DIRS: ${NickSVChat_PROTO_OUT_DIRS}")
 
-add_library(NickSVChat SHARED
+
+set(NickSVChat_SOURCE_FILES
     ChatSocket.cpp
     ChatClient.cpp
     ChatServer.cpp
@@ -55,20 +57,38 @@ add_library(NickSVChat SHARED
     Message.cpp
     Utils.cpp
     ${NickSVChat_PROTO_SRCS}
-    )
-    
+)
 
-if( CMAKE_SYSTEM_NAME MATCHES Windows AND
-    CMAKE_CXX_COMPILER_ID MATCHES "MSVC" AND
-    NOT Protobuf_USE_STATIC_LIBS)
-		target_compile_definitions(NickSVChat PRIVATE PROTOBUF_USE_DLLS)
+
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<BOOL:${BUILD_SHARED_LIBS}>:DLL>$<$<CONFIG:Debug>:Debug>")
+
+if(BUILD_SHARED_LIBS)
+    add_library(NickSVChat SHARED ${NickSVChat_SOURCE_FILES})
+else()
+    add_library(NickSVChat STATIC ${NickSVChat_SOURCE_FILES})
 endif()
+
+
+target_link_libraries(NickSVChat
+    PRIVATE 
+        GameNetworkingSockets::static
+        protobuf::libprotobuf
+)
+
+
+if( BUILD_SHARED_LIBS AND
+    CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+		target_compile_definitions(NickSVChat PRIVATE PROTOBUF_USE_DLLS)
+else()
+    #target_compile_definitions(NickSVChat PRIVATE PROTOBUF_USE_DLLS)
+endif()
+
+
 target_compile_definitions(NickSVChat
     PUBLIC
         STEAMNETWORKINGSOCKETS_OPENSOURCE
     PRIVATE
         NICKSVCHAT_FOREXPORT
-        #NICKSVCHAT_PROTO_API=${NickSVChat_PROTO_EXPORT}
 )
 
 
@@ -87,25 +107,15 @@ INTERFACE
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(NickSVChat
-PUBLIC
-    GameNetworkingSockets::shared
-    protobuf::libprotobuf
-)
-#set_target_properties(NickSVChat PROPERTIES LINK_FLAGS "-static -static-libgcc -static-libstdc++")
+
 #-----------------------------------------------
 #-----------------------------------------------
 #-----------------------------------------------
-
-
-
-
 
 
 #-----------------------------------------------
 #INSTALLING
 #-----------------------------------------------
-
 install(
 	TARGETS NickSVChat
 	EXPORT NickSVChat
@@ -140,10 +150,6 @@ install(
     DIRECTORY   ${NickSVChat_INCLUDE_DIR}
     DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR}/
 )
-#install(
-#    FILES ${NickSVChat_PROTO_HDRS}
-#    DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR}/NickSV/Chat/
-#)
     
 #-----------------------------------------------
 #-----------------------------------------------

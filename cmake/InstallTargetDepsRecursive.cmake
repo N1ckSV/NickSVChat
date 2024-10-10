@@ -97,18 +97,20 @@ function(install_target_deps_recursive TGT)
         message(STATUS "[ITDR] -- Target's dep dirs: ${LIST_DIRS_TO_ADD_VAR}")
 
         #Transfer paths to install config
+        install(CODE "message(STATUS \"[ITDR] -- ITDR is InstallTargetDepsRecursive script\")")
         install(CODE "set(LIST_FILES_TO_ADD_VAR_TRANSFER \"$<TARGET_FILE:${TGT}>;${LIST_FILES_TO_ADD_VAR}\")")
         install(CODE "set(LIST_DIRS_TO_ADD_VAR_TRANSFER \"${LIST_DIRS_TO_ADD_VAR}\")")
         
         install(CODE "list(REMOVE_DUPLICATES LIST_FILES_TO_ADD_VAR_TRANSFER)")
         install(CODE "list(REMOVE_DUPLICATES LIST_DIRS_TO_ADD_VAR_TRANSFER)")
 
+        install(CODE "list(LENGTH LIST_FILES_TO_ADD_VAR_TRANSFER LIST_FILES_TO_ADD_VAR_TRANSFER_LENGTH)")
+        
         if(WIN32)
             install(CODE "set(INSTALL_SHARED_LIBDIR_TRANSFER \"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}\")")
         elseif(UNIX)
             install(CODE "set(INSTALL_SHARED_LIBDIR_TRANSFER \"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}\")")
         endif()
-        install(CODE "set(MINIMUM_DEPENDENCIES_COUNT_TO_SKIP_INSTALL_TRANSFER ${MINIMUM_DEPENDENCIES_COUNT_TO_SKIP_INSTALL})")
 
         # Also install shared library dependencies
         install(CODE  [[
@@ -120,7 +122,7 @@ function(install_target_deps_recursive TGT)
             list(LENGTH _RUNTIME_FILES_TO_CHECK_LIST _RUNTIME_FILES_TO_CHECK_LIST_LENGTH)
             message(STATUS "[ITDR] -- INSTALL_SHARED_LIBDIR_TRANSFER: ${INSTALL_SHARED_LIBDIR_TRANSFER}")
             message(STATUS "[ITDR] -- RUNTIME_FILES_TO_CHECK_LIST: ${_RUNTIME_FILES_TO_CHECK_LIST}")
-            if(_RUNTIME_FILES_TO_CHECK_LIST_LENGTH GREATER_EQUAL ${MINIMUM_DEPENDENCIES_COUNT_TO_SKIP_INSTALL_TRANSFER})
+            if(_RUNTIME_FILES_TO_CHECK_LIST_LENGTH GREATER_EQUAL ${LIST_FILES_TO_ADD_VAR_TRANSFER_LENGTH})
                 message(WARNING "[ITDR] -- There are enough runtime files found in the installation binary folder so no installation required, but you are able to set MINIMUM_DEPENDENCIES_COUNT_TO_SKIP_INSTALL_TRANSFER variable to change the skip threshold")
             else()
                 if(WIN32)
@@ -178,9 +180,9 @@ function(install_target_deps_recursive TGT)
                         list(APPEND _r_deps_not_system32 ${_file})
                     endif()
                 endforeach()
-                message(STATUS "[ITDR] -- RESOLVED_DEPENDENCIES_VAR for target ${TGT}: ${_r_deps_not_system32}")
+                message(VERBOSE "[ITDR] -- RESOLVED_DEPENDENCIES_VAR for target ${TGT}: ${_r_deps_not_system32}")
                 
-                message(STATUS "[ITDR] -- UNRESOLVED_DEPENDENCIES_VAR for target ${TGT}: ${_u_deps}")
+                message(VERBOSE "[ITDR] -- UNRESOLVED_DEPENDENCIES_VAR for target ${TGT}: ${_u_deps}")
             endif(_RUNTIME_FILES_TO_CHECK_LIST_LENGTH GREATER_EQUAL ${MINIMUM_DEPENDENCIES_COUNT_TO_SKIP_INSTALL_TRANSFER})
 
         ]])

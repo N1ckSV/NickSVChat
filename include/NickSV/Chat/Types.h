@@ -226,7 +226,7 @@ struct ChatIPAddr;
 class ClientInfo;
 class Message;
 
-class RequestInfo;
+struct RequestInfo;
 
 class Request;
 class MessageRequest;

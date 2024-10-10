@@ -21,19 +21,19 @@ std::string* Message::MutableText()
 
 bool Message::SetText(const std::string& str)
 { 
-    if(IsValidUTF8String(str))
-        protoMessage.set_text(str); 
-        return true;
-
+    if(!IsValidUTF8String(str))
+        return false;
+    
+    protoMessage.set_text(str); 
     return false;
 }
 
 bool Message::SetText(std::string&& str)
 { 
-    if(IsValidUTF8String(str))
-        protoMessage.set_text(str); 
-        return true;
-
+    if(!IsValidUTF8String(str))
+        return false;
+    
+    protoMessage.set_text(str); 
     return false;
 }
 

@@ -28,7 +28,7 @@ EResult ChatClient::Run(const ChatIPAddr &serverAddr)
 
 	result = ChatSocket::Run(m_serverIPAddress);
 	if(!ResultIsOneOf(result, EResult::Success)) {
-		sprintf(errMsg, "ChatSocket::Run() not succeeded");
+		std::snprintf(errMsg, sizeof(ChatErrorMsg), "ChatSocket::Run() not succeeded");
 		OnRun(m_serverIPAddress, result, errMsg);
 		return result; }
 	
@@ -45,13 +45,13 @@ EResult ChatClient::Run(const ChatIPAddr &serverAddr)
 	case EResult::Success:
 		break;
 	case EResult::Error:
-		sprintf(errMsg, "Cannot Connect(). SteamNetworkingSockets' interface (m_pInterface) returned invalid connection (m_hConnection)");
+		std::snprintf(errMsg, sizeof(errMsg), "Cannot Connect(). SteamNetworkingSockets' interface (m_pInterface) returned invalid connection (m_hConnection)");
 		break;
 	case EResult::TimeoutExpired:
-		sprintf(errMsg, "Cannot Connect(). Timeout expired");
+		std::snprintf(errMsg, sizeof(errMsg), "Cannot Connect(). Timeout expired");
 		break;
 	default:
-		sprintf(errMsg, "Cannot Connect(). LIB User defined error");
+		std::snprintf(errMsg, sizeof(errMsg), "Cannot Connect(). LIB User defined error");
 		break;
 	}
 	if(!ResultIsOneOf(result, EResult::Success)){

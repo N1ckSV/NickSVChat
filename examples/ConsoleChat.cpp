@@ -18,6 +18,7 @@
 
 
 #include "NickSV/Tools/ValueLock.h"
+#include "NickSV/Tools/Utils.h"
 
 #include "NickSV/Chat/ChatClient.h"
 #include "NickSV/Chat/ChatServer.h"
@@ -26,16 +27,35 @@
 #include "UserName.pb.h"
 
 
+
 #ifdef _WIN32
+	#include <Windows.h>
+	std::wstring UTF8_TO_WCHAR_FUNC(const std::string& str)
+	{
+		std::wstring wstr;
+		size_t size = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), str.size(), NULL, 0);
+		wstr.resize(size);
+		MultiByteToWideChar(CP_UTF8, 0, str.c_str(), str.size(), 
+			NickSV::Tools::MutableStringData(wstr), wstr.size());
+		return wstr;
+	}
+
+	std::string WCHAR_TO_UTF8_FUNC(const std::wstring& wstr)
+	{
+		std::string str;
+		size_t size = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), wstr.size(), NULL, 0, NULL, NULL);
+		str.resize(size);
+		WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), wstr.size(),
+			NickSV::Tools::MutableStringData(str), str.size(), NULL, NULL);
+		return str;
+	}
+
 	#define sout std::wcout
 	#define scin std::wcin
 	#define _T(x) L##x
 	#define VAR_CHAR wchar_t
-	#include <codecvt>
-	#define UTF8_TO_WCHAR(x) \
-	std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(x)
-	#define WCHAR_TO_UTF8(x) \
-	std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(x)
+	#define UTF8_TO_WCHAR(x) UTF8_TO_WCHAR_FUNC(x)
+	#define WCHAR_TO_UTF8(x) WCHAR_TO_UTF8_FUNC(x)
 
 	
 	//#include <sstream>
@@ -176,7 +196,7 @@ class ExampleServer : public ChatServer
 			CloseSocket();
 		};
 	}
-	void OnAcceptClient(const ConnectionInfo&, const RequestInfo& reqInfo, ClientInfo& rClientInfo, NickSV::Chat::EResult res, TaskInfo tInfo) override
+	void OnAcceptClient(const ConnectionInfo&, const RequestInfo&, ClientInfo& rClientInfo, NickSV::Chat::EResult res, TaskInfo tInfo) override
     {
 		if(res != NickSV::Chat::EResult::Success)
 		{
@@ -193,14 +213,14 @@ class ExampleServer : public ChatServer
 		}
 	}
 
-	void OnHandleRequest(const Request& req, RequestInfo reqInfo, NickSV::Chat::EResult result)
+	void OnHandleRequest(const Request& req, RequestInfo reqInfo, NickSV::Chat::EResult)
     {
 		sout << _T("\nGot ")<< req.Type() << _T(" from client with id ") << reqInfo.userID << std::endl << std::endl;
     }
 
-	void OnHandleRequest(const ClientInfoRequest& rcRer, RequestInfo, 
+	void OnHandleRequest(const ClientInfoRequest&, RequestInfo, 
                                  ClientInfo& rClientInfo, 
-                                 NickSV::Chat::EResult outsideResult,
+                                 NickSV::Chat::EResult,
                                  TaskInfo) override
     {
 		sout << _T("\nClient with id ") << rClientInfo.UserID() << _T(" now is ") << rClientInfo.State() << std::endl << std::endl;
@@ -274,14 +294,14 @@ class ExampleClient : public ChatClient
 		 << _T("\nFatal error. ") << STR(errorMsg.c_str()) << std::endl << std::endl;
 	}
 	
-    NickSV::Chat::EResult OnPreConnect(ChatIPAddr &serverAddr, std::chrono::milliseconds &timeout, unsigned int &maxAttempts) override
+    NickSV::Chat::EResult OnPreConnect(ChatIPAddr &, std::chrono::milliseconds &, unsigned int &) override
 	{
 		sout
 		<< _T("\nTrying to connect.") << std::endl << std::endl;
 		return NickSV::Chat::EResult::Success;
 	}
 
-    void OnConnect(const ChatIPAddr &serverAddr, NickSV::Chat::EResult res, std::chrono::milliseconds reconnectTime, unsigned int countRetries) override
+    void OnConnect(const ChatIPAddr &, NickSV::Chat::EResult res, std::chrono::milliseconds , unsigned int ) override
 	{
 		sout
 		<< _T("\nConnect result: ") << res << std::endl << std::endl;
@@ -342,7 +362,6 @@ UTF-8 test end.)")
 	if (bClient)
 	{
 		std::basic_string<VAR_CHAR> name_text;
-		bool validString = false;
 		std::string utf8str;
 		while(true)
 		{
@@ -377,7 +396,7 @@ UTF-8 test end.)")
             MessageRequest mReq;
 			Message message;
 			message.PackAdditionalDataFrom(name);
-			message.SetText(utf8str);
+			(void)message.SetText(utf8str);
 			mReq.PackMessageFrom(message);
 			NickSV::Chat::EResult result = NickSV::Chat::EResult::Success;
             auto taskInfo = client.QueueRequest(mReq);
