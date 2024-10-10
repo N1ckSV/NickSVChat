@@ -18,7 +18,7 @@
 
 #include "NickSV/Chat/Types.h"
 
-
+#include <google/protobuf/arena.h>
 
 
 namespace NickSV {
@@ -163,9 +163,7 @@ constexpr auto ResultIsOneOf(ResultT result, Other other, Others... others)
     std::is_same<decltype(static_cast<EResult>(result)), EResult>::value &&
     std::is_same<decltype(static_cast<EResult>(other )), EResult>::value ,
 bool>::type
-{
-    return  (static_cast<EResult>(result) == static_cast<EResult>(other)) || ResultIsOneOf(result, others...);
-}
+{ return  (static_cast<EResult>(result) == static_cast<EResult>(other)) || ResultIsOneOf(result, others...); }
 
 template<class ResultT, class Other>
 constexpr auto ResultIsOneOf(ResultT result, Other other) 
@@ -173,57 +171,20 @@ constexpr auto ResultIsOneOf(ResultT result, Other other)
     std::is_same<decltype(static_cast<EResult>(result)), EResult>::value &&
     std::is_same<decltype(static_cast<EResult>(other )), EResult>::value ,
 bool>::type
-{
-    return  static_cast<EResult>(result) == static_cast<EResult>(other);
-}
+{ return  static_cast<EResult>(result) == static_cast<EResult>(other); }
 
 /**
  * @returns true if UserID_t is reserved by Lib and false otherwise
  */
 constexpr inline bool IsLibReservedID(UserID_t id)
-{
-	return id < Constant::LibReservedUserIDs;
-}
+{ return id < Constant::LibReservedUserIDs; }
 
 
 
 /**
  * Protobuf only accepts valid UTF-8 string
  */
-bool IsValidUTF8String(const std::string& str)
-{
-    size_t i = 0;
-    while (i < str.size()) 
-	{
-        unsigned char c = str[i];
-        size_t num_bytes = 0;
-
-        if (c <= 0x7F)
-            num_bytes = 1;
-        else if ((c & 0xE0) == 0xC0)
-            num_bytes = 2;
-        else if ((c & 0xF0) == 0xE0)
-            num_bytes = 3;
-        else if ((c & 0xF8) == 0xF0)
-            num_bytes = 4;
-        else
-            return false;
-			
-        if (i + num_bytes > str.size())
-            return false;
-
-        for (size_t j = 1; j < num_bytes; ++j) 
-		{
-            if ((str[i + j] & 0xC0) != 0x80)
-                return false;
-        }
-        i += num_bytes;
-    }
-
-    return true;
-}
-
-
+bool IsValidUTF8String(const std::string& str);
 
 
 template<class T>

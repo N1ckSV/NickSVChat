@@ -8,11 +8,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch",
+            "name": "(gdb) Launch Windows",
             "type": "cppdbg",
             "request": "launch",
             "program": "${command:cmake.launchTargetPath}",
-            "cwd": "${workspaceRoot}/install/Windows/Debug/bin",
+            "cwd": "${workspaceRoot}/install/Windows/${buildType}/bin",
             "args": [ ],
             "setupCommands": [
                 {
@@ -28,7 +28,27 @@
             ]
         },
         {
-            "name": "(msvc) Launch",
+            "name": "(gdb) Launch Linux",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "cwd": "${workspaceRoot}/install/Linux/${buildType}/bin",
+            "args": [ ],
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(msvc) Launch Debug",
             "type": "cppvsdbg",
             "request": "launch",
             // Resolved by CMake Tools:
@@ -44,6 +64,25 @@
                     "value": "${env:PATH}:${command:cmake.getLaunchTargetDirectory}"
                 },
             ],
+            "externalConsole": true
+        },
+        {
+            "name": "(msvc) Launch Release",
+            "type": "cppvsdbg",
+            "request": "launch",
+            // Resolved by CMake Tools:
+            "program": "${command:cmake.launchTargetPath}",
+            "cwd": "${workspaceRoot}/install/Windows/Release/bin",
+            "args": [],
+            "stopAtEntry": false,
+            "environment": [
+                {
+                    // add the directory where our target was built to the PATHs
+                    // it gets resolved by CMake Tools:
+                    "name": "PATH",
+                    "value": "${env:PATH}:${command:cmake.getLaunchTargetDirectory}"
+                },
+            ]
         }
     ]
 }

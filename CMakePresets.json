@@ -18,7 +18,11 @@
             "hidden": true,
             "cacheVariables": {
                 "CMAKE_CXX_COMPILER": "g++",
-                "CMAKE_C_COMPILER": "gcc"
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_FLAGS_INIT":
+                    "-pedantic -Wall -Wextra -Wattributes -Wpedantic -Wconversion -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo -Wstrict-null-sentinel -Wswitch-default -Wundef -Werror -Wno-unused",
+                "CMAKE_CXX_FLAGS_DEBUG_INIT": "-g -O0",
+                "CMAKE_CXX_FLAGS_RELEASE_INIT": "-O3"
             }
         },
 
@@ -29,7 +33,13 @@
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "cl.exe",
                 "CMAKE_CXX_COMPILER": "cl.exe",
-                "OPENSSL_ROOT_DIR": "E:/SDK/OpenSSL-Win64"
+                "OPENSSL_ROOT_DIR": "E:/SDK/OpenSSL-Win64",
+                "CMAKE_CXX_FLAGS_INIT":
+                    "/W4 /WX /permissive- /EHa /utf-8 /wd4125 /wd4245 /wd4146 /wd4530 /wd4244 /wd4251 /wd4267 /sdl /FC",
+                "CMAKE_CXX_FLAGS_DEBUG_INIT":
+                    "/Od /DEBUG /RTC1 /Zi /Gs",
+                "CMAKE_CXX_FLAGS_RELEASE_INIT":
+                    "/O2 /Oi /Ot /GL /Gy /DEBUG:NONE /INCREMENTAL:NO /wd4189"
             },
             "architecture": {
                 "value": "x64",
@@ -195,6 +205,7 @@
             "name": "windows-debug-mingw",
             "displayName": "Enabled",
             "configurePreset": "windows-debug-mingw",
+            "configuration": "Debug",
             "targets":[
               "all"
             ]
@@ -203,6 +214,7 @@
             "name": "windows-release-mingw",
             "displayName": "Enabled",
             "configurePreset": "windows-release-mingw",
+            "configuration": "Release",
             "targets":[
               "all"
             ]
@@ -215,6 +227,7 @@
             "name": "windows-debug-msvc",
             "displayName": "Enabled",
             "configurePreset": "windows-debug-msvc",
+            "configuration": "Debug",
             "targets":[
               "all"
             ]
@@ -223,6 +236,7 @@
             "name": "windows-release-msvc",
             "displayName": "Enabled",
             "configurePreset": "windows-release-msvc",
+            "configuration": "Release",
             "targets":[
               "all"
             ]
@@ -233,6 +247,7 @@
             "name": "linux-debug-ninja",
             "displayName": "Enabled",
             "configurePreset": "linux-debug-ninja",
+            "configuration": "Debug",
             "targets":[
               "all"
             ]
@@ -241,6 +256,7 @@
             "name": "linux-release-ninja",
             "displayName": "Enabled",
             "configurePreset": "linux-release-ninja",
+            "configuration": "Release",
             "targets":[
               "all"
             ]
@@ -250,6 +266,7 @@
             "name": "windows-debug-mingw-test",
             "displayName": "Enabled",
             "configurePreset": "windows-debug-mingw-test",
+            "configuration": "Debug",
             "targets":[
               "install"
             ]
@@ -258,6 +275,7 @@
             "name": "windows-release-mingw-test",
             "displayName": "Enabled",
             "configurePreset": "windows-release-mingw-test",
+            "configuration": "Release",
             "targets":[
               "install"
             ]
@@ -268,6 +286,7 @@
             "name": "windows-debug-msvc-test",
             "displayName": "Enabled",
             "configurePreset": "windows-debug-msvc-test",
+            "configuration": "Debug",
             "targets":[
               "install"
             ]
@@ -276,6 +295,7 @@
             "name": "windows-release-msvc-test",
             "displayName": "Enabled",
             "configurePreset": "windows-release-msvc-test",
+            "configuration": "Release",
             "targets":[
               "install"
             ]
@@ -285,6 +305,7 @@
             "name": "linux-debug-ninja-test",
             "displayName": "Enabled",
             "configurePreset": "linux-debug-ninja-test",
+            "configuration": "Debug",
             "targets":[
               "install"
             ]
@@ -293,6 +314,7 @@
             "name": "linux-release-ninja-test",
             "displayName": "Enabled",
             "configurePreset": "linux-release-ninja-test",
+            "configuration": "Release",
             "targets":[
               "install"
             ]
@@ -303,22 +325,26 @@
         {
             "name": "windows-debug-mingw",
             "displayName": "Disabled",
+            "configuration": "Debug",
             "configurePreset": "windows-debug-mingw"
         },
         {
             "name": "windows-release-mingw",
             "displayName": "Disabled",
-            "configurePreset": "windows-release-mingw"
+            "configurePreset": "windows-release-mingw",
+           "configuration": "Release"
         },
         {
           "name": "windows-debug-mingw-test",
           "displayName": "Enabled",
+          "configuration": "Debug",
           "configurePreset": "windows-debug-mingw-test"
         },
         {
             "name": "windows-release-mingw-test",
             "displayName": "Enabled",
-            "configurePreset": "windows-release-mingw-test"
+            "configurePreset": "windows-release-mingw-test",
+           "configuration": "Release"
         },
 
 
@@ -328,12 +354,14 @@
         {
             "name": "windows-debug-msvc",
             "displayName": "Disabled",
+            "configuration": "Debug",
             "configurePreset": "windows-debug-msvc"
         },
         {
             "name": "windows-release-msvc",
             "displayName": "Disabled",
-            "configurePreset": "windows-release-msvc"
+            "configurePreset": "windows-release-msvc",
+           "configuration": "Release"
         },
         {
           "name": "windows-debug-msvc-test",
@@ -355,22 +383,26 @@
         {
             "name": "linux-debug-ninja",
             "displayName": "Disabled",
-            "configurePreset": "linux-debug-ninja"
+            "configurePreset": "linux-debug-ninja",
+           "configuration": "Debug"
         },
         {
             "name": "linux-release-ninja",
             "displayName": "Disabled",
-            "configurePreset": "linux-release-ninja"
+            "configurePreset": "linux-release-ninja",
+           "configuration": "Release"
         },
         {
           "name": "linux-debug-ninja-test",
           "displayName": "Enabled",
-          "configurePreset": "linux-debug-ninja-test"
+          "configurePreset": "linux-debug-ninja-test",
+           "configuration": "Debug"
         },
         {
             "name": "linux-release-ninja-test",
             "displayName": "Enabled",
-            "configurePreset": "linux-release-ninja-test"
+            "configurePreset": "linux-release-ninja-test",
+           "configuration": "Release"
         }
 
 

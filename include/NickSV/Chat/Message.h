@@ -36,6 +36,7 @@ public:
      * @retval
      * false if invalid UTF-8 string is given, text is not set
      */
+    [[nodiscard]] 
     bool SetText(const std::string&);
 
     /**
@@ -44,6 +45,7 @@ public:
      * @retval
      * false if invalid UTF-8 string is given, text is not set
      */
+    [[nodiscard]] 
     bool SetText(std::string&&);
 
     bool HasAdditionalData() const;

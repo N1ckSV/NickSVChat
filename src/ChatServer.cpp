@@ -26,7 +26,7 @@ EResult ChatServer::Run(const ChatIPAddr &serverAddr)
 
 	result = ChatSocket::Run(serverAddr);
 	if(result != EResult::Success) {
-		sprintf(errMsg, "ChatSocket::Run() not succeeded");
+		std::snprintf(errMsg, sizeof(errMsg), "ChatSocket::Run() not succeeded");
 		OnRun(serverAddr, result, errMsg);
 		return result; }
 	
@@ -41,14 +41,14 @@ EResult ChatServer::Run(const ChatIPAddr &serverAddr)
 	m_hListenSock = m_pInterface->CreateListenSocketIP(serverAddr, 1, &opt);
 	if(m_hListenSock == k_HSteamListenSocket_Invalid){
 		GameNetworkingSockets_Kill();
-		sprintf(errMsg, "ISteamNetworkingSockets interface created invalid listen socket");
+		std::snprintf(errMsg, sizeof(errMsg),  "ISteamNetworkingSockets interface created invalid listen socket");
         OnRun(serverAddr, EResult::Error, errMsg);
 		return EResult::Error; }
 
 	m_hPollGroup = m_pInterface->CreatePollGroup();
 	if(m_hPollGroup == k_HSteamNetPollGroup_Invalid) {
 		GameNetworkingSockets_Kill();
-		sprintf(errMsg, "ISteamNetworkingSockets interface created invalid poll group");
+		std::snprintf(errMsg, sizeof(errMsg), "ISteamNetworkingSockets interface created invalid poll group");
 		OnRun(serverAddr, EResult::Error, errMsg);
         return EResult::Error; }
 

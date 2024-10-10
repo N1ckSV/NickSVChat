@@ -1,9 +1,11 @@
 
 
+#include "NickSV/Tools/Utils.h"
 
 #include "NickSV/Chat/Request.h"
 #include "NickSV/Chat/ClientInfo.h"
 #include "NickSV/Chat/Message.h"
+#include "NickSV/Chat/Utils.h"
 
 
 
@@ -27,7 +29,7 @@ bool Request::SerializeToString(std::string* pString) const
 {
     auto size = protoRequest.ByteSizeLong();
     pString->resize(size);
-	bool serializeResult = protoRequest.SerializeToArray(pString->data(), static_cast<int>(size));
+	bool serializeResult = protoRequest.SerializeToArray(Tools::MutableStringData(*pString), static_cast<int>(size));
 	CHAT_EXPECT(serializeResult, "Failed to serialize Request");
     return serializeResult;
 }

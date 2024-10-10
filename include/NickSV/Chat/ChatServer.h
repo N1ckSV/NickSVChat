@@ -162,7 +162,7 @@ public:
     public:
         Clients() = delete;
         explicit Clients(ClientsMap_t* const _pClientsMap);
-        DECLARE_RULE_OF_5_DELETE(Clients);
+        DECLARE_MOVE_ONLY(Clients);
         
         /**
          * @throws - std::out_of_range if the Clients does not have an client with the specified UserID_t.
