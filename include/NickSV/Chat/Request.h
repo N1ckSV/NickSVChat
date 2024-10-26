@@ -4,8 +4,9 @@
 #pragma once
 
 
-#include "Types.h"
-#include "Request.pb.h"
+#include "NickSV/Chat/Types.h"
+
+#include "NickSV/Chat/Proto/Request.pb.h"
 
 
 namespace NickSV {

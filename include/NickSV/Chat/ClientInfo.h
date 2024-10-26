@@ -4,7 +4,7 @@
 
 
 #include "NickSV/Chat/Types.h"
-#include "ClientInfo.pb.h"
+#include "NickSV/Chat/Proto/ClientInfo.pb.h"
 
 
 
@@ -38,7 +38,7 @@ public:
     bool AdditionalDataIs() const
     { return protoClientInfo.additional_data().Is<T>(); }
 
-    bool UnpackAdditionalDataTo(google::protobuf::Message*) const; //Pointer bc proto one is ptr;
+    bool UnpackAdditionalDataTo(google::protobuf::Message*) const; //Pointer bc proto's one is ptr;
     void PackAdditionalDataFrom(const google::protobuf::Message&);
 
 private:

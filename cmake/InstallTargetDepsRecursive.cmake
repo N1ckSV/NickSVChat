@@ -183,7 +183,7 @@ function(install_target_deps_recursive TGT)
                 message(VERBOSE "[ITDR] -- RESOLVED_DEPENDENCIES_VAR for target ${TGT}: ${_r_deps_not_system32}")
                 
                 message(VERBOSE "[ITDR] -- UNRESOLVED_DEPENDENCIES_VAR for target ${TGT}: ${_u_deps}")
-            endif(_RUNTIME_FILES_TO_CHECK_LIST_LENGTH GREATER_EQUAL ${MINIMUM_DEPENDENCIES_COUNT_TO_SKIP_INSTALL_TRANSFER})
+            endif(_RUNTIME_FILES_TO_CHECK_LIST_LENGTH GREATER_EQUAL ${LIST_FILES_TO_ADD_VAR_TRANSFER_LENGTH})
 
         ]])
     else(WIN32 OR UNIX)

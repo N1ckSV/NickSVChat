@@ -48,3 +48,5 @@ _deps
 [Bb][Uu][Ii][Ll][Dd]/
 [Ii][Nn][Ss][Tt][Aa][Ll][Ll]/
 goxygen-docs
+
+cmake/local

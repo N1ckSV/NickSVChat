@@ -6,9 +6,9 @@
 #include "NickSV/Chat/ChatClient.h"
 #include "NickSV/Chat/ChatSocket.h"
 
-#include "Request.pb.h"
-#include "ClientInfo.pb.h"
-#include "Message.pb.h"
+#include "NickSV/Chat/Request.h"
+#include "NickSV/Chat/ClientInfo.h"
+#include "NickSV/Chat/Message.h"
 
 #include "NickSV/Tools/Utils.h"
 
