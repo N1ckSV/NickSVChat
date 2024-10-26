@@ -3,12 +3,33 @@ include(GNUInstallDirs)
 include(CheckSymbolExists)
 
 
-#Protobuf is required
-find_package(Protobuf REQUIRED)
-#GameNetworkingSockets is main network api for this project
-find_package(GameNetworkingSockets REQUIRED
-    HINTS ${GameNetworkingSockets_DIR_HINTS} 
-)
+macro(check_submodule SUBMODULE_PATH TESTFILE)
+	if (NOT EXISTS ${TESTFILE} AND EXISTS "${CMAKE_SOURCE_DIR}/.git" )
+		find_package(Git QUIET)
+		if(GIT_FOUND)
+
+			# Update submodules as needed
+			message(STATUS "git submodule update --init ${SUBMODULE_PATH}")
+			execute_process(COMMAND "${GIT_EXECUTABLE}" submodule update --init ${SUBMODULE_PATH}
+							WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+							RESULT_VARIABLE GIT_SUBMOD_RESULT)
+			if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+				message(FATAL_ERROR "'git submodule update --init ${SUBMODULE_PATH}' failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+			endif()
+		endif()
+	endif()
+	if (NOT EXISTS ${TESTFILE})
+		message(FATAL_ERROR "${TESTFILE} not found; submodule ${SUBMODULE_PATH} not initialized and we failed to initialized it.\nTry: 'git submodule update ${SUBMODULE_PATH}'" )
+	endif()
+endmacro()
+
+set(NickSVTools_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/Tools")
+set(NickSVTools_INCLUDE_DIR "${NickSVTools_SOURCE_DIR}/include/")
+check_submodule(${NickSVTools_SOURCE_DIR} "${NickSVTools_SOURCE_DIR}/include/NickSV/Tools/Definitions.h")
+add_subdirectory(modules/Tools)
+if(NOT TARGET NickSVTools)
+    message(FATAL_ERROR "NickSVTools was not found as a target")
+endif()
 
 get_target_property(GameNetworkingSockets_INCLUDE_DIR GameNetworkingSockets::static INTERFACE_INCLUDE_DIRECTORIES)
 
@@ -16,7 +37,6 @@ set(NickSVChat_EXTERNAL_INCLUDE_DIRS
     ${GameNetworkingSockets_INCLUDE_DIR}
     ${Protobuf_INCLUDE_DIR}
     )
-message(STATUS "NickSVChat_EXTERNAL_INCLUDE_DIRS: ${NickSVChat_EXTERNAL_INCLUDE_DIRS}")
 
 
 #-----------------------------------------------
@@ -103,13 +123,12 @@ foreach(PROTO_FILE ${NickSVChat_PROTO_OUT_FILES})
     list(APPEND NickSVChat_PROTO_OUT_DIRS ${PROTO_DIR})
 endforeach()
 list(REMOVE_DUPLICATES NickSVChat_PROTO_OUT_DIRS)
-message(STATUS "NickSVChat_PROTO_OUT_DIRS: ${NickSVChat_PROTO_OUT_DIRS}")
-message(STATUS "NickSVChat_PROTO_HDRS: ${NickSVChat_PROTO_HDRS}")
-message(STATUS "CMAKE_CURRENT_BINARY_DIR: ${CMAKE_CURRENT_BINARY_DIR}")
+
 
 target_include_directories(NickSVChat
 PUBLIC
     "$<BUILD_INTERFACE:${NickSVChat_INCLUDE_DIR}>"
+    "$<BUILD_INTERFACE:${NickSVTools_INCLUDE_DIR}>"
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"                              #protobuf's headers
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/${NickSVChat_INCLUDE_PREFIX}>" #protobuf's headers
 INTERFACE
@@ -162,8 +181,10 @@ install(FILES
 	${CMAKE_CURRENT_BINARY_DIR}/NickSVChatConfig.cmake
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/NickSVChat
 	)
+
 install(
-    DIRECTORY   ${NickSVChat_INCLUDE_DIR}
+    DIRECTORY   
+        ${NickSVChat_INCLUDE_DIR}/
     DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR}/
 )
 install(FILES 

@@ -37,9 +37,31 @@ message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
 
 
 
+#-----------------------------------------------
+#FINDING STUFF
+#-----------------------------------------------
+#TODO git check for NickSV Tools
+#TODO git installing openssl, protobuf, gns
+
+
 list(APPEND GameNetworkingSockets_DIR_HINTS ${GameNetworkingSockets_DIR})
 #author's stuff
 include(local/LocalConfig)
+
+
+#Protobuf is required
+find_package(Protobuf REQUIRED)
+#GameNetworkingSockets is main network api for this project
+find_package(GameNetworkingSockets REQUIRED
+    HINTS ${GameNetworkingSockets_DIR_HINTS} 
+)
+
+#-----------------------------------------------
+#-----------------------------------------------
+#-----------------------------------------------
+
+
+
 
 
 
@@ -91,7 +113,6 @@ add_subdirectory(examples)
 
 if(BUILD_TESTS)
     enable_testing()
-    add_subdirectory(include/NickSV/Tools/tests)
     add_subdirectory(tests)
 endif()
 

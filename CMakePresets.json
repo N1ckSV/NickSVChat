@@ -86,8 +86,8 @@
         {
             "name": "test",
             "hidden": true,
-            "displayName": "Test ${displayName}",
-            "description": "Test ${description}",
+            "displayName": "${displayName} + Tests",
+            "description": "${description} + Tests",
             "cacheVariables": {
                 "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/${presetName}",
                 "INSTALL_RUNTIME_DEPENDENCIES": "ON",
@@ -99,8 +99,8 @@
 
         {
             "name": "windows-debug-mingw",
-            "displayName": "Windows Debug MinGW",
-            "description": "Windows Debug build using MinGW gen",
+            "displayName": "Debug MinGW",
+            "description": "Debug build using MinGW gen",
             "inherits" : ["base", "gcc", "windows", "debug"],
             "generator": "MinGW Makefiles",
             "cacheVariables": {
@@ -110,8 +110,8 @@
 
         {
             "name": "windows-release-mingw",
-            "displayName": "Windows Release MinGW",
-            "description": "Windows Release build using MinGW gen",
+            "displayName": "Release MinGW",
+            "description": "Release build using MinGW gen",
             "inherits" : ["base", "gcc", "windows", "release"],
             "generator": "MinGW Makefiles",
             "cacheVariables": {
@@ -122,15 +122,15 @@
         
         {
             "name": "windows-debug-msvc",
-            "displayName": "Windows Debug MSVC",
-            "description": "Windows Debug build using MSVC",
+            "displayName": "Debug MSVC",
+            "description": "Debug build using MSVC",
             "inherits" : ["base", "msvc", "windows", "debug"]
         },
 
         {
             "name": "windows-release-msvc",
-            "displayName": "Windows Release MSVC",
-            "description": "Windows Release build using MSVC gen",
+            "displayName": "Release MSVC",
+            "description": "Release build using MSVC gen",
             "inherits" : ["base", "msvc", "windows", "release"]
         },
 
@@ -138,16 +138,16 @@
         
         {
             "name": "linux-debug-ninja",
-            "displayName": "Linux Debug Ninja",
-            "description": "Linux Debug build using Ninja gen",
+            "displayName": "Debug Ninja",
+            "description": "Debug build using Ninja gen",
             "inherits" : ["base", "gcc", "linux", "debug"],
             "generator": "Ninja"
         },
 
         {
             "name": "linux-release-ninja",
-            "displayName": "Linux Release Ninja",
-            "description": "Linux Release build using Ninja gen",
+            "displayName": "Release Ninja",
+            "description": "Release build using Ninja gen",
             "inherits" : ["base", "gcc","linux", "release"],
             "generator": "Ninja"
         },
@@ -156,42 +156,42 @@
         
         {
             "name": "windows-debug-mingw-test",
-            "displayName": "Test Windows Debug MinGW",
-            "description": "Test Windows Debug build using MinGW gen",
+            "displayName": "Debug MinGW + Tests",
+            "description": "Debug build using MinGW gen + Tests",
             "inherits" : ["windows-debug-mingw", "test"]
         },
         {
             "name": "windows-release-mingw-test",
-            "displayName": "Test Windows Release MinGW",
-            "description": "Test Windows Release build using MinGW gen",
+            "displayName": "Release MinGW + Tests",
+            "description": "Release build using MinGW gen + Tests",
             "inherits" : ["windows-release-mingw", "test"]
         },
 
         
         {
             "name": "windows-debug-msvc-test",
-            "displayName": "Test Windows Debug MSVC",
-            "description": "Test Windows Debug build using MSVC",
+            "displayName": "Debug MSVC + Tests",
+            "description": "Debug build using MSVC + Tests",
             "inherits" : ["windows-debug-msvc", "test"]
         },
         {
             "name": "windows-release-msvc-test",
-            "displayName": "Test Windows Release MSVC",
-            "description": "Test Windows Release build using MSVC gen",
+            "displayName": "Release MSVC + Tests",
+            "description": "Release build using MSVC gen + Tests",
             "inherits" : ["windows-release-msvc", "test"]
         },
 
         
         {
             "name": "linux-debug-ninja-test",
-            "displayName": "Test Linux Debug Ninja",
-            "description": "Test Linux Debug build using Ninja gen",
+            "displayName": "Debug Ninja + Tests",
+            "description": "Debug build using Ninja gen + Tests",
             "inherits" : ["linux-debug-ninja", "test"]
         },
         {
             "name": "linux-release-ninja-test",
-            "displayName": "Test Linux Release Ninja",
-            "description": "Test Linux Release build using Ninja gen",
+            "displayName": "Release Ninja + Tests",
+            "description": "Release build using Ninja gen + Tests",
             "inherits" : ["linux-release-ninja", "test"]
         }
 

@@ -95,9 +95,6 @@
 //#endif
 
 
-#define TEXT(text, type) NickSV_TEXT(text, type)
-
-
 //Send flags
 #define SF_SEND_TO_ONE    0
 #define SF_SEND_TO_ALL    1

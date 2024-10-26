@@ -11,8 +11,9 @@ find_dependency(Protobuf)
 
 include(${CMAKE_CURRENT_LIST_DIR}/NickSVChat.cmake)
 
-set(NickSVChat_INCLUDE_DIR "@NickSVChat_INCLUDE_DIR@" "@NickSVChat_EXTERNAL_INCLUDE_DIRS@")
-
-
 check_required_components(NickSVChat)
+
+get_target_property(NickSVChat_INCLUDE_DIRS NickSVChat INTERFACE_INCLUDE_DIRECTORIES)
+
+
 set(NickSVChat_FOUND 1)
