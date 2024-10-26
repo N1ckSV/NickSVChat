@@ -28,24 +28,13 @@ configure_file(
 )
 
 
-protobuf_generate_cpp(
-    NickSVChat_PROTO_SRCS
-    NickSVChat_PROTO_HDRS
-    Proto/ClientInfo.proto
-    Proto/Message.proto
-    Proto/Request.proto
-)
-
-set(NickSVChat_PROTO_OUT_DIRS)
-foreach(PROTO_FILE ${NickSVChat_PROTO_HDRS})
-    get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
-    list(APPEND NickSVChat_PROTO_OUT_DIRS ${PROTO_DIR})
-endforeach()
-list(REMOVE_DUPLICATES NickSVChat_PROTO_OUT_DIRS)
-
-message(STATUS "NickSVChat_PROTO_HDRS: ${NickSVChat_PROTO_HDRS}")
-message(STATUS "NickSVChat_PROTO_SRCS: ${NickSVChat_PROTO_SRCS}")
-message(STATUS "NickSVChat_PROTO_OUT_DIRS: ${NickSVChat_PROTO_OUT_DIRS}")
+#protobuf_generate_cpp(
+#    NickSVChat_PROTO_SRCS
+#    NickSVChat_PROTO_HDRS
+#    Proto/ClientInfo.proto
+#    Proto/Message.proto
+#    Proto/Request.proto
+#)
 
 
 set(NickSVChat_SOURCE_FILES
@@ -56,7 +45,10 @@ set(NickSVChat_SOURCE_FILES
     ClientInfo.cpp
     Message.cpp
     Utils.cpp
-    ${NickSVChat_PROTO_SRCS}
+    #${NickSVChat_PROTO_SRCS}
+    Proto/ClientInfo.proto
+    Proto/Message.proto
+    Proto/Request.proto
 )
 
 
@@ -92,20 +84,44 @@ target_compile_definitions(NickSVChat
 )
 
 
+protobuf_generate (
+    TARGET NickSVChat
+    LANGUAGE cpp
+    OUT_VAR NickSVChat_PROTO_OUT_FILES
+    PROTOC_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${NickSVChat_INCLUDE_PREFIX}
+    #APPEND_PATH
+    )
+
+    
+set(NickSVChat_PROTO_OUT_DIRS)
+set(NickSVChat_PROTO_HDRS ${NickSVChat_PROTO_OUT_FILES})
+
+list(FILTER NickSVChat_PROTO_HDRS INCLUDE REGEX ".*\\.h$")
+
+foreach(PROTO_FILE ${NickSVChat_PROTO_OUT_FILES})
+    get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
+    list(APPEND NickSVChat_PROTO_OUT_DIRS ${PROTO_DIR})
+endforeach()
+list(REMOVE_DUPLICATES NickSVChat_PROTO_OUT_DIRS)
+message(STATUS "NickSVChat_PROTO_OUT_DIRS: ${NickSVChat_PROTO_OUT_DIRS}")
+message(STATUS "NickSVChat_PROTO_HDRS: ${NickSVChat_PROTO_HDRS}")
+message(STATUS "CMAKE_CURRENT_BINARY_DIR: ${CMAKE_CURRENT_BINARY_DIR}")
+
 target_include_directories(NickSVChat
 PUBLIC
     "$<BUILD_INTERFACE:${NickSVChat_INCLUDE_DIR}>"
-    "$<BUILD_INTERFACE:${NickSVChat_PROTO_OUT_DIRS}>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"                              #protobuf's headers
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/${NickSVChat_INCLUDE_PREFIX}>" #protobuf's headers
 INTERFACE
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 target_include_directories(NickSVChat 
 SYSTEM 
 PUBLIC
-    "$<BUILD_INTERFACE:${NickSVChat_EXTERNAL_INCLUDE_DIRS}>"
-INTERFACE
-    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+    ${NickSVChat_EXTERNAL_INCLUDE_DIRS}
 )
+
+
 
 
 #-----------------------------------------------
@@ -150,6 +166,10 @@ install(
     DIRECTORY   ${NickSVChat_INCLUDE_DIR}
     DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR}/
 )
+install(FILES 
+	${NickSVChat_PROTO_HDRS}
+	DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR}/${NickSVChat_INCLUDE_PREFIX}/Proto
+	)
     
 #-----------------------------------------------
 #-----------------------------------------------

@@ -4,7 +4,8 @@
 
 
 #include "NickSV/Chat/Types.h"
-#include "Message.pb.h"
+
+#include "NickSV/Chat/Proto/Message.pb.h"
 
 namespace NickSV {
 namespace Chat {

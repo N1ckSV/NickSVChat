@@ -229,7 +229,7 @@
             "configurePreset": "windows-debug-msvc",
             "configuration": "Debug",
             "targets":[
-              "all"
+              "all_build"
             ]
         },
         {
@@ -238,7 +238,7 @@
             "configurePreset": "windows-release-msvc",
             "configuration": "Release",
             "targets":[
-              "all"
+              "all_build"
             ]
         },
 
