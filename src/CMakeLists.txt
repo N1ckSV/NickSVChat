@@ -3,6 +3,8 @@ include(GNUInstallDirs)
 include(CheckSymbolExists)
 
 
+
+
 macro(check_submodule SUBMODULE_PATH TESTFILE)
 	if (NOT EXISTS ${TESTFILE} AND EXISTS "${CMAKE_SOURCE_DIR}/.git" )
 		find_package(Git QUIET)
@@ -31,13 +33,6 @@ if(NOT TARGET NickSVTools)
     message(FATAL_ERROR "NickSVTools was not found as a target")
 endif()
 
-get_target_property(GameNetworkingSockets_INCLUDE_DIR GameNetworkingSockets::static INTERFACE_INCLUDE_DIRECTORIES)
-
-set(NickSVChat_EXTERNAL_INCLUDE_DIRS
-    ${GameNetworkingSockets_INCLUDE_DIR}
-    ${Protobuf_INCLUDE_DIR}
-    )
-
 
 #-----------------------------------------------
 #CONFIGURING LIBRARY
@@ -48,14 +43,6 @@ configure_file(
 )
 
 
-#protobuf_generate_cpp(
-#    NickSVChat_PROTO_SRCS
-#    NickSVChat_PROTO_HDRS
-#    Proto/ClientInfo.proto
-#    Proto/Message.proto
-#    Proto/Request.proto
-#)
-
 
 set(NickSVChat_SOURCE_FILES
     ChatSocket.cpp
@@ -65,12 +52,10 @@ set(NickSVChat_SOURCE_FILES
     ClientInfo.cpp
     Message.cpp
     Utils.cpp
-    #${NickSVChat_PROTO_SRCS}
     Proto/ClientInfo.proto
     Proto/Message.proto
     Proto/Request.proto
 )
-
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<BOOL:${BUILD_SHARED_LIBS}>:DLL>$<$<CONFIG:Debug>:Debug>")
 
@@ -80,13 +65,11 @@ else()
     add_library(NickSVChat STATIC ${NickSVChat_SOURCE_FILES})
 endif()
 
-
 target_link_libraries(NickSVChat
-    PRIVATE 
-        GameNetworkingSockets::static
+    PUBLIC 
+        ${GNS_TARGET} # shared or static
         protobuf::libprotobuf
 )
-
 
 if( BUILD_SHARED_LIBS AND
     CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
@@ -109,7 +92,6 @@ protobuf_generate (
     LANGUAGE cpp
     OUT_VAR NickSVChat_PROTO_OUT_FILES
     PROTOC_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${NickSVChat_INCLUDE_PREFIX}
-    #APPEND_PATH
     )
 
     
@@ -134,13 +116,6 @@ PUBLIC
 INTERFACE
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
-target_include_directories(NickSVChat 
-SYSTEM 
-PUBLIC
-    ${NickSVChat_EXTERNAL_INCLUDE_DIRS}
-)
-
-
 
 
 #-----------------------------------------------
@@ -167,7 +142,7 @@ if(INSTALL_RUNTIME_DEPENDENCIES)
     include(InstallTargetDepsRecursive)
     install_target_deps_recursive(
         NickSVChat
-        GameNetworkingSockets::GameNetworkingSockets
+        ${GNS_TARGET}
         protobuf::libprotobuf
     )
 endif()
@@ -187,9 +162,10 @@ install(
         ${NickSVChat_INCLUDE_DIR}/
     DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR}/
 )
+file(TO_CMAKE_PATH "${CMAKE_INSTALL_FULL_INCLUDEDIR}/${NickSVChat_INCLUDE_PREFIX}/Proto" NickSVChat_PROTO_HDRS_DEST)
 install(FILES 
 	${NickSVChat_PROTO_HDRS}
-	DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR}/${NickSVChat_INCLUDE_PREFIX}/Proto
+	DESTINATION "${NickSVChat_PROTO_HDRS_DEST}"
 	)
     
 #-----------------------------------------------

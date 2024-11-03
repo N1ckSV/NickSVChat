@@ -63,9 +63,8 @@ if( BUILD_EXAMPLES )
     )
 
     target_link_libraries(NickSVChatExample
-        PRIVATE
+        PUBLIC
             NickSVChat
-        PRIVATE 
             protobuf::libprotobuf
     )
 

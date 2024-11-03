@@ -93,8 +93,8 @@ function(install_target_deps_recursive TGT)
         list(REMOVE_DUPLICATES LIST_FILES_TO_ADD_VAR)
         list(REMOVE_DUPLICATES LIST_DIRS_TO_ADD_VAR)
 
-        message(STATUS "[ITDR] -- Target's dep files: ${LIST_FILES_TO_ADD_VAR}")
-        message(STATUS "[ITDR] -- Target's dep dirs: ${LIST_DIRS_TO_ADD_VAR}")
+        message(STATUS "[ITDR] -- Target's shared dep files: ${LIST_FILES_TO_ADD_VAR}")
+        message(STATUS "[ITDR] -- Target's shared dep dirs: ${LIST_DIRS_TO_ADD_VAR}")
 
         #Transfer paths to install config
         install(CODE "message(STATUS \"[ITDR] -- ITDR is InstallTargetDepsRecursive script\")")
