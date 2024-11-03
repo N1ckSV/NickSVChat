@@ -121,21 +121,12 @@
 
         
         {
-            "name": "windows-debug-msvc",
-            "displayName": "Debug MSVC",
-            "description": "Debug build using MSVC",
-            "inherits" : ["base", "msvc", "windows", "debug"]
+            "name": "windows-msvc",
+            "displayName": "MSVC",
+            "description": "Windows build using MSVC",
+            "inherits" : ["base", "msvc", "windows"]
         },
 
-        {
-            "name": "windows-release-msvc",
-            "displayName": "Release MSVC",
-            "description": "Release build using MSVC gen",
-            "inherits" : ["base", "msvc", "windows", "release"]
-        },
-
-
-        
         {
             "name": "linux-debug-ninja",
             "displayName": "Debug Ninja",
@@ -169,16 +160,10 @@
 
         
         {
-            "name": "windows-debug-msvc-test",
-            "displayName": "Debug MSVC + Tests",
-            "description": "Debug build using MSVC + Tests",
-            "inherits" : ["windows-debug-msvc", "test"]
-        },
-        {
-            "name": "windows-release-msvc-test",
-            "displayName": "Release MSVC + Tests",
-            "description": "Release build using MSVC gen + Tests",
-            "inherits" : ["windows-release-msvc", "test"]
+            "name": "windows-msvc-test",
+            "displayName": "MSVC + Tests",
+            "description": "Windows build using MSVC + Tests",
+            "inherits" : ["windows-msvc", "test"]
         },
 
         
@@ -225,20 +210,22 @@
         
         {
             "name": "windows-debug-msvc",
-            "displayName": "Enabled",
-            "configurePreset": "windows-debug-msvc",
+            "displayName": "Debug",
+            "configurePreset": "windows-msvc",
             "configuration": "Debug",
             "targets":[
-              "all_build"
+                "all_build",
+                "install"
             ]
         },
         {
             "name": "windows-release-msvc",
-            "displayName": "Enabled",
-            "configurePreset": "windows-release-msvc",
+            "displayName": "Release",
+            "configurePreset": "windows-msvc",
             "configuration": "Release",
             "targets":[
-              "all_build"
+                "all_build",
+                "install"
             ]
         },
 
@@ -284,20 +271,22 @@
         
         {
             "name": "windows-debug-msvc-test",
-            "displayName": "Enabled",
-            "configurePreset": "windows-debug-msvc-test",
+            "displayName": "Debug",
+            "configurePreset": "windows-msvc-test",
             "configuration": "Debug",
             "targets":[
-              "install"
+                "all_build",
+                "install"
             ]
         },
         {
             "name": "windows-release-msvc-test",
-            "displayName": "Enabled",
-            "configurePreset": "windows-release-msvc-test",
+            "displayName": "Release",
+            "configurePreset": "windows-msvc-test",
             "configuration": "Release",
             "targets":[
-              "install"
+                "all_build",
+                "install"
             ]
         },
         
@@ -355,24 +344,24 @@
             "name": "windows-debug-msvc",
             "displayName": "Disabled",
             "configuration": "Debug",
-            "configurePreset": "windows-debug-msvc"
+            "configurePreset": "windows-msvc"
         },
         {
             "name": "windows-release-msvc",
             "displayName": "Disabled",
-            "configurePreset": "windows-release-msvc",
-           "configuration": "Release"
+            "configurePreset": "windows-msvc",
+            "configuration": "Release"
         },
         {
           "name": "windows-debug-msvc-test",
           "displayName": "Enabled",
-          "configurePreset": "windows-debug-msvc-test",
+          "configurePreset": "windows-msvc-test",
           "configuration": "Debug"
         },
         {
             "name": "windows-release-msvc-test",
             "displayName": "Enabled",
-            "configurePreset": "windows-release-msvc-test",
+            "configurePreset": "windows-msvc-test",
             "configuration": "Release"
         },
 

@@ -8,7 +8,7 @@ include(CTest)
 
 add_executable(
     NickSVChatTest
-    test.cpp 
+    NickSVChatTest.cpp 
 )
 
 
@@ -46,16 +46,16 @@ target_link_libraries(NickSVChatTest
 )
 
 add_test(
-    NAME test_main COMMAND NickSVChatTest
+    NAME NickSVChatTest COMMAND NickSVChatTest
     )
 
-set_tests_properties(test_main 
+set_tests_properties(NickSVChatTest 
     PROPERTIES 
     TIMEOUT 20
 )
 
 if(BUILD_SHARED_LIBS)
-    set_tests_properties(test_main 
+    set_tests_properties(NickSVChatTest 
         PROPERTIES 
         WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}"
     )
